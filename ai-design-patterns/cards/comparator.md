@@ -10,7 +10,7 @@ Also known as: Named Comparison, Comparison Operator, Match Mode.
 
 ## Intent
 
-Express verification comparison as a named operator from a finite family, so the verdict is a deterministic function of `(expected, observed, operator)` rather than a model's interpretation of "does this look right?"
+Express verification comparison as a named operator from a finite family, so the verdict is a deterministic function of `(expected, observed, operator, threshold, normalization)` rather than a model's interpretation of "does this look right?"
 
 ## Problem
 
@@ -40,9 +40,9 @@ Once those operations are fused, the recorded result is only the model's label. 
 
 ## Solution
 
-Maintain a finite family of named comparison operators. For each verification step, choose the loosest operator that still distinguishes the correct output from the wrong one.
+Maintain a finite family of named comparison operators. For each verification step, choose the least restrictive operator allowed by the stated criterion, rather than tuning the operator until the current answer passes.
 
-Extract the observed value before comparison. Do not let the comparison operator fetch state, parse a model's reasoning, or decide what should be checked. It receives `expected`, `observed`, and operator settings. It returns a structured record with the operator name, score, threshold, and verdict.
+Extract the observed value before comparison. Do not let the comparison operator fetch state, parse a model's reasoning, or decide what should be checked. It receives `expected`, `observed`, and operator settings. It returns a structured record with the operator name, comparison values, normalization, notes, score, threshold, and derived verdict.
 
 Common shapes:
 
@@ -57,8 +57,8 @@ If no named operator fits, that is useful information. Tighten the answer format
 1. **Define the comparison surface.** Name whether the comparison is over a string, regex, JSON tree, structured event sequence, or predicate set.
 2. **Pick a named operator.** Choose `exact`, `normalized_exact`, `regex`, `json_canonical`, `json_distance`, `trajectory_exact`, `trajectory_in_order`, `trajectory_any_order`, or a named aggregator.
 3. **Extract observed value separately.** Extraction happens before the comparator runs and is recorded verbatim.
-4. **Apply the operator.** Return a structured score with `{operator, expected, observed, score, threshold}`.
-5. **Record every comparison.** Reports include operator, expected, observed, normalization, score, threshold, and verdict for passes and failures.
+4. **Apply the operator.** Return a structured score with `{operator, expected, observed, score, threshold, normalization}`; for `regex`, the expected field is the pattern being matched.
+5. **Record every comparison.** Reports include operator, expected, observed, normalization, notes, score, threshold, and a verdict derived from `score >= threshold` for passes and failures.
 
 ## Pattern / Antipattern
 
@@ -98,7 +98,7 @@ The structured implementation separates extraction from comparison and makes the
 ```python
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 
@@ -110,38 +110,63 @@ class ComparisonResult:
     score: float
     threshold: float
     normalization: list[str]
+    notes: list[str] = field(default_factory=list)
 
     @property
     def passed(self) -> bool:
         return self.score >= self.threshold
+
+    @property
+    def verdict(self) -> str:
+        return "pass" if self.passed else "fail"
+
+    def to_report(self) -> dict[str, Any]:
+        return {
+            "operator": self.operator,
+            "expected": self.expected,
+            "observed": self.observed,
+            "normalization": self.normalization,
+            "notes": self.notes,
+            "score": self.score,
+            "threshold": self.threshold,
+            "verdict": self.verdict,
+        }
 
 
 def normalize_text(value: str) -> str:
     return " ".join(value.lower().strip().split())
 
 
-def exact(expected: str, observed: str) -> tuple[float, list[str]]:
-    return (1.0 if expected == observed else 0.0, [])
+def exact(expected: str, observed: str) -> tuple[float, list[str], list[str]]:
+    return (1.0 if expected == observed else 0.0, [], [])
 
 
-def normalized_exact(expected: str, observed: str) -> tuple[float, list[str]]:
+def normalized_exact(expected: str, observed: str) -> tuple[float, list[str], list[str]]:
     return (
         1.0 if normalize_text(expected) == normalize_text(observed) else 0.0,
         ["lowercase", "strip", "collapse_whitespace"],
+        [],
     )
 
 
-def regex(expected: str, observed: str) -> tuple[float, list[str]]:
-    return (1.0 if re.fullmatch(expected, observed) else 0.0, [])
+def regex(expected: str, observed: str) -> tuple[float, list[str], list[str]]:
+    try:
+        matched = re.fullmatch(expected, observed)
+    except re.error:
+        return (0.0, [], ["invalid_regex_pattern"])
+    return (1.0 if matched else 0.0, [], [])
 
 
-def json_canonical(expected: str, observed: str) -> tuple[float, list[str]]:
-    expected_json = json.dumps(json.loads(expected), sort_keys=True)
-    observed_json = json.dumps(json.loads(observed), sort_keys=True)
-    return (1.0 if expected_json == observed_json else 0.0, ["json_sort_keys"])
+def json_canonical(expected: str, observed: str) -> tuple[float, list[str], list[str]]:
+    try:
+        expected_json = json.dumps(json.loads(expected), sort_keys=True)
+        observed_json = json.dumps(json.loads(observed), sort_keys=True)
+    except json.JSONDecodeError:
+        return (0.0, [], ["json_parse_failed"])
+    return (1.0 if expected_json == observed_json else 0.0, ["json_sort_keys"], [])
 
 
-OPERATORS: dict[str, Callable[[str, str], tuple[float, list[str]]]] = {
+OPERATORS: dict[str, Callable[[str, str], tuple[float, list[str], list[str]]]] = {
     "exact": exact,
     "normalized_exact": normalized_exact,
     "regex": regex,
@@ -152,8 +177,10 @@ OPERATORS: dict[str, Callable[[str, str], tuple[float, list[str]]]] = {
 def compare(operator: str, expected: str, observed: str, threshold: float = 1.0) -> ComparisonResult:
     if operator not in OPERATORS:
         raise ValueError(f"Unknown comparator: {operator}")
+    if not 0.0 < threshold <= 1.0:
+        raise ValueError("threshold must be in (0, 1]")
 
-    score, normalization = OPERATORS[operator](expected, observed)
+    score, normalization, notes = OPERATORS[operator](expected, observed)
     return ComparisonResult(
         operator=operator,
         expected=expected,
@@ -161,6 +188,7 @@ def compare(operator: str, expected: str, observed: str, threshold: float = 1.0)
         score=score,
         threshold=threshold,
         normalization=normalization,
+        notes=notes,
     )
 
 
@@ -170,11 +198,28 @@ report = compare(
     observed="the answer is 42.",
 )
 assert report.passed is True
+assert compare("exact", "The answer is 42.", "the answer is 42.").passed is False
+assert report.normalization == ["lowercase", "strip", "collapse_whitespace"]
+
+malformed_json = compare("json_canonical", '{"answer": 42}', '{"answer":')
+assert malformed_json.passed is False
+assert malformed_json.notes == ["json_parse_failed"]
+
+assert report.to_report() == {
+    "operator": "normalized_exact",
+    "expected": "The answer is 42.",
+    "observed": "the answer is 42.",
+    "normalization": ["lowercase", "strip", "collapse_whitespace"],
+    "notes": [],
+    "score": 1.0,
+    "threshold": 1.0,
+    "verdict": "pass",
+}
 ```
 
 LangChain's non-LLM evaluator family demonstrates this pattern at framework level: exact match, regex match, and JSON edit distance take reference and prediction values and return mechanical scores. Its evaluator schema distinguishes named non-LLM evaluators from LLM evaluators, which is the architectural distinction Comparator needs.
 
-ADK's `TrajectoryEvaluator` shows the structured-event variant. It compares actual and expected tool-call sequences using named match modes: `EXACT`, `IN_ORDER`, and `ANY_ORDER`. That proves Comparator is not just equality; it is a finite family of declared tolerance contracts.
+ADK's `TrajectoryEvaluator` shows the structured-event variant. It compares actual and expected tool-call sequences using named match modes: `EXACT`, `IN_ORDER`, and `ANY_ORDER`. This illustrates Comparator as a finite family of declared tolerance contracts, not just equality.
 
 ## Determinism Move
 
@@ -189,17 +234,19 @@ Every Comparator report should include:
 * operator name;
 * expected value or reference;
 * observed value extracted before comparison;
-* score and threshold;
 * normalization steps applied before comparison;
+* notes for recorded parse or pattern failures;
+* score and threshold;
 * pass/fail verdict.
 
-A useful report is replayable from the record:
+A useful report is replayable from the record plus the pinned comparator implementation:
 
 ```text
 operator: normalized_exact
 expected: "The answer is 42."
 observed: "the answer is 42."
 normalization: lowercase, strip, collapse_whitespace
+notes: []
 score: 1.0
 threshold: 1.0
 verdict: pass
@@ -208,7 +255,7 @@ verdict: pass
 ## Failure Modes
 
 * **Fused Judgment:** Extraction, comparison, and verdict collapse into one LLM prompt. Extract observed value first, then apply a named operator outside the model call.
-* **Wrong Operator:** The check uses `exact` when `regex`, `json_canonical`, or `trajectory_any_order` matches the criterion. Choose the loosest operator that still distinguishes correct from wrong.
+* **Wrong Operator:** The check uses `exact` when `regex`, `json_canonical`, or `trajectory_any_order` matches the criterion. Apply the Solution rule: choose the least restrictive operator the criterion permits.
 * **Hidden Normalization:** The operator lowercases, strips punctuation, or canonicalizes JSON without reporting that step. Record normalization and normalized comparison surfaces.
 * **No Tolerance Policy:** Structured events are compared without declaring exact, in-order, any-order, distance, or threshold semantics. Reject `compare(expected, observed)` without a mode.
 
@@ -245,4 +292,4 @@ Do not reach for Comparator when:
 * **Blind Oracle:** fused comparison often violates blind evaluation because the judge sees the draft beside the truth.
 * **Judge Harness:** handles cases where no named comparator fits, but only with calibration and reliability checks.
 * **Constitution:** can name expected values and accepted comparator operators.
-* **Delta:** produces relative observed values that Comparator can evaluate with `delta_equals` or threshold operators.
+* **Delta:** produces relative observed values that Comparator can evaluate with a declared numeric tolerance operator.
