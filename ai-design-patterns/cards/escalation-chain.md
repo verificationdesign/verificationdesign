@@ -25,7 +25,7 @@ Those instructions name a desired behavior, not a routing mechanism. The model s
 
 No typed handoff means no inspectable target. No validated target means no guarantee the next handler exists. No depth cap means escalation can loop.
 
-`verification_design.md` Principle 2 names the core independence rule: generation and verification should be separated so the verifier does not copy the same errors. Escalation Chain applies that rule to routing. A failed or low-confidence handler should transfer control to a validated next handler, not ask the same model to remember an escalation instruction. Principle 7 adds the same-family caveat: escalation within the same family is weaker than escalation across a real family or capability boundary.
+`verification_design.md` Principle 2 names the core independence rule: generation and verification should be separated so the verifier does not copy the same errors. Escalation Chain extends that rule to routing by analogy. A failed or low-confidence handler should transfer control to a validated next handler, not ask the same model to remember an escalation instruction. Principle 7 adds the same-family caveat: escalation within the same family is weaker than escalation across a real family or capability boundary.
 
 ## Forces
 
@@ -44,20 +44,19 @@ The orchestrator defines known handlers, allowed targets, maximum depth, and the
 * source handler;
 * target handler;
 * reason;
-* depth;
 * payload or work item.
 
-The orchestrator validates the target against registered participants, rejects self-escalation where independence is required, enforces the depth cap, and records the path.
+The orchestrator validates the source and target against registered participants, checks that the source is the current handler, rejects self-escalation, enforces the allowed-target policy, computes depth from the recorded path, enforces the depth cap, and records the path. Retries are a Backpressure loop, not a self-handoff through this escalation boundary.
 
 Escalation authority belongs in code. The model may propose a handoff. The orchestrator decides whether the handoff is valid.
 
 ## Mechanism
 
 1. **Define handlers and tiers.** Register handler ids, capabilities, families, and allowed handoff targets.
-2. **Define a handoff schema.** The schema carries source, target, reason, depth, and payload.
-3. **Validate the target.** Reject unknown targets and reject self-escalation where independence is required.
+2. **Define a handoff schema.** The schema carries source, target, reason, and payload. The orchestrator derives depth from the recorded path.
+3. **Validate the route.** Reject unknown sources, unknown targets, source impersonation, self-escalation, disallowed transitions, and over-depth paths.
 4. **Route through the orchestrator.** The orchestrator sets the next handler from the validated handoff, not from free prose.
-5. **Record the escalation path.** Store source, target, reason, depth, max depth, validation result, and process mode.
+5. **Record the escalation path.** Store source, target, reason, computed depth, max depth, performed checks, process mode, and path.
 
 ## Pattern / Antipattern
 
@@ -91,7 +90,6 @@ class Handoff:
     source: str
     target: str
     reason: str
-    depth: int
     payload: str
 
 
@@ -102,34 +100,61 @@ class EscalationResult:
     escalation_reason: str
     escalation_depth: int
     max_depth: int
-    target_validated: bool
-    self_escalation_rejected: bool
+    checks_performed: tuple[str, ...]
     process_mode: str
     next_handler: Handler
     path: tuple[str, ...]
+
+    def to_report(self) -> dict[str, object]:
+        return {
+            "source_handler": self.source_handler,
+            "target_handler": self.target_handler,
+            "escalation_reason": self.escalation_reason,
+            "escalation_depth": self.escalation_depth,
+            "max_depth": self.max_depth,
+            "checks_performed": self.checks_performed,
+            "process_mode": self.process_mode,
+            "path": self.path,
+        }
 
 
 def route_handoff(
     handoff: Handoff,
     participants: dict[str, Handler],
+    allowed_targets: dict[str, set[str]],
     max_depth: int,
     path: tuple[str, ...],
 ) -> EscalationResult:
+    checks = (
+        "unknown_target",
+        "source_identity",
+        "allowed_transition",
+        "self_escalation",
+        "depth_cap",
+    )
+
+    if handoff.source not in participants:
+        raise ValueError(f"unknown escalation source: {handoff.source}")
     if handoff.target not in participants:
         raise ValueError(f"unknown escalation target: {handoff.target}")
+    if not path or path[-1] != handoff.source:
+        raise ValueError("handoff source is not the current handler")
     if handoff.target == handoff.source:
         raise ValueError("self-escalation is not an escalation")
-    if handoff.depth > max_depth:
+    if handoff.target not in allowed_targets.get(handoff.source, set()):
+        raise ValueError("target is not allowed for this source")
+
+    depth = len(path)
+    if depth > max_depth:
         raise ValueError("escalation depth exceeded")
 
     return EscalationResult(
         source_handler=handoff.source,
         target_handler=handoff.target,
         escalation_reason=handoff.reason,
-        escalation_depth=handoff.depth,
+        escalation_depth=depth,
         max_depth=max_depth,
-        target_validated=True,
-        self_escalation_rejected=True,
+        checks_performed=checks,
         process_mode="typed_handoff",
         next_handler=participants[handoff.target],
         path=path + (handoff.target,),
@@ -142,25 +167,107 @@ participants = {
     "human": Handler(handler_id="human", family="human", tier=3),
 }
 
+allowed_targets = {
+    "writer": {"reviewer"},
+    "reviewer": {"human"},
+    "human": set(),
+}
+
 handoff = Handoff(
     source="writer",
     target="reviewer",
     reason="low confidence after adversary finding",
-    depth=1,
     payload="migration plan requires independent review",
 )
 
 result = route_handoff(
     handoff=handoff,
     participants=participants,
+    allowed_targets=allowed_targets,
     max_depth=2,
     path=("writer",),
 )
 
-assert handoff.target in participants
-assert handoff.target != handoff.source
-assert result.escalation_depth <= result.max_depth
+expected_report = {
+    "source_handler": "writer",
+    "target_handler": "reviewer",
+    "escalation_reason": "low confidence after adversary finding",
+    "escalation_depth": 1,
+    "max_depth": 2,
+    "checks_performed": (
+        "unknown_target",
+        "source_identity",
+        "allowed_transition",
+        "self_escalation",
+        "depth_cap",
+    ),
+    "process_mode": "typed_handoff",
+    "path": ("writer", "reviewer"),
+}
+
+
+def assert_rejected(bad_handoff: Handoff, bad_path: tuple[str, ...]) -> None:
+    try:
+        route_handoff(
+            handoff=bad_handoff,
+            participants=participants,
+            allowed_targets=allowed_targets,
+            max_depth=2,
+            path=bad_path,
+        )
+    except ValueError:
+        return
+    raise AssertionError("invalid handoff was accepted")
+
+
+assert_rejected(
+    Handoff(
+        source="writer",
+        target="ghost",
+        reason="unknown target",
+        payload="work item",
+    ),
+    ("writer",),
+)
+assert_rejected(
+    Handoff(
+        source="writer",
+        target="writer",
+        reason="self-target",
+        payload="work item",
+    ),
+    ("writer",),
+)
+assert_rejected(
+    Handoff(
+        source="reviewer",
+        target="human",
+        reason="wrong source",
+        payload="work item",
+    ),
+    ("writer",),
+)
+assert_rejected(
+    Handoff(
+        source="reviewer",
+        target="writer",
+        reason="disallowed transition",
+        payload="work item",
+    ),
+    ("writer", "reviewer"),
+)
+assert_rejected(
+    Handoff(
+        source="reviewer",
+        target="human",
+        reason="over depth",
+        payload="work item",
+    ),
+    ("writer", "human", "reviewer"),
+)
+
 assert result.next_handler.handler_id == handoff.target
+assert result.to_report() == expected_report
 ```
 
 AutoGen's `Swarm` team has this typed-handoff shape. It selects the next speaker only from handoff messages, validates that handoff targets are participants, persists the current speaker, and otherwise keeps the current speaker when no handoff occurs.
@@ -184,9 +291,9 @@ Every Escalation Chain report should include:
 * escalation reason;
 * escalation depth;
 * maximum depth;
-* target-validated boolean;
+* checks performed;
 * process mode, such as `typed_handoff` or `manager_process`;
-* manager-present boolean when applicable;
+* manager-present boolean for manager-process reports;
 * path so far.
 
 A useful report names the handoff:
@@ -197,16 +304,15 @@ target_handler: reviewer
 escalation_reason: low confidence after adversary finding
 escalation_depth: 1
 max_depth: 2
-target_validated: true
+checks_performed: [unknown_target, source_identity, allowed_transition, self_escalation, depth_cap]
 process_mode: typed_handoff
-manager_present: false
 path: [writer, reviewer]
 ```
 
 ## Failure Modes
 
 * **Prompt-Convention Escalation:** the prompt says "ask the manager," but no typed target is emitted or validated. Add a handoff object and reject unknown targets.
-* **Self-Escalation:** the target is the source handler. Reject self-handoffs unless the route is explicitly a retry, not escalation.
+* **Self-Escalation:** the target is the source handler. Reject self-handoffs at this boundary. Retries belong in Backpressure, not in Escalation Chain.
 * **Same-Family Escalation:** work routes to a role that shares the same model family and blind spot. Use Cross-Family when independence matters.
 * **Unbounded Escalation:** the chain has no depth cap and loops among handlers. Record depth and enforce `max_depth`.
 * **Unvalidated Target:** the handoff names a handler that is not registered. Reject before routing.
@@ -235,7 +341,7 @@ If escalation cannot name and validate a different next owner, label it as retry
 
 ## Evidence
 
-* **Verification Design Principle 2:** the design doc names independence between generation and verification; Escalation Chain applies that independence rule to routing after failure or low confidence.
+* **Verification Design Principle 2:** the design doc names independence between generation and verification; Escalation Chain applies that independence rule to routing by analogy after failure or low confidence.
 * **Verification Design Principle 7:** the same design doc frames cross-family verification as stronger than self-verification, which supplies the same-family caveat for escalation targets.
 * **[AutoGen](https://github.com/microsoft/autogen) Swarm:** the orchestration sweep records a direct typed-handoff instance: next speaker is selected from handoff messages, targets are validated against participants, and current speaker is persisted.
 * **[CrewAI](https://github.com/crewAIInc/crewAI) hierarchical process:** the orchestration sweep records a direct manager-process instance: hierarchical mode requires a manager, routes execution through that manager, and supplies delegation tools.
