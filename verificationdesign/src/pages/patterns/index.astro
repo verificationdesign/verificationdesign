@@ -1,0 +1,120 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CategoryGrid from '../../components/CategoryGrid.astro';
+
+const failures = [
+  {
+    failure: 'The agent says done, but the work is not actually done.',
+    shape: 'The workflow has no external signal for completion.',
+    links: [
+      { label: 'Executable Analog', href: '/patterns/verification/executable-analog/' },
+      { label: 'Comparator', href: '/patterns/verification/comparator/' },
+      { label: 'Constitution', href: '/patterns/context-and-state/constitution/' },
+    ],
+  },
+  {
+    failure: 'The agent reviews itself and misses obvious problems.',
+    shape: 'The verifier is too close to the generator.',
+    links: [
+      { label: 'Blind Oracle', href: '/patterns/verification/blind-oracle/' },
+      { label: 'Cross-Family', href: '/patterns/orchestration/cross-family/' },
+      { label: 'Adversary', href: '/patterns/orchestration/adversary/' },
+      { label: 'Adversarial Frame', href: '/patterns/verification/adversarial-frame/' },
+    ],
+  },
+  {
+    failure: 'The same prompt produces different outcomes across runs.',
+    shape: 'Variance is leaking through sampling, state, timing, or judge behavior.',
+    links: [
+      { label: 'State Baseline', href: '/patterns/context-and-state/state-baseline/' },
+      { label: 'Judge Harness', href: '/patterns/verification/judge-harness/' },
+      { label: 'Backpressure', href: '/patterns/orchestration/backpressure/' },
+    ],
+  },
+  {
+    failure: 'The check passes because the environment already looked right.',
+    shape: 'The verifier observes a true fact, but not causality.',
+    links: [
+      { label: 'Delta', href: '/patterns/verification/delta/' },
+      { label: 'Causal Tag', href: '/patterns/context-and-state/causal-tag/' },
+      { label: 'Trajectory Cursor', href: '/patterns/context-and-state/trajectory-cursor/' },
+    ],
+  },
+  {
+    failure: 'Agents disagree, loop, or escalate randomly.',
+    shape: 'The system has no explicit routing policy for uncertainty.',
+    links: [
+      { label: 'Escalation Chain', href: '/patterns/orchestration/escalation-chain/' },
+      { label: 'Debate', href: '/patterns/orchestration/debate/' },
+      { label: 'Backpressure', href: '/patterns/orchestration/backpressure/' },
+    ],
+  },
+  {
+    failure: 'Tool calls are messy, unsafe, or hard to verify.',
+    shape: 'The boundary between model intent, tool input, and policy is ambiguous.',
+    links: [
+      { label: 'Guardrail Decorator', href: '/patterns/context-and-state/guardrail-decorator/' },
+      { label: 'Tool Adapter', href: '/patterns/orchestration/tool-adapter/' },
+      { label: 'Constitution', href: '/patterns/context-and-state/constitution/' },
+    ],
+  },
+];
+
+const cards = await getCollection('patterns');
+const validHrefs = new Set(cards.map((card) => `/patterns/${card.data.category}/${card.data.slug}/`));
+const deadLinks = failures
+  .flatMap((entry) => entry.links)
+  .filter((link) => !validHrefs.has(link.href));
+
+if (deadLinks.length > 0) {
+  throw new Error(`Chooser links missing from the card collection: ${deadLinks.map((l) => l.href).join(', ')}`);
+}
+---
+
+<BaseLayout
+  title="Patterns"
+  description="Reusable verification patterns for agentic systems, organized by context, verification, and orchestration."
+>
+  <div class="patterns-page">
+    <h1>Patterns</h1>
+    <p class="patterns-orientation">
+      Patterns are reusable verification structures for agentic systems.
+      Each card names the failure it controls, the mechanism it uses, the
+      observable signal it produces, and the evidence behind it. Two ways
+      in: start from the failure you are seeing, or browse by family.
+    </p>
+
+    <section class="chooser" aria-labelledby="by-failure-heading">
+      <h2 id="by-failure-heading">Start from the failure</h2>
+      <p class="chooser-lead">
+        First the pain, then the pattern. Each failure lists the patterns to
+        reach for, closest fit first.
+      </p>
+      <div class="chooser-list">
+        {failures.map((entry) => (
+          <section class="chooser-card">
+            <h3>{entry.failure}</h3>
+            <p>{entry.shape}</p>
+            <ul role="list">
+              {entry.links.map((link) => (
+                <li><a href={link.href}>{link.label}</a></li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+      <p class="chooser-footer">
+        If the failure is still unclear, start with
+        <a href="/patterns/context-and-state/constitution/">Constitution</a>.
+        Most verification failures become easier to diagnose once the system has
+        an explicit answer to what is being checked.
+      </p>
+    </section>
+
+    <section class="by-family" aria-labelledby="by-family-heading">
+      <h2 id="by-family-heading">Browse by family</h2>
+      <CategoryGrid showCount={true} headingLevel="h3" />
+    </section>
+  </div>
+</BaseLayout>

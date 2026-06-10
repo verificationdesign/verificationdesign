@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Principles"
+  description="Nine principles for grounding agent verification in external signals, executable checks, and isolated evidence."
+>
+  <div class="principles-page">
+    <h1>Principles</h1>
+    <p>
+      Verification design rests on nine principles. They emerged from
+      research on LLM self-correction, verification chains, and agent
+      evaluation. The patterns in this catalog implement these principles
+      in code.
+    </p>
+
+    <h2 id="core-finding">The core finding</h2>
+    <p>
+      LLMs cannot reliably self-correct their own reasoning through naive
+      self-review
+      <sup><a href="https://arxiv.org/abs/2310.01798" class="source-link" aria-label="Source: arXiv 2310.01798">1</a></sup>.
+      This is the most replicated finding across the recent
+      literature on LLM verification. Performance often degrades when a
+      model is asked to review its own work without external feedback.
+    </p>
+
+    <h2 id="external-signals">1. External signals over self-review</h2>
+    <p>
+      Tests, builds, linters, type checkers, API responses, browser DOM
+      extraction. Binary pass and fail signals that do not depend on the
+      agent's judgment. These are sycophancy-proof.
+    </p>
+
+    <h2 id="independence">2. Independence between generation and verification</h2>
+    <p>
+      If the verifier can see the original output, it copies the same
+      errors. Structure verification as extract, then compare, not as read
+      and opine.
+    </p>
+
+    <h2 id="step-level">3. Step-level checkpoints</h2>
+    <p>
+      Verify intermediate steps throughout the workflow, not just the
+      final output. Step-level verification catches errors at the layer
+      where they originate, before they compound.
+    </p>
+
+    <h2 id="adversarial-framing">4. Adversarial framing</h2>
+    <p>
+      Ask what could fail, not what looks right. Confirmatory framing
+      produces unreliable results by default. SycEval measured 58.19
+      percent sycophancy overall across major model families
+      <sup><a href="https://ojs.aaai.org/index.php/AIES/article/download/36598/38736/40673" class="source-link" aria-label="Source: SycEval, AAAI 2025">2</a></sup>.
+    </p>
+
+    <h2 id="explicit-criteria">5. Explicit criteria</h2>
+    <p>
+      No hardcoded values, all error paths handled, no TODOs remain.
+      Specific criteria constrain rationalization; vague instructions
+      invite it.
+    </p>
+
+    <h2 id="executable-verification">6. Executable verification is king</h2>
+    <p>
+      Run the tests is the single most reliable verification step
+      available. For any check that depends on agent judgment, find the
+      executable analog.
+    </p>
+
+    <h2 id="cross-family">7. Cross-family beats self-verification</h2>
+    <p>
+      Different model family is needed when verification is LLM-based.
+      Self-verification and intra-family verification are systematically
+      biased toward accepting incorrect outputs.
+    </p>
+
+    <h2 id="simulate-debate">8. Simulate debate</h2>
+    <p>
+      In a single-agent context, instruct the agent to argue against its
+      own output before concluding. Competitive disagreement reveals more
+      than confirmatory review.
+    </p>
+
+    <h2 id="isolate-ambient-state">9. Isolate verification from ambient state</h2>
+    <p>
+      Assertions must prove the system's actions caused the expected
+      outcome, not that the environment happened to already contain
+      matching data. Delta-based assertions and tagged test data isolate
+      causality.
+    </p>
+
+    <p class="principles-footer">
+      The <a href="/patterns/">patterns</a> give each principle a code
+      shape, an antipattern, and a determinism move that names what the
+      pattern constrains.
+    </p>
+  </div>
+</BaseLayout>

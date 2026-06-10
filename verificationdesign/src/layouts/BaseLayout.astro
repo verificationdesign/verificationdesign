@@ -1,0 +1,108 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getUi, DEFAULT_LOCALE } from '../i18n/ui';
+import '../styles/global.css';
+
+const { title, description, updated, noindex = false } = Astro.props;
+const t = getUi();
+
+const baseTitle = t.siteName;
+const pageTitle = title ? `${title}  ·  ${baseTitle}` : baseTitle;
+const defaultDescription =
+  'Build agentic systems that verify their work with evidence, not opinion.';
+const pageDescription = description ?? defaultDescription;
+const websiteSchema = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: baseTitle,
+  url: Astro.site?.toString(),
+  description: defaultDescription,
+});
+const canonicalPath = Astro.url.pathname === '/'
+  ? '/'
+  : `${Astro.url.pathname.replace(/\/$/, '')}/`;
+const canonicalUrl = new URL(canonicalPath, Astro.site).toString();
+const socialImage = new URL('/og.png', Astro.site).toString();
+---
+
+<!DOCTYPE html>
+<html lang={DEFAULT_LOCALE}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content={baseTitle} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Verification Design" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={socialImage} />
+    <script is:inline type="application/ld+json" set:html={websiteSchema} />
+  </head>
+  <body
+    data-copy-label={t.copy.label}
+    data-copy-idle={t.copy.idle}
+    data-copy-copied={t.copy.copied}
+    data-copy-failed={t.copy.failed}
+  >
+    <a href="#main" class="skip-link">Skip to content</a>
+    <Header />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer updated={updated} />
+    <script is:inline>
+      // Copy buttons on code blocks
+      (function () {
+        var pres = document.querySelectorAll('pre');
+        pres.forEach(function (pre) {
+          if (pre.querySelector('.copy-button')) return;
+          var button = document.createElement('button');
+          button.className = 'copy-button';
+          button.type = 'button';
+          var copyText = document.body.dataset;
+          button.setAttribute('aria-label', copyText.copyLabel || 'Copy code to clipboard');
+          button.setAttribute('aria-live', 'polite');
+          button.textContent = copyText.copyIdle || 'Copy';
+          button.addEventListener('click', async function () {
+            var code = pre.querySelector('code');
+            var text = code ? code.textContent : pre.textContent;
+            try {
+              await navigator.clipboard.writeText(text || '');
+              button.textContent = copyText.copyCopied || 'Copied';
+              setTimeout(function () { button.textContent = copyText.copyIdle || 'Copy'; }, 1500);
+            } catch (err) {
+              button.textContent = copyText.copyFailed || 'Failed';
+            }
+          });
+          pre.appendChild(button);
+        });
+      })();
+
+      // Outbound links open in new tab; internal links stay in tab.
+      (function () {
+        var siteHost = location.hostname;
+        var links = document.querySelectorAll('a[href^="http://"], a[href^="https://"]');
+        links.forEach(function (a) {
+          try {
+            var url = new URL(a.getAttribute('href'));
+            if (url.hostname === siteHost) return;
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel', 'noopener noreferrer');
+          } catch (e) {}
+        });
+      })();
+    </script>
+  </body>
+</html>

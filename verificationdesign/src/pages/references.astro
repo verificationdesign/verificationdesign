@@ -1,0 +1,45 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { collectReferences } from '../lib/references';
+
+const cards = await getCollection('patterns');
+const references = await collectReferences(
+  cards.map((card) => ({
+    title: card.data.title,
+    href: `/patterns/${card.data.category}/${card.data.slug}/`,
+    body: card.body ?? '',
+  })),
+);
+---
+
+<BaseLayout
+  title="References"
+  description="A deduplicated bibliography extracted from the Verification Design principles and pattern-card evidence sections."
+>
+  <div class="references-page">
+    <h1>References</h1>
+    <p>
+      Bibliography extracted from canonical principles and pattern-card
+      evidence sections. Entries are deduplicated by link target.
+    </p>
+
+    <ol class="reference-list">
+      {references.map((reference) => (
+        <li>
+          <a href={reference.href}>{reference.label}</a>
+          <span class="reference-sources">
+            {' '}Cited from{' '}
+            {reference.sources.map((source, index) => (
+              <>
+                {index > 0 && ', '}
+                <a href={source.href}>{source.title}</a>
+              </>
+            ))}
+            .
+          </span>
+        </li>
+      ))}
+    </ol>
+  </div>
+</BaseLayout>

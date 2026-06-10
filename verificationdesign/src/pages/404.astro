@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getUi } from '../i18n/ui';
+
+const t = getUi();
+---
+
+<BaseLayout title="Page not found" description="This page does not exist." noindex={true}>
+  <div class="not-found">
+    <h1>404: page not found</h1>
+    <p>
+      Expected a page at this address; observed none. The link is broken,
+      moved, or mistyped.
+    </p>
+    <div class="cta-row">
+      <a href={t.routes.patterns} class="cta-primary">Browse the patterns →</a>
+      <a href={t.routes.home} class="cta-secondary">Go to the homepage</a>
+    </div>
+  </div>
+</BaseLayout>

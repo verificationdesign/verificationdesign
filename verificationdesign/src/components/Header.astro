@@ -1,0 +1,60 @@
+---
+import ComparatorMark from './ComparatorMark.astro';
+import { getUi } from '../i18n/ui';
+
+const t = getUi();
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const isActive = (route: string) => {
+  const r = route.replace(/\/$/, '') || '/';
+  return r === '/' ? path === '/' : path === r || path.startsWith(r + '/');
+};
+const isHome = isActive(t.routes.home);
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    {isHome ? (
+      <span class="brand brand-current">
+        <ComparatorMark />
+        <span class="brand-name">{t.siteName}</span>
+      </span>
+    ) : (
+      <a href={t.routes.home} class="brand">
+        <ComparatorMark />
+        <span class="brand-name">{t.siteName}</span>
+      </a>
+    )}
+    <nav aria-label={t.nav.primary}>
+      <ul>
+        <li>
+          {isActive(t.routes.patterns) ? (
+            <span class="nav-current" aria-current="page">{t.nav.patterns}</span>
+          ) : (
+            <a href={t.routes.patterns}>{t.nav.patterns}</a>
+          )}
+        </li>
+        <li>
+          {isActive(t.routes.principles) ? (
+            <span class="nav-current" aria-current="page">{t.nav.principles}</span>
+          ) : (
+            <a href={t.routes.principles}>{t.nav.principles}</a>
+          )}
+        </li>
+        <li>
+          {isActive(t.routes.references) ? (
+            <span class="nav-current" aria-current="page">{t.nav.references}</span>
+          ) : (
+            <a href={t.routes.references}>{t.nav.references}</a>
+          )}
+        </li>
+        <li>
+          {isActive(t.routes.about) ? (
+            <span class="nav-current" aria-current="page">{t.nav.about}</span>
+          ) : (
+            <a href={t.routes.about}>{t.nav.about}</a>
+          )}
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

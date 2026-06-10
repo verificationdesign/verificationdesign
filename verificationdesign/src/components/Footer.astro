@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import { getUi } from '../i18n/ui';
+import { REPO_URL } from '../lib/repo';
+
+const { updated } = Astro.props;
+const t = getUi();
+let date = updated as string | undefined;
+
+if (!date) {
+  try {
+    const cards = await getCollection('patterns');
+    const dates = cards.map((c) => c.data.updated).filter(Boolean).sort();
+    date = dates.length ? dates[dates.length - 1] : undefined;
+  } catch {
+    date = undefined;
+  }
+}
+---
+
+<footer class="site-footer">
+  <p>
+    {date ? `${t.footer.updated} ${date}.` : t.footer.updatedFallback}
+    <a href={REPO_URL}>{t.footer.repo}</a>.
+  </p>
+</footer>

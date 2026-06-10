@@ -1,0 +1,200 @@
+---
+// Comparator mark: two near-identical structures resolved through comparison.
+const { size = 32 } = Astro.props;
+const height = Math.round((size / 32) * 24);
+---
+
+<span class="comparator-mark" style={`--mark-width: ${size}px; --mark-height: ${height}px;`}>
+  <svg
+    class="comparator-mark-svg"
+    viewBox="0 0 32 24"
+    width={size}
+    height={height}
+    aria-hidden="true"
+    focusable="false"
+  >
+    <rect x="2.5" y="5.5" width="11" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <rect x="18.5" y="5.5" width="11" height="13" rx="1" fill="none" stroke="currentColor" stroke-width="1.6" />
+    <line x1="13.5" y1="12" x2="18.5" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+  </svg>
+  <canvas
+    class="comparator-mark-canvas"
+    width={size}
+    height={height}
+    aria-hidden="true"
+  ></canvas>
+</span>
+
+<script>
+  const vertexSource = `
+    attribute vec2 a_position;
+    void main() {
+      gl_Position = vec4(a_position, 0.0, 1.0);
+    }
+  `;
+
+  const fragmentSource = `
+    precision mediump float;
+    uniform vec2 u_resolution;
+    uniform float u_progress;
+    uniform vec3 u_color;
+
+    float rectStroke(vec2 p, vec2 center, vec2 halfSize, float width) {
+      vec2 d = abs(p - center) - halfSize;
+      float outside = length(max(d, 0.0));
+      float inside = min(max(d.x, d.y), 0.0);
+      float dist = outside + inside;
+      return 1.0 - smoothstep(width, width + 0.55, abs(dist));
+    }
+
+    float capsule(vec2 p, vec2 a, vec2 b, float radius) {
+      vec2 pa = p - a;
+      vec2 ba = b - a;
+      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+      float dist = length(pa - ba * h);
+      return 1.0 - smoothstep(radius, radius + 0.55, dist);
+    }
+
+    void main() {
+      vec2 p = gl_FragCoord.xy;
+      p.y = u_resolution.y - p.y;
+
+      float settle = smoothstep(0.0, 1.0, u_progress);
+      float drift = (1.0 - settle) * 2.2;
+      float alpha = 0.0;
+
+      alpha = max(alpha, rectStroke(p, vec2(8.0, 12.0), vec2(5.5, 6.5), 0.85));
+      alpha = max(alpha, rectStroke(p, vec2(24.0 - drift, 12.0), vec2(5.5, 6.5), 0.85));
+      alpha = max(alpha, capsule(p, vec2(13.5, 12.0), vec2(18.5 - drift, 12.0), 0.82));
+
+      float probe = capsule(
+        p,
+        vec2(13.8, 12.0),
+        vec2(13.8 + (4.4 - drift) * settle, 12.0),
+        1.05
+      );
+      alpha = max(alpha, probe * (1.0 - abs(settle - 0.5) * 0.65));
+
+      gl_FragColor = vec4(u_color, alpha);
+    }
+  `;
+
+  function compile(gl: WebGLRenderingContext, type: number, source: string) {
+    const shader = gl.createShader(type);
+    if (!shader) return null;
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  function colorFromElement(element: Element) {
+    const value = getComputedStyle(element).color;
+    const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!match) return [0.176, 0.227, 0.31];
+    return [Number(match[1]) / 255, Number(match[2]) / 255, Number(match[3]) / 255];
+  }
+
+  function mountComparatorMark(mark: Element) {
+    const canvas = mark.querySelector('canvas');
+    if (!(canvas instanceof HTMLCanvasElement)) return;
+    const targetCanvas: HTMLCanvasElement = canvas;
+
+    const context = targetCanvas.getContext('webgl', {
+      alpha: true,
+      antialias: true,
+      depth: false,
+      stencil: false,
+      premultipliedAlpha: false,
+      preserveDrawingBuffer: false,
+    });
+    if (!context) return;
+    const gl: WebGLRenderingContext = context;
+
+    const vertexShader = compile(gl, gl.VERTEX_SHADER, vertexSource);
+    const fragmentShader = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
+    if (!vertexShader || !fragmentShader) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vertexShader);
+    gl.attachShader(program, fragmentShader);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW,
+    );
+
+    const position = gl.getAttribLocation(program, 'a_position');
+    const resolution = gl.getUniformLocation(program, 'u_resolution');
+    const progress = gl.getUniformLocation(program, 'u_progress');
+    const color = gl.getUniformLocation(program, 'u_color');
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const hasPlayed = window.sessionStorage.getItem('vdComparatorMarkPlayed') === '1';
+    const started = performance.now();
+    const rgb = colorFromElement(mark);
+
+    function draw(value: number) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, Math.round(targetCanvas.clientWidth * dpr));
+      const height = Math.max(1, Math.round(targetCanvas.clientHeight * dpr));
+      if (targetCanvas.width !== width || targetCanvas.height !== height) {
+        targetCanvas.width = width;
+        targetCanvas.height = height;
+      }
+
+      gl.viewport(0, 0, width, height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(program);
+      gl.enableVertexAttribArray(position);
+      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+      gl.uniform2f(resolution, width, height);
+      gl.uniform1f(progress, value);
+      gl.uniform3f(color, rgb[0], rgb[1], rgb[2]);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    mark.classList.add('is-webgl-ready');
+
+    if (prefersReducedMotion || hasPlayed) {
+      draw(1);
+      return;
+    }
+
+    function frame(now: number) {
+      const elapsed = Math.min(1, (now - started) / 950);
+      draw(elapsed);
+      if (elapsed < 1) {
+        requestAnimationFrame(frame);
+      } else {
+        window.sessionStorage.setItem('vdComparatorMarkPlayed', '1');
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  function startComparatorMarks() {
+    const run = () => document.querySelectorAll('.comparator-mark').forEach(mountComparatorMark);
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(run, { timeout: 1600 });
+      return;
+    }
+    setTimeout(run, 250);
+  }
+
+  if (document.readyState === 'complete') {
+    startComparatorMarks();
+  } else {
+    window.addEventListener('load', startComparatorMarks, { once: true });
+  }
+</script>

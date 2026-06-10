@@ -1,0 +1,78 @@
+---
+import { getCollection } from 'astro:content';
+
+const cards = await getCollection('patterns');
+
+type CategoryKey = 'context-and-state' | 'verification' | 'orchestration';
+
+const grouped: Record<CategoryKey, typeof cards> = {
+  'context-and-state': [],
+  'verification': [],
+  'orchestration': [],
+};
+
+for (const card of cards) {
+  grouped[card.data.category as CategoryKey].push(card);
+}
+
+for (const key of Object.keys(grouped) as CategoryKey[]) {
+  grouped[key].sort((a, b) => a.data.title.localeCompare(b.data.title));
+}
+
+const CATEGORY_INFO: Record<CategoryKey, { label: string; blurb: string }> = {
+  'context-and-state': {
+    label: 'Context and State',
+    blurb: 'What exists before the model acts.',
+  },
+  'verification': {
+    label: 'Verification',
+    blurb: 'How to turn judgment into observable signals.',
+  },
+  'orchestration': {
+    label: 'Orchestration',
+    blurb: 'How to control bias through independence and feedback routing.',
+  },
+};
+
+const visible = (Object.keys(CATEGORY_INFO) as CategoryKey[]).filter(
+  (key) => grouped[key].length > 0,
+);
+
+const { showCount = true, headingLevel = 'h2' } = Astro.props;
+const Heading = headingLevel;
+
+const longestIntent = cards.reduce(
+  (longest, card) =>
+    card.data.intent && card.data.intent.length > longest.length
+      ? card.data.intent
+      : longest,
+  '',
+);
+---
+
+<div class="category-grid">
+  {visible.map((key) => (
+    <section class="category">
+      <Heading class="category-title">{CATEGORY_INFO[key].label}</Heading>
+      <p class="category-blurb">
+        {CATEGORY_INFO[key].blurb}
+        {showCount && <span class="category-count"> {grouped[key].length} {grouped[key].length === 1 ? 'pattern' : 'patterns'}.</span>}
+      </p>
+      <ul class="card-list">
+        {grouped[key].map((card) => (
+          <li>
+            <a href={`/patterns/${card.data.category}/${card.data.slug}/`}>
+              <span class="card-title">{card.data.title}</span>
+              {card.data.intent && (
+                <span class="card-gloss-stack">
+                  <span class="card-gloss">{card.data.intent}</span>
+                  <span class="card-gloss card-gloss-ghost" aria-hidden="true">{longestIntent}</span>
+                </span>
+              )}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</div>

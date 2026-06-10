@@ -1,0 +1,22 @@
+---
+import { getUi } from '../i18n/ui';
+
+const { prev, next } = Astro.props;
+const t = getUi();
+---
+
+<nav class="card-nav" aria-label={t.card.navigation}>
+  {prev ? (
+    <a class="card-nav-link prev" href={`/patterns/${prev.data.category}/${prev.data.slug}/`}>
+      <span class="card-nav-label">{t.card.previous}</span>
+      <span class="card-nav-title"><span aria-hidden="true">&lt;</span> {prev.data.title}</span>
+    </a>
+  ) : <span class="card-nav-link prev empty" aria-hidden="true"></span>}
+
+  {next ? (
+    <a class="card-nav-link next" href={`/patterns/${next.data.category}/${next.data.slug}/`}>
+      <span class="card-nav-label">{t.card.next}</span>
+      <span class="card-nav-title">{next.data.title} <span aria-hidden="true">&gt;</span></span>
+    </a>
+  ) : <span class="card-nav-link next empty" aria-hidden="true"></span>}
+</nav>

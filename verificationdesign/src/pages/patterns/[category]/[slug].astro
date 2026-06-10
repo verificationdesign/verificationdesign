@@ -1,0 +1,53 @@
+---
+import { getCollection, render } from 'astro:content';
+import CardLayout from '../../../layouts/CardLayout.astro';
+
+// Nora's canonical reading order for prev/next nav.
+const READING_ORDER = [
+  'context-and-state/constitution',
+  'context-and-state/guardrail-decorator',
+  'context-and-state/causal-tag',
+  'context-and-state/trajectory-cursor',
+  'context-and-state/state-baseline',
+  'verification/executable-analog',
+  'verification/blind-oracle',
+  'verification/comparator',
+  'verification/delta',
+  'verification/judge-harness',
+  'verification/adversarial-frame',
+  'orchestration/cross-family',
+  'orchestration/adversary',
+  'orchestration/debate',
+  'orchestration/escalation-chain',
+  'orchestration/backpressure',
+  'orchestration/tool-adapter',
+];
+
+export async function getStaticPaths() {
+  const cards = await getCollection('patterns');
+  return cards.map((card) => ({
+    params: { category: card.data.category, slug: card.data.slug },
+    props: { card },
+  }));
+}
+
+const { card } = Astro.props;
+const allCards = await getCollection('patterns');
+const orderIndex = new Map(READING_ORDER.map((id, index) => [id, index]));
+const unordered = allCards.filter((c) => !orderIndex.has(c.id));
+
+if (unordered.length > 0) {
+  throw new Error(`Missing reading order entries: ${unordered.map((c) => c.id).join(', ')}`);
+}
+
+const ordered = [...allCards].sort((a, b) => orderIndex.get(a.id)! - orderIndex.get(b.id)!);
+const i = ordered.findIndex((c) => c.id === card.id);
+const prev = i > 0 ? ordered[i - 1] : null;
+const next = i >= 0 && i < ordered.length - 1 ? ordered[i + 1] : null;
+
+const { Content, headings } = await render(card);
+---
+
+<CardLayout entry={card} headings={headings} prev={prev} next={next}>
+  <Content />
+</CardLayout>

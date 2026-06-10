@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Verification Design</title>
+  <desc id="desc">Build agentic systems that verify their work with evidence, not opinion.</desc>
+  <rect width="1200" height="630" fill="#f4efe7"/>
+  <rect x="64" y="64" width="1072" height="502" fill="none" stroke="#d6cec1" stroke-width="2"/>
+  <text x="88" y="340" fill="#171714" font-family="Helvetica, Arial, sans-serif" font-size="58" font-weight="700">
+    <tspan x="88" dy="0">Verification Design</tspan>
+  </text>
+  <text x="88" y="430" fill="#2a2823" font-family="Georgia, Times New Roman, serif" font-size="36">
+    <tspan x="88" dy="0">Build agentic systems that verify</tspan>
+    <tspan x="88" dy="50">their work with evidence, not opinion.</tspan>
+  </text>
+  <text x="88" y="530" fill="#6f675d" font-family="Helvetica, Arial, sans-serif" font-size="22">
+    Executable checks. External signals. Controlled orchestration.
+  </text>
+</svg>

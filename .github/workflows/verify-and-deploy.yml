@@ -1,0 +1,106 @@
+# Verification gate + deploy. A red run never ships: the deployed site is a
+# passing site by construction. Deploys MUST run from this workflow (not CF
+# auto-build-on-push) because the gates need python3.13, which the Cloudflare
+# Pages build image does not have.
+#
+# Required repo secrets before the first deploy:
+#   CLOUDFLARE_API_TOKEN   (Pages:Edit permission)
+#   CLOUDFLARE_ACCOUNT_ID
+# The Pages project must exist once: `wrangler pages project create verificationdesign`.
+
+name: Verify and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Pattern linter
+        run: python3 ai-design-patterns/scripts/lint_patterns.py
+
+      - name: Card-code runner
+        env:
+          CARD_CODE_PYTHON: python3
+        run: python3 ai-design-patterns/scripts/run_card_code.py
+
+      # Link liveness depends on live external hosts; a transient publisher
+      # 503 should not block a release on the first try. Three attempts with
+      # increasing backoff, then fail for real (the escape hatch for
+      # persistently-blocking publishers is research/link-confirmations.txt).
+      - name: Repo verifier (3 attempts with backoff)
+        run: |
+          for attempt in 1 2 3; do
+            if python3 scripts/verify.py; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 90))
+              echo "verify.py failed (attempt $attempt); retrying"
+            fi
+          done
+          echo "verify.py failed on all 3 attempts"
+          exit 1
+
+  site:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    defaults:
+      run:
+        working-directory: verificationdesign
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: verificationdesign/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Check
+        run: npm run check
+
+      - name: Card lint (site-side)
+        run: npm run lint:cards
+
+      - name: Accessibility
+        run: npm run a11y
+
+      - name: Ensure Pages project exists
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler@4 pages project list | grep -q verificationdesign \
+            || npx wrangler@4 pages project create verificationdesign --production-branch=main
+
+      - name: Deploy to Cloudflare Pages
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '4'
+          workingDirectory: verificationdesign
+          command: pages deploy dist --project-name=verificationdesign

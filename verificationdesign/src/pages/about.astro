@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { REPO_URL } from '../lib/repo';
+---
+
+<BaseLayout
+  title="About"
+  description="The method and lineage behind Verification Design, a GoF-inspired catalog for reliable agentic systems."
+>
+  <div class="about-page">
+    <h1>About</h1>
+
+    <p>
+      Verification design is a set of principles and patterns for building
+      agentic systems that produce reliable behavior under probabilistic
+      substrates. The thesis is short: large language models cannot reliably
+      self-correct through naive self-review
+      <sup><a href="https://arxiv.org/abs/2310.01798" class="source-link" aria-label="Source: arXiv 2310.01798">1</a></sup>.
+      The implication runs through
+      every page on this site. Every verification step must be grounded in
+      something the system can execute and observe, not something the model
+      reads and opines on.
+    </p>
+    <p>This catalog collects patterns that implement that thesis.</p>
+
+    <h2>Lineage</h2>
+    <p>
+      The catalog draws on Design Patterns: Elements of Reusable
+      Object-Oriented Software (Gamma, Helm, Johnson, Vlissides, 1994), the
+      book known as the Gang of Four or GoF, as a structural model. Where GoF
+      organized object-oriented patterns into
+      Behavioral, Creational, and Structural categories, this catalog
+      organizes agentic patterns into Verification, Context and State, and
+      Orchestration.
+    </p>
+    <p>
+      The card schema follows the canonical Problem, Forces, and Solution
+      pattern form, with GoF's Intent and Related Patterns. Each card states
+      Name, Intent, Problem, Forces, Solution, Mechanism, Failure Modes, Use
+      When, Do Not Use When, Evidence, and Related Patterns. The schema is
+      extended for the agentic substrate with three additions: Pattern and
+      Antipattern as a paired section, with code where a credible instance
+      exists; Determinism Move naming the source of variance or bias the
+      pattern constrains; and Observable Signal naming what the pattern lets
+      the system log or compare.
+    </p>
+    <p>
+      This is not a translation of GoF into AI. It is a GoF-inspired catalog
+      for a different substrate: probabilistic agents operating through
+      context, tools, and verifiers. If GoF gave object-oriented programmers
+      a vocabulary for managing object interactions, this catalog tries to
+      give agent builders a vocabulary for managing model fallibility.
+    </p>
+
+    <h2>Method</h2>
+    <p>
+      Every empirical claim carries a citation. Cards are linted against a
+      machine-readable constitution for manuscript shape, vague language,
+      evidence fields, and code-block structure. The
+      <a href={REPO_URL}>repository</a> verifier
+      checks canonical citation balance and scholarly links. The research
+      workflow is staged in four steps:
+    </p>
+    <ol>
+      <li>Scout. Mechanical retrieval from arXiv.</li>
+      <li>Triage. First-pass relevance judgment.</li>
+      <li>Review. Notes on confirmed sources.</li>
+      <li>Canonical. The principles document and the pattern cards.</li>
+    </ol>
+    <p>
+      Patterns are added when evidence accumulates. They are revised when
+      new evidence arrives. Dated updates are appended; prior research
+      state is not overwritten.
+    </p>
+
+    <h2>Disclaimer</h2>
+    <p>
+      These patterns are working design notes, not settled doctrine. They
+      describe practices that have held up across repeated agent-building
+      failures and revisions.
+    </p>
+    <p>
+      The patterns in this catalog describe what has worked in practice on
+      a moving target. They are not theorems. Frontier model behavior
+      changes. Tool affordances change. Evidence appears that revises
+      earlier conclusions. Read the dates on each card.
+    </p>
+
+    <h2>Why</h2>
+    <p>
+      This site is meant for people to learn from. It carries no author
+      name on purpose. The way I see it: I learned and had fun, so I
+      already won. If anyone else does, that's extra icing.
+    </p>
+    <p>
+      A maintainer name is not a verification method. This project should
+      be evaluated the way it says to evaluate agent work: by evidence,
+      checks, and reproducible artifacts, not by personal trust. The
+      <a href={REPO_URL}>repository</a> runs its verification pipeline on
+      deploy-bound changes and refuses publication on failure. A deployed
+      site is a passing artifact by construction.
+    </p>
+  </div>
+</BaseLayout>

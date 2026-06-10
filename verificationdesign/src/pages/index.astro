@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CategoryGrid from '../components/CategoryGrid.astro';
+---
+
+<BaseLayout>
+  <div class="home">
+    <h1 class="hero">
+      Build agentic systems that verify their work with evidence, not opinion.
+    </h1>
+
+    <p class="framing">
+      LLMs cannot reliably self-correct through naive self-review
+      <sup><a href="https://arxiv.org/abs/2310.01798" class="source-link" aria-label="Source: arXiv 2310.01798">1</a></sup>.
+      AI design patterns make probabilistic systems more reliable by reducing
+      variance and countering systematic bias through explicit context,
+      executable checks, and controlled orchestration. The goal of
+      verification design is to approach deterministic behavior where full
+      determinism is unavailable.
+    </p>
+
+    <div class="cta-row">
+      <a href="/patterns/" class="cta-primary">Browse the patterns →</a>
+      <a href="/principles/" class="cta-secondary">Read the principles</a>
+      <a href="/about/" class="cta-secondary">About the project</a>
+    </div>
+
+    <section class="failure-classes" aria-labelledby="failure-classes-heading">
+      <h2 id="failure-classes-heading">Two failure classes</h2>
+      <h3>Variance failures</h3>
+      <p>
+        Sampling instability, ambient state, context contamination,
+        asynchronous timing, non-deterministic tool state.
+      </p>
+      <h3>Bias failures</h3>
+      <p>
+        Sycophancy, self-review blindness, judge preference bias,
+        confirmation framing, same-family blind spots.
+      </p>
+      <p class="closer">
+        Variance is the new coupling. Anchoring is the new cohesion. Each
+        pattern in this catalog names what it constrains.
+      </p>
+    </section>
+
+    <CategoryGrid />
+  </div>
+</BaseLayout>

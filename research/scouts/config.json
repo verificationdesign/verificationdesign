@@ -1,0 +1,99 @@
+{
+  "anchor_phrases": [
+    "LLM",
+    "large language model",
+    "language model",
+    "AI agent",
+    "LLM agent"
+  ],
+  "categories": {
+    "cs.AI": "artificial intelligence",
+    "cs.CL": "NLP / LLMs",
+    "cs.LG": "machine learning",
+    "cs.SE": "software engineering, testing, verification",
+    "cs.CR": "security, robustness, adversarial behavior",
+    "cs.HC": "human-computer interaction, human evaluation",
+    "stat.ML": "ML methods"
+  },
+  "keyword_groups": {
+    "core_self_correction": [
+      "self-correction",
+      "self correction",
+      "intrinsic self-correction",
+      "self-verification",
+      "external feedback",
+      "reflexion",
+      "self-refine",
+      "self-critique",
+      "self-repair"
+    ],
+    "external_judges": [
+      "LLM-as-a-judge",
+      "LLM-as-judge",
+      "LLM as a judge",
+      "LLM judge",
+      "agent-as-a-judge",
+      "judge reliability",
+      "judge consistency",
+      "LLM evaluator",
+      "evaluator models"
+    ],
+    "independent_verification": [
+      "chain-of-verification",
+      "factored verification",
+      "independent verifier"
+    ],
+    "step_level_verification": [
+      "process reward model",
+      "process supervision",
+      "step-level reward",
+      "step-level verification",
+      "trajectory evaluation",
+      "agent trajectory",
+      "tool-use PRM",
+      "tool PRM"
+    ],
+    "sycophancy": [
+      "sycophancy",
+      "regressive sycophancy",
+      "user preference bias"
+    ],
+    "explicit_criteria": [
+      "constitutional AI",
+      "rubric-based evaluation",
+      "principle-based critique"
+    ],
+    "executable_verification": [
+      "verifiable reward",
+      "RLVR",
+      "execution feedback",
+      "unit test feedback"
+    ],
+    "cross_family_judges": [
+      "cross-family verification",
+      "cross-model verification",
+      "intra-family verification",
+      "weak-to-strong generalization"
+    ],
+    "debate_oversight": [
+      "multi-agent debate",
+      "LLM debate",
+      "scalable oversight",
+      "AI safety via debate"
+    ],
+    "state_isolation": [
+      "benchmark contamination",
+      "evaluation contamination",
+      "test flakiness"
+    ],
+    "cot_faithfulness": [
+      "chain-of-thought faithfulness",
+      "CoT faithfulness",
+      "CoT manipulation",
+      "reasoning trace fidelity",
+      "unfaithful reasoning",
+      "post-hoc rationalization",
+      "alignment faking"
+    ]
+  }
+}
