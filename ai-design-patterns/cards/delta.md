@@ -33,7 +33,7 @@ If the agent is supposed to append a log line, assert `len(log_lines_post) - len
 ## Mechanism
 
 1. **Pre-Hook (Baseline Capture):** Query the specific environment metric before handing control to the agent.
-2. **Context Passing:** Store the baseline in a read-only state dictionary associated with the current execution trajectory.
+2. **Context Passing:** Store the baseline alongside the current execution trajectory and treat it as immutable once captured.
 3. **Agent Execution:** The agent performs its task.
 4. **Post-Hook (Measurement):** Query the exact same environment metric.
 5. **Delta Calculation:** Subtract, diff, or otherwise compare the two states, and assert on the diff.
@@ -58,7 +58,7 @@ def verify_flow_created_naive(get_flow_count):
 
 ### Pattern: baseline plus delta assertion
 
-The structured implementation captures the baseline before the agent acts and verifies only the change caused during this run.
+The structured implementation captures the baseline before the agent acts and verifies the change measured during this run's verification window.
 
 ```python
 from typing import Callable
@@ -85,6 +85,7 @@ class DeltaVerifier:
         actual_delta = self.post_state - self.pre_state
         return {
             "check": f"{self.metric_name}_delta",
+            "metric": self.metric_name,
             "passed": actual_delta == self.expected_delta,
             "expected_delta": self.expected_delta,
             "actual_delta": actual_delta,
@@ -101,25 +102,43 @@ def get_flow_count() -> int:
     return len(flows)
 
 
+def verify_flow_created_naive_local(get_flow_count: Callable[[], int]) -> dict:
+    observed = get_flow_count()
+    return {
+        "passed": observed >= 1,
+        "observed": observed,
+        "expected": "at least 1 flow",
+    }
+
+
 flow_verifier = DeltaVerifier("active_flows", get_flow_count, expected_delta=1)
 flow_verifier.capture_baseline()       # pre-action: records 3
+assert verify_flow_created_naive_local(get_flow_count)["passed"] is True
 flows.append({"id": 4})                # the agent creates exactly one flow this run
 report = flow_verifier.verify_delta()  # post-action check
 
-assert report["passed"]                     # the change caused this run is exactly +1
-assert report["actual_delta"] == 1          # relative, not the absolute count of 4
+assert report == {
+    "check": "active_flows_delta",
+    "metric": "active_flows",
+    "passed": True,
+    "expected_delta": 1,
+    "actual_delta": 1,
+    "pre_state": 3,
+    "post_state": 4,
+}
 assert report["pre_state"] == 3 and report["post_state"] == 4
+assert report["passed"]                     # the measured change in this window is +1
 ```
 
 Aider's command tests show this shape in a real suite: they capture `initial_count = len(coder.abs_fnames)` before dropping files from a chat session, then after the drop assert that membership changed and `len(coder.abs_fnames) == initial_count - 1`. The check is on the relative file-set change, not an absolute count, so it holds no matter how many files were already in the session.
 
 ## Determinism Move
 
-Delta constrains `ambient_state` by turning an absolute assertion into a relative assertion scoped to the current run. The baseline and post-state expose whether the matching object was already present before the agent acted. The determinism move is scoping the assertion to a captured baseline, so a pass means this run caused the change, not that the environment already matched.
+Delta constrains `ambient_state` by turning an absolute assertion into a relative assertion scoped to the current run. The baseline and post-state expose whether the matching object was already present before the agent acted. The determinism move is scoping the assertion to a captured baseline, so a pass means the measured state changed by the expected amount during this run's verification window. Full causal attribution under concurrent activity requires scoped metrics, exclusive access, or pairing with **Causal Tag**.
 
 ## Observable Signal
 
-The observable signal is the tuple `(pre_state, post_state, actual_delta, expected_delta)`.
+The observable signal reports the baseline, the new state, the computed delta, the expectation, and the metric being measured.
 
 Every report should include:
 
@@ -127,10 +146,11 @@ Every report should include:
 * the post-action value captured after the agent acted;
 * the computed delta;
 * the expected delta;
-* the exact metric or query used for both captures.
+* the named metric used for both captures.
 
 ```text
 check: active_flows_delta
+metric: active_flows
 passed: true
 pre_state: 3
 post_state: 4
@@ -149,8 +169,8 @@ Use this pattern when:
 
 * the environment is shared, persistent, or carries non-trivial pre-existing state;
 * the metric being measured exists in the environment before the agent acts;
-* concurrent activity in the environment is possible;
-* the assertion needs to prove the agent caused the change, not that the state happened to match.
+* concurrent activity is possible and the metric can be scoped, locked, or paired with Causal Tag;
+* the assertion needs to prove the state changed during the agent's verification window, with causal attribution handled by scoping, exclusive access, or Causal Tag when concurrency is present.
 
 ## Do Not Use When
 
@@ -166,7 +186,7 @@ In those cases, absolute assertions or Causal Tag are simpler and more honest.
 ## Evidence
 
 * **[Aider](https://github.com/Aider-AI/aider) command tests:** the delta sweep records a direct instance in aider's `test_commands.py`: the drop-file tests capture `initial_count = len(coder.abs_fnames)` and then assert `len(coder.abs_fnames) == initial_count - 1`, a relative file-set delta rather than an absolute count.
-* **Test Flakiness Analysis:** State contamination across test runs is a primary driver of flaky tests in software engineering (Luo et al., FSE 2014).
+* **Test Flakiness Analysis:** Luo et al. identify state contamination and order dependence as recurring causes of flaky tests in software engineering (Luo et al., FSE 2014).
 * **Verification Design Principles (Principle 9):** "Assertions must prove the system's actions caused the expected outcome, not that the environment happened to already contain matching data."
 
 ## Related Patterns
