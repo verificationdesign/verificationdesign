@@ -59,7 +59,7 @@ The model may generate arguments. Code owns:
 2. **Initialize debate state.** Set phase, round count, maximum rounds, consensus threshold, and decision rule.
 3. **Select speakers by schedule.** The orchestrator chooses the next speaker, not a model.
 4. **Collect structured positions.** Each turn records speaker id, round, stance, rationale, and vote.
-5. **Apply the stopping rule.** Stop when the threshold is met or when the round cap is exhausted, and emit the vote tally and decision.
+5. **Apply the stopping rule.** Stop when the threshold is met by distinct debaters' current votes or when the round cap is exhausted, and emit the vote tally and decision. The threshold check runs after every phase, so a debate can stop before critique or revision when the proposal votes already meet the rule. If the cap is exhausted without consensus, route the unresolved outcome to escalation.
 
 ## Pattern / Antipattern
 
@@ -71,7 +71,7 @@ No strict Debate antipattern was promoted from the OSS bench surveyed for this c
 
 The natural failure shape is theatrical debate: role labels without independent positions, no round cap, no speaker schedule, and a model-declared consensus. That overlaps with **Adversary** when the "critic" is only a label, and with **Cross-Family** when all debaters share the same family and priors.
 
-This card keeps the Antipattern instance empty rather than fabricating a code example. When a strict instance is mined, re-author this section around the assertion `speaker_selected_by == "model" or consensus_threshold is None`.
+This card keeps the Antipattern instance empty rather than fabricating a code example. When a strict instance is mined, re-author this section around observable model-chosen speaking or a missing counted threshold.
 
 ### Pattern: bounded round-robin debate
 
@@ -94,6 +94,14 @@ class Turn:
     speaker_id: str
     phase: Phase
     stance: str
+    rationale: str
+    vote: Vote
+
+
+@dataclass(frozen=True)
+class TurnContent:
+    stance: str
+    rationale: str
     vote: Vote
 
 
@@ -111,6 +119,35 @@ class DebateResult:
     speaker_selected_by: Literal["schedule"]
     transcript: tuple[Turn, ...]
 
+    def to_report(self) -> str:
+        debaters = ", ".join(self.debater_ids)
+        phases = ", ".join(self.phase_sequence)
+        tally = ", ".join(
+            f"{vote}: {count}" for vote, count in self.vote_tally.items()
+        )
+        schedule = ", ".join(self.speaker_schedule)
+        return "\n".join(
+            [
+                f"debater_ids: [{debaters}]",
+                f"rounds_run: {self.rounds_run}",
+                f"max_rounds: {self.max_rounds}",
+                f"phase_sequence: [{phases}]",
+                f"consensus_threshold: {self.consensus_threshold}",
+                f"vote_tally: {{{tally}}}",
+                f"decision: {self.decision}",
+                f"decision_rule: {self.decision_rule}",
+                f"speaker_schedule: [{schedule}]",
+            ]
+        )
+
+
+def latest_vote_tally(transcript: list[Turn]) -> Counter[Vote]:
+    latest_vote_by_speaker = {
+        turn.speaker_id: turn.vote
+        for turn in transcript
+    }
+    return Counter(latest_vote_by_speaker.values())
+
 
 def run_debate(
     debater_ids: tuple[str, ...],
@@ -118,25 +155,39 @@ def run_debate(
     consensus_threshold: int,
     collect_turn,
 ) -> DebateResult:
+    if not debater_ids:
+        raise ValueError("debater_ids must not be empty")
+    if max_rounds < 1:
+        raise ValueError("max_rounds must be at least 1")
+
     transcript: list[Turn] = []
     phases: list[Phase] = []
     schedule: list[str] = []
     decision: Vote | None = None
     decision_rule: DecisionRule = "max_rounds_exhausted"
+    votes: Counter[Vote] = Counter()
 
     for round_index in range(1, max_rounds + 1):
         for phase in ("proposal", "critique", "revision", "consensus"):
             phases.append(phase)
             for speaker_id in debater_ids:
                 schedule.append(speaker_id)
-                turn = collect_turn(
+                content = collect_turn(
                     round_index=round_index,
                     speaker_id=speaker_id,
                     phase=phase,
                 )
+                turn = Turn(
+                    round_index=round_index,
+                    speaker_id=speaker_id,
+                    phase=phase,
+                    stance=content.stance,
+                    rationale=content.rationale,
+                    vote=content.vote,
+                )
                 transcript.append(turn)
 
-            votes = Counter(turn.vote for turn in transcript)
+            votes = latest_vote_tally(transcript)
             winner, count = votes.most_common(1)[0]
             if count >= consensus_threshold:
                 decision = winner
@@ -146,8 +197,8 @@ def run_debate(
             break
 
     if decision is None:
-        votes = Counter(turn.vote for turn in transcript)
-        decision = votes.most_common(1)[0][0]
+        votes = latest_vote_tally(transcript)
+        decision = "escalate"
 
     return DebateResult(
         debater_ids=debater_ids,
@@ -164,17 +215,15 @@ def run_debate(
     )
 
 
-def collect_turn(round_index: int, speaker_id: str, phase: Phase) -> Turn:
+def collect_turn(round_index: int, speaker_id: str, phase: Phase) -> TurnContent:
     vote_by_speaker = {
         "planner": "release",
         "critic": "revise",
         "operator": "revise",
     }
-    return Turn(
-        round_index=round_index,
-        speaker_id=speaker_id,
-        phase=phase,
+    return TurnContent(
         stance=f"{speaker_id} position during {phase}",
+        rationale=f"{speaker_id} rationale during {phase}",
         vote=vote_by_speaker[speaker_id],
     )
 
@@ -186,21 +235,57 @@ result = run_debate(
     collect_turn=collect_turn,
 )
 
-assert result.rounds_run <= result.max_rounds
-assert result.consensus_threshold == 2
-assert result.decision_rule in {"threshold_vote", "max_rounds_exhausted"}
-assert result.speaker_selected_by == "schedule"
+assert result.decision == "revise"
+assert result.vote_tally == {"release": 1, "revise": 2}
+assert result.decision_rule == "threshold_vote"
+assert result.rounds_run == 1
+assert tuple(turn.speaker_id for turn in result.transcript) == result.speaker_schedule
+assert result.to_report() == """debater_ids: [planner, critic, operator]
+rounds_run: 1
+max_rounds: 2
+phase_sequence: [proposal]
+consensus_threshold: 2
+vote_tally: {release: 1, revise: 2}
+decision: revise
+decision_rule: threshold_vote
+speaker_schedule: [planner, critic, operator]"""
+
+
+def split_vote_turn(round_index: int, speaker_id: str, phase: Phase) -> TurnContent:
+    vote_by_speaker = {
+        "planner": "release",
+        "critic": "revise",
+        "operator": "escalate",
+    }
+    return TurnContent(
+        stance=f"{speaker_id} split position during {phase}",
+        rationale=f"{speaker_id} split rationale during {phase}",
+        vote=vote_by_speaker[speaker_id],
+    )
+
+
+split_result = run_debate(
+    debater_ids=("planner", "critic", "operator"),
+    max_rounds=2,
+    consensus_threshold=2,
+    collect_turn=split_vote_turn,
+)
+
+assert split_result.decision_rule == "max_rounds_exhausted"
+assert split_result.decision == "escalate"
+assert split_result.rounds_run == split_result.max_rounds
+assert split_result.vote_tally == {"release": 1, "revise": 1, "escalate": 1}
 ```
 
-AutoGPT's `multi_agent_debate.py` in `classic/original_autogpt/` has this shape as a legacy v1 instance. It names proposal, critique, revision, consensus, and execution phases; stores proposal and critique artifacts; exposes debater count, round count, consensus threshold, and voting mode; and moves through bounded rounds before consensus.
+AutoGPT's legacy `multi_agent_debate.py` has this shape as a v1 instance. It names proposal, critique, revision, consensus, and execution phases; stores proposal and critique artifacts; exposes debater count, round count, consensus threshold, and voting mode; and moves through bounded rounds before consensus.
 
 AutoGen's `RoundRobinGroupChat` is the speaker-schedule instance. Its manager persists the message thread, current turn, and next-speaker index, then selects exactly one participant per turn by round-robin order. Debate is orchestration state, not a model choosing who should speak next.
 
 ## Determinism Move
 
-Debate constrains `criteria_drift` by putting the decision rule in code. Consensus means a named threshold, vote tally, or exhausted round budget, not the model's changing sense that the group now agrees.
+Debate constrains `criteria_drift` by putting the decision rule in code. Consensus means a named threshold over current votes by distinct debaters, a vote tally, or exhausted round budget, not the model's changing sense that the group now agrees.
 
-It constrains `self_review_bias` by replacing one perspective with multiple recorded positions before the final decision. This does not guarantee independence, but it creates a place to inspect who argued what and whether a single role dominated.
+Debate also creates an inspectable record of who argued what and whether one role dominated. By itself, it does not constrain `self_review_bias`; use Cross-Family and Adversary when the system must enforce producer-verifier separation.
 
 The determinism move is putting the stopping rule and turn order in code, so consensus is a counted condition, not a vibe.
 
@@ -264,7 +349,7 @@ If the debate cannot create independent positions or a counted stopping rule, do
 
 * **Verification Design Principle 8:** the design doc names Simulate Debate and frames debate as a way to force counterargument before conclusion.
 * **[AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) multi-agent debate:** the orchestration sweep records a direct Debate instance with explicit phases, separate proposal and critique artifacts, configurable debater count, round count, consensus threshold, and voting mode.
-* **AutoGPT legacy caveat:** the same implementation lives in `classic/original_autogpt/`, so it is treated as a legacy v1 implementation rather than a current framework recommendation.
+* **AutoGPT legacy caveat:** the same implementation lives in AutoGPT's legacy classic tree, so it is treated as a legacy v1 implementation rather than a current framework recommendation.
 * **[AutoGen](https://github.com/microsoft/autogen) RoundRobinGroupChat:** the orchestration sweep records a direct speaker-schedule instance: message thread, current turn, next-speaker index, one selected participant per turn, max turns, and termination conditions.
 * **No promoted antipattern:** the orchestration sweep did not promote a strict Debate antipattern; this card cross-references Adversary and Cross-Family rather than inventing one.
 
