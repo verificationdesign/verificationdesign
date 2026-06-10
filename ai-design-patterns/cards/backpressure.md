@@ -38,7 +38,7 @@ That is upstream-unaware failure. The verifier found something, but the work ste
 
 Feed the failure back to the producer.
 
-The orchestrator runs the work step, runs the verifier, and if the verifier fails, formats the failure into rerun context. It invokes the work step again with that context and increments a retry counter. The loop stops only when the verifier passes or the budget is exhausted. On exhaustion, the system raises or escalates.
+The orchestrator runs the work step, runs the verifier, and if the verifier fails, formats the failure into rerun context. It invokes the work step again with that context and increments a retry counter. The loop stops only when the verifier passes or the budget is exhausted. On exhaustion, the loop returns an explicit exhaustion outcome for the caller to raise on or route to escalation.
 
 The model may revise the artifact. Code owns:
 
@@ -55,7 +55,7 @@ The model may revise the artifact. Code owns:
 2. **Run the verifier.** The verifier returns a structured pass or failure with a reason.
 3. **On failure, format rerun context.** Convert the failure into actionable context for the upstream step.
 4. **Retry within a budget.** Reinvoke the upstream step with rerun context and increment attempts.
-5. **Stop explicitly.** Proceed on pass; raise or escalate on exhaustion; record all attempts.
+5. **Stop explicitly.** Proceed on pass; on exhaustion, record the outcome so the caller can raise or escalate.
 
 ## Pattern / Antipattern
 
@@ -78,7 +78,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 
-Outcome = Literal["passed", "raised_on_exhaustion"]
+Outcome = Literal["passed", "exhausted"]
 
 
 @dataclass(frozen=True)
@@ -105,6 +105,17 @@ class BackpressureResult:
     outcome: Outcome
     artifact: str
     attempt_log: tuple[Attempt, ...]
+
+    def to_report(self) -> dict[str, object]:
+        return {
+            "attempts": self.attempts,
+            "max_retries": self.max_retries,
+            "rerun_context_fed_back": self.rerun_context_fed_back,
+            "last_failure_reason": self.last_failure_reason,
+            "per_attempt_verdicts": self.per_attempt_verdicts,
+            "outcome": self.outcome,
+            "artifact": self.artifact,
+        }
 
 
 def format_rerun_context(check: Verification) -> str:
@@ -149,7 +160,7 @@ def run_with_backpressure(work_fn, verify_fn, max_retries: int) -> BackpressureR
                 rerun_context_fed_back=any(a.rerun_context for a in attempts),
                 last_failure_reason=last_failure_reason,
                 per_attempt_verdicts=tuple(a.verdict for a in attempts),
-                outcome="raised_on_exhaustion",
+                outcome="exhausted",
                 artifact=artifact,
                 attempt_log=tuple(attempts),
             )
@@ -162,7 +173,9 @@ def run_with_backpressure(work_fn, verify_fn, max_retries: int) -> BackpressureR
 def work_fn(rerun_context: str | None) -> str:
     if rerun_context is None:
         return "migration plan without rollback verification"
-    return "migration plan with rollback verification"
+    if "rollback verification" in rerun_context:
+        return "migration plan with rollback verification"
+    return "migration plan without rollback verification"
 
 
 def verify_fn(artifact: str) -> Verification:
@@ -173,14 +186,40 @@ def verify_fn(artifact: str) -> Verification:
 
 result = run_with_backpressure(work_fn, verify_fn, max_retries=2)
 
-assert result.attempts <= result.max_retries + 1
+expected_report = {
+    "attempts": 2,
+    "max_retries": 2,
+    "rerun_context_fed_back": True,
+    "last_failure_reason": "rollback verification is missing",
+    "per_attempt_verdicts": ("fail", "pass"),
+    "outcome": "passed",
+    "artifact": "migration plan with rollback verification",
+}
+
+assert result.per_attempt_verdicts == ("fail", "pass")
+assert result.outcome == "passed"
+assert result.attempt_log[1].rerun_context == (
+    "Validation failed: rollback verification is missing. Revise only this failure."
+)
+assert result.artifact == "migration plan with rollback verification"
+assert result.to_report() == expected_report
 assert result.rerun_context_fed_back
-assert result.outcome in {"passed", "raised_on_exhaustion"}
+
+
+def stubborn_work_fn(rerun_context: str | None) -> str:
+    return "migration plan without rollback verification"
+
+
+exhausted_result = run_with_backpressure(stubborn_work_fn, verify_fn, max_retries=2)
+
+assert exhausted_result.outcome == "exhausted"
+assert exhausted_result.attempts == exhausted_result.max_retries + 1
+assert exhausted_result.per_attempt_verdicts == ("fail", "fail", "fail")
 ```
 
 CrewAI task guardrails are the canonical instance for this card. A task can define guardrails and `guardrail_max_retries`; failed guardrails format validation error context, rerun the agent with that context, and raise when retry exhaustion is reached. The test suite covers both failure-then-success and max-retry exhaustion.
 
-AutoGen's writer and critic loop is a partial instance. The critic's `APPROVE` token controls termination, so unresolved feedback keeps the writer/critic loop running. Dify's provider cooldown is analogy-grade: provider failures cool down a route and push the next attempt elsewhere, but that is infrastructure backpressure rather than agent-output backpressure.
+AutoGen's writer and critic loop is a partial instance. The critic's `APPROVE` token controls termination, and feedback travels through conversational turns rather than typed rerun context. Dify's provider cooldown is analogy-grade: provider failures cool down a route and push the next attempt elsewhere, but that is infrastructure backpressure rather than agent-output backpressure.
 
 ## Determinism Move
 
@@ -196,22 +235,22 @@ Every Backpressure report should include:
 
 * attempts;
 * maximum retries;
-* rerun-context-present boolean;
+* rerun_context_fed_back boolean;
 * last failure reason;
 * per-attempt verdicts;
-* outcome, such as `passed` or `raised_on_exhaustion`;
-* final artifact or escalation target.
+* outcome, such as `passed` or `exhausted`;
+* artifact or escalation target.
 
 A useful report shows the feedback loop:
 
 ```text
 attempts: 2
 max_retries: 2
-rerun_context_present: true
+rerun_context_fed_back: true
 last_failure_reason: rollback verification is missing
 per_attempt_verdicts: [fail, pass]
 outcome: passed
-final_artifact: migration plan with rollback verification
+artifact: migration plan with rollback verification
 ```
 
 ## Failure Modes
