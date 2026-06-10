@@ -214,7 +214,7 @@ ADK gives this shape at both boundaries. Its plugin manager routes model calls t
 
 ## Determinism Move
 
-Guardrail Decorator constrains `tool_boundary_ambiguity` by making the policy decision live at the call boundary the model crosses. The tool boundary is where policy is enforced, not merely where the next cursor entry appears.
+Guardrail Decorator constrains `self_review_bias` by moving the allow or deny decision out of the producing agent's judgment and into code at the call boundary. The producer no longer approves its own action; policy is enforced where the call crosses.
 
 It constrains `criteria_drift` by anchoring policy in code that survives prompt rewrites, persona changes, summarization, and context compaction.
 

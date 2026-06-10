@@ -171,7 +171,7 @@ CrewAI's hierarchical process is the manager-process sibling. Its hierarchical m
 
 Escalation Chain constrains `tool_boundary_ambiguity` by making transfer of control happen at a typed boundary. The handoff target is validated against participants before the next handler runs, rather than being held in model memory.
 
-It also constrains `same_family_bias` when the target carries family metadata and the chain can refuse or label same-family escalation. Routing to a same-family sibling may still be useful for load or specialization, but it is weaker evidence than routing to a different family or capability.
+Escalating to a same-family sibling can still be useful for load or specialization. Escalation Chain by itself does not constrain `same_family_bias`; that requires Cross-Family's enforced family boundary at the verifier seam.
 
 The determinism move is making the routing target a validated fact in code, not a model's recollection of who to call.
 

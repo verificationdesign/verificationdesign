@@ -115,7 +115,7 @@ Aider's command tests show this shape in a real suite: they capture `initial_cou
 
 ## Determinism Move
 
-Delta constrains `ambient_state` by turning an absolute assertion into a relative assertion scoped to the current run. It also narrows `context_contamination`: the verifier no longer has to infer whether a matching object was already present, because the baseline and post-state are both recorded. The determinism move is scoping the assertion to a captured baseline, so a pass means this run caused the change, not that the environment already matched.
+Delta constrains `ambient_state` by turning an absolute assertion into a relative assertion scoped to the current run. The baseline and post-state expose whether the matching object was already present before the agent acted. The determinism move is scoping the assertion to a captured baseline, so a pass means this run caused the change, not that the environment already matched.
 
 ## Observable Signal
 

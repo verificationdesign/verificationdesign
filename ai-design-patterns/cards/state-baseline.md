@@ -164,7 +164,7 @@ The verifier can now reason about state inside the test body without inheriting 
 
 ## Determinism Move
 
-State Baseline constrains `ambient_state` by recording the state the agent did not create. It constrains `context_contamination` when the baseline is restored after the action, so one run cannot leak state into the next.
+State Baseline constrains `ambient_state` by recording the state the agent did not create. Restoring the baseline after the action closes the same source of error: one run's residue should not become the next run's setup.
 
 The move is simple: make inherited state observable before the agent acts. Once pre-state is explicit, a verifier can compute Delta, restore cleanup state, or reject a post-condition that was already true.
 

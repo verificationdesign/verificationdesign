@@ -186,7 +186,7 @@ Dify's workflow event snapshot service is a resumable variant: persisted workflo
 
 ## Determinism Move
 
-Trajectory Cursor constrains `context_contamination` by making the trajectory an explicit record the next turn reads instead of reconstructing from chat memory. It constrains `tool_boundary_ambiguity` by requiring every observable boundary to produce a structured entry.
+Trajectory Cursor constrains `tool_boundary_ambiguity` by requiring every observable boundary to produce a structured entry. The next turn reads the explicit trajectory record instead of reconstructing proposals, denials, executions, and results from chat memory.
 
 The determinism move is boundary accounting. A proposal, denial, execution, result, retry, and feedback event are different states. If the cursor records them, the next turn and verifier can distinguish them. If not, the model is left to guess what happened.
 

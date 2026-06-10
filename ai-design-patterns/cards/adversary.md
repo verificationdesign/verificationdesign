@@ -153,7 +153,7 @@ AutoGen's writer and critic example in the migration guide is a partial instance
 
 Adversary constrains `self_review_bias` by making the proposer unable to satisfy the adversarial step alone. The critic identity is external to the proposal, and the assertion rejects `critic_id == proposer_id`.
 
-It also constrains `same_family_bias` when paired with Cross-Family. A same-family critic can still share blind spots, but the Adversary report at least exposes the role boundary and gives Cross-Family a place to assert family diversity.
+A same-family critic can still share the proposer's blind spots. Adversary by itself does not constrain `same_family_bias`; the recorded role boundary is where Cross-Family can attach its enforced family check.
 
 The determinism move is making the negative channel mandatory and the critic's identity external.
 
