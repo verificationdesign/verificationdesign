@@ -99,6 +99,8 @@ For non-code systems: find the executable analog. Can you curl an endpoint? Run 
 
 > **Research**: TDD teams released 32% more frequently; TDD produces 40-80% fewer bugs (Thoughtworks 2024). Reflexion (NeurIPS 2023) works because it uses *external* feedback (test output, environment signals). The reflection itself is not the magic; the external signal is. [arXiv:2303.11366](https://arxiv.org/abs/2303.11366)
 
+> **2026-06-09 Update**: Executable checks inherit the validity of their oracle. An IRT-based audit of seven preference and multiple-choice benchmarks (20986 items, responses from 114 models) surfaced likely label errors, with its authors reporting 95% precision in the top 200 flagged items against consensus-plus-hand-inspection reference labels. The error sources are instructive for verification design: mechanical construction rules that mark answers correct for satisfying the letter of a format rather than the intent, upstream annotation errors inherited unchanged across downstream variants, and items with no defensible single answer. A test that does not care what the agent thinks is still confidently wrong when its expected value is wrong. Design implication: expected values, labels, and fixtures need their own audit path; "the check passed" is conditional on oracle validity. Source: [arXiv:2605.30504](https://arxiv.org/abs/2605.30504)
+
 ### 7. Cross-Family Beats Self-Verification
 
 If using LLM-based verification, a different model family is needed. Self-verification and intra-family verification are systematically biased toward accepting incorrect outputs. The same blind spots that caused the error also prevent detecting it.
@@ -120,6 +122,8 @@ For single-agent workflows, this means: lean on tooling rather than self-review.
 > **2026-05-30 Update**: Cross-family judging does not make chain-of-thought safe as a verification surface. Gaming the Judge reports that manipulation-aware prompts, rubric changes, and extra judge compute reduce but do not eliminate CoT manipulation, while removing CoT can reduce recall. The design implication is not "never show CoT"; it is to ground any CoT-derived judgment in action logs, tool results, and environment evidence, and to report the resulting precision/recall tradeoff. Source: [arXiv:2601.14691](https://arxiv.org/abs/2601.14691)
 
 > **2026-06-09 Update**: "Debias the judge" is not a dependable fix. Reward Bias Substitution proves that under any audit-distribution scoring, even with oracle access to the true reward, successful mitigation, bias substitution, and overcorrection produce identical observables; single-axis fixes for length, sycophancy, or style can rotate optimization pressure onto correlated proxies instead of removing it. Empirically, a length penalty under GRPO compressed responses while driving the policy into overconfidence and lower free-form accuracy, and a published length-debiasing operator that zeroed reward-length correlation on the audit set reintroduced the bias under best-of-N selection on three of four reward models tested. The transfer to verification design: a debiased judge is only certified under the distribution the optimized system actually induces, with multiple bias features tracked at once, and a single-axis debiasing claim validated on a static audit set is an unverified claim. This strengthens the existing stance: prefer executable checks over patched judges. Source: [arXiv:2605.27996](https://arxiv.org/abs/2605.27996)
+
+> **2026-06-09 Update**: Judge validation is becoming a measurement discipline. An Item Response Theory framework formalizes judge reliability in two ordered phases: intrinsic consistency first (stability of the judge's latent quality estimates under typo, line-break, and paraphrase perturbations, with explicit acceptance thresholds), then human alignment, which is only meaningful for judges that pass the consistency phase. Across seven judges, reliability varied sharply by task: summarization judging held up while dialogue understandability scoring fell well below the framework's reliability threshold. For harness design this sharpens the 2026-05-29 note: perturbation tests with stated thresholds come before any alignment claim, and validation is per task, not per judge. Source: [arXiv:2602.00521](https://arxiv.org/abs/2602.00521)
 
 ### 8. Simulate Debate
 
@@ -226,6 +230,8 @@ When writing a verification system:
 | Judge Reliability Harness | Dev et al., ICLR 2026 workshop | [arXiv:2603.05399](https://arxiv.org/abs/2603.05399) |
 | Gaming the Judge | Khalifa et al., Jan 2026 | [arXiv:2601.14691](https://arxiv.org/abs/2601.14691) |
 | Reward Bias Substitution | Lamparth et al., May 2026 | [arXiv:2605.27996](https://arxiv.org/abs/2605.27996) |
+| Benchmark Label Auditing (IRT) | Land and Bikel, May 2026 | [arXiv:2605.30504](https://arxiv.org/abs/2605.30504) |
+| Judge Reliability via IRT | Choi et al., Jan 2026 | [arXiv:2602.00521](https://arxiv.org/abs/2602.00521) |
 | Agent-as-a-Judge | ICML 2025 | [arXiv:2410.10934](https://arxiv.org/abs/2410.10934) |
 | ThinkPRM | Apr 2025 | [arXiv:2504.16828](https://arxiv.org/abs/2504.16828) |
 | ToolPRMBench | Li et al., Jan 2026 | [arXiv:2601.12294](https://arxiv.org/abs/2601.12294) |
