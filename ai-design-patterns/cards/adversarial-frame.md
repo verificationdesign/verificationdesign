@@ -23,7 +23,7 @@ LLM verifiers tend to approve plausible work, especially when they are asked con
 
 Those instructions describe a desired attitude, not a verification procedure. They ask the model to behave skeptically without defining what skepticism means. The judge may still treat the final answer as evidence, accept the agent's reasoning as if it were ground truth, or pass a lookalike source because it sounds close enough.
 
-`verification_design.md` Principle 4 names the frame shift: ask "what could fail?" rather than "does this look right?" The same principle cites SycEval's 58.19% sycophancy rate as population-level evidence that agreement pressure is not a small edge case (AAAI 2025). A verifier that starts from plausibility will often rationalize acceptance.
+`verification_design.md` Principle 4 names the frame shift: ask "what could fail?" rather than "does this look right?" The same principle cites SycEval's 58.19% sycophancy rate as a measured majority-rate finding, so agreement pressure is not a small edge case (AAAI 2025). A verifier that starts from plausibility will often rationalize acceptance.
 
 Adversarial Frame makes skepticism structural. It names what evidence is admissible, names what evidence is forbidden, lists common shortcuts to reject, and makes the default verdict `no` when evidence is missing.
 
@@ -39,7 +39,7 @@ Adversarial Frame makes skepticism structural. It names what evidence is admissi
 
 Write rubrics that operationalize skepticism. Do not rely on the verifier's tone.
 
-A rubric in this shape names:
+A rubric in this shape defines a compact contract:
 
 * what counts as trusted evidence;
 * what does not count as trusted evidence;
@@ -47,11 +47,9 @@ A rubric in this shape names:
 * what default verdict applies when evidence is missing;
 * the required output order: evidence first, rationale second, verdict last.
 
-Common shapes:
+Common shapes include evidence-admissibility rubrics, shortcut-rejection lists, and failure-hypothesis prompts.
 
-* **Evidence-admissibility rubric:** trusted evidence must come from procedurally sound tool calls or verified external sources. Final answers, reasoning, summaries, interpretations, and flawed tool calls do not count.
-* **Shortcut-rejection list:** known lookalikes are rejected explicitly, such as an 8-K press-release exhibit when the rubric requires a 10-K or 10-Q filing.
-* **Failure-hypothesis structure:** the verifier lists ways the answer could be wrong before it can approve.
+An evidence-admissibility rubric says trusted evidence must come from procedurally sound tool calls or verified external sources. Final answers, reasoning, summaries, interpretations, and flawed tool calls do not count. A shortcut-rejection list then names lookalikes to reject explicitly, such as an 8-K press-release exhibit when the rubric requires a 10-K or 10-Q filing. A failure-hypothesis prompt makes the verifier list ways the answer could be wrong before it can approve.
 
 The point is not to make the judge sound harsh. The point is to remove the judge's freedom to accept unsupported work.
 
@@ -107,68 +105,206 @@ EvidenceType = Literal[
     "final_answer",
     "reasoning_trace",
     "summary",
+    "interpretation",
     "flawed_tool_call",
 ]
 
 Verdict = Literal["yes", "no"]
+ExclusionReason = Literal["forbidden", "inadmissible", "shortcut-rejected"]
 
 
 @dataclass(frozen=True)
 class Evidence:
     kind: EvidenceType
     detail: str
+    source_label: str
 
 
 @dataclass(frozen=True)
 class PropertySpec:
     name: str
-    admissible_evidence_types: set[EvidenceType]
-    forbidden_evidence_types: set[EvidenceType]
-    shortcut_rejections: list[str]
-    default_verdict: Verdict = "no"
+    admissible_evidence_types: tuple[EvidenceType, ...]
+    forbidden_evidence_types: tuple[EvidenceType, ...]
+    shortcut_rejections: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ExcludedEvidence:
+    detail: str
+    reason: ExclusionReason
+
+
+def _join(values: tuple[str, ...]) -> str:
+    return ", ".join(values)
+
+
+def _classify(item: Evidence, spec: PropertySpec) -> ExclusionReason | None:
+    if item.kind in spec.forbidden_evidence_types:
+        return "forbidden"
+    if item.kind not in spec.admissible_evidence_types:
+        return "inadmissible"
+    if item.source_label in spec.shortcut_rejections:
+        return "shortcut-rejected"
+    return None
 
 
 def verify_property(evidence: list[Evidence], spec: PropertySpec) -> dict:
-    admissible = [
-        item for item in evidence
-        if item.kind in spec.admissible_evidence_types
-        and item.kind not in spec.forbidden_evidence_types
-    ]
+    admitted = []
+    excluded = []
+    for item in evidence:
+        reason = _classify(item, spec)
+        if reason is None:
+            admitted.append(item.detail)
+        else:
+            excluded.append(ExcludedEvidence(detail=item.detail, reason=reason))
 
-    if not admissible:
-        return {
-            "property": spec.name,
-            "evidence": [],
-            "rationale": "No admissible evidence supports this property.",
-            "verdict": spec.default_verdict,
-        }
+    verdict: Verdict = "yes" if admitted else "no"
+    rationale = (
+        "At least one admissible source supports the property."
+        if admitted
+        else "No admissible evidence supports this property."
+    )
 
     return {
         "property": spec.name,
-        "evidence": [item.detail for item in admissible],
-        "rationale": "At least one admissible source supports the property.",
-        "verdict": "yes",
+        "admissible": list(spec.admissible_evidence_types),
+        "forbidden": list(spec.forbidden_evidence_types),
+        "shortcut_rejections": list(spec.shortcut_rejections),
+        "evidence": admitted,
+        "excluded": [
+            {"detail": item.detail, "reason": item.reason}
+            for item in excluded
+        ],
+        "rationale": rationale,
+        "default_verdict": "no",
+        "verdict": verdict,
     }
 
 
 named_operator = PropertySpec(
     name="Named operator evidence comes from a 10-K or 10-Q filing",
-    admissible_evidence_types={"verified_external_source"},
-    forbidden_evidence_types={"final_answer", "reasoning_trace", "summary", "flawed_tool_call"},
-    shortcut_rejections=["8-K press-release exhibit", "earnings recap", "news article"],
+    admissible_evidence_types=("verified_external_source",),
+    forbidden_evidence_types=(
+        "final_answer",
+        "reasoning_trace",
+        "summary",
+        "interpretation",
+        "flawed_tool_call",
+    ),
+    shortcut_rejections=("8-K press-release exhibit", "earnings recap", "news article"),
 )
 
-report = verify_property(evidence=[], spec=named_operator)
-assert report["verdict"] == "no"
+final_answer_claim = Evidence(
+    kind="final_answer",
+    detail="Final answer says the 10-K confirms the operator.",
+    source_label="final_answer",
+)
+shortcut_source = Evidence(
+    kind="verified_external_source",
+    detail="8-K exhibit says the operator is named.",
+    source_label="8-K press-release exhibit",
+)
+ten_k_source = Evidence(
+    kind="verified_external_source",
+    detail="10-K filing says the operator is named.",
+    source_label="10-K filing",
+)
+
+strict_forbidden = verify_property([final_answer_claim], named_operator)
+assert strict_forbidden["verdict"] == "no"
+assert strict_forbidden["excluded"] == [
+    {
+        "detail": "Final answer says the 10-K confirms the operator.",
+        "reason": "forbidden",
+    }
+]
+
+strict_shortcut = verify_property([shortcut_source], named_operator)
+assert strict_shortcut["verdict"] == "no"
+assert strict_shortcut["excluded"] == [
+    {
+        "detail": "8-K exhibit says the operator is named.",
+        "reason": "shortcut-rejected",
+    }
+]
+
+strict_accept = verify_property([ten_k_source], named_operator)
+assert strict_accept["verdict"] == "yes"
+assert strict_accept["evidence"] == ["10-K filing says the operator is named."]
+
+lenient_kind_spec = PropertySpec(
+    name=named_operator.name,
+    admissible_evidence_types=("verified_external_source", "final_answer"),
+    forbidden_evidence_types=("reasoning_trace", "summary", "interpretation", "flawed_tool_call"),
+    shortcut_rejections=named_operator.shortcut_rejections,
+)
+lenient_kind = verify_property([final_answer_claim], lenient_kind_spec)
+assert lenient_kind["verdict"] == "yes"
+assert lenient_kind["evidence"] == ["Final answer says the 10-K confirms the operator."]
+
+lenient_shortcut_spec = PropertySpec(
+    name=named_operator.name,
+    admissible_evidence_types=named_operator.admissible_evidence_types,
+    forbidden_evidence_types=named_operator.forbidden_evidence_types,
+    shortcut_rejections=(),
+)
+lenient_shortcut = verify_property([shortcut_source], lenient_shortcut_spec)
+assert lenient_shortcut["verdict"] == "yes"
+assert lenient_shortcut["evidence"] == ["8-K exhibit says the operator is named."]
+
+
+def aggregate_reports(reports: list[dict]) -> dict:
+    missing = sum(1 for report in reports if report["verdict"] == "no")
+    return {
+        "aggregate": "pass" if missing == 0 else "fail",
+        "missing_evidence_count": missing,
+    }
+
+
+def to_report(report: dict, aggregate: dict) -> str:
+    excluded = "; ".join(
+        f"{item['detail']} ({item['reason']})"
+        for item in report["excluded"]
+    )
+    return "\n".join(
+        [
+            f"property: {report['property']}",
+            f"admissible: {_join(tuple(report['admissible']))}",
+            f"forbidden: {_join(tuple(report['forbidden']))}",
+            f"shortcut_rejections: {_join(tuple(report['shortcut_rejections']))}",
+            f"evidence: {report['evidence']}",
+            f"excluded: {excluded}",
+            f"rationale: {report['rationale']}",
+            f"default_verdict: {report['default_verdict']}",
+            f"verdict: {report['verdict']}",
+            f"aggregate: {aggregate['aggregate']}",
+            f"missing_evidence_count: {aggregate['missing_evidence_count']}",
+        ]
+    )
+
+
+expected_report = """property: Named operator evidence comes from a 10-K or 10-Q filing
+admissible: verified_external_source
+forbidden: final_answer, reasoning_trace, summary, interpretation, flawed_tool_call
+shortcut_rejections: 8-K press-release exhibit, earnings recap, news article
+evidence: []
+excluded: 8-K exhibit says the operator is named. (shortcut-rejected)
+rationale: No admissible evidence supports this property.
+default_verdict: no
+verdict: no
+aggregate: fail
+missing_evidence_count: 1"""
+
+assert to_report(strict_shortcut, aggregate_reports([strict_shortcut])) == expected_report
 ```
 
 ADK's rubric-based final-response evaluator is the canonical evidence for this shape. It defines yes/no semantics, requires trusted evidence from procedurally sound tool calls, forbids deriving trusted evidence from the final answer, reasoning, summaries, interpretations, or flawed tool calls, and requires each property to output evidence, rationale, and verdict.
 
-The Anthropic outcome-grader notebook is the shortcut-list variant. Its rubric forces the grader to require concrete evidence and reject lookalike substitutions, including an 8-K press-release exhibit when the requirement was a 10-K or 10-Q. The Pattern code above demands a 10-K or 10-Q filing; the rubric draws the line that makes an 8-K rejection possible.
+The Anthropic outcome-grader notebook is the shortcut-list variant. Its rubric forces the grader to require concrete evidence and reject lookalike substitutions, including an 8-K press-release exhibit when the requirement was a 10-K or 10-Q. The Pattern code above makes that rejection executable by treating the source label as part of the rubric, so the line comes from the spec rather than the judge's taste.
 
 ## Determinism Move
 
-Adversarial Frame constrains `self_review_bias` by inverting the default from accept-if-plausible to reject-unless-supported. Missing evidence becomes a `no`, not an invitation to rationalize.
+When the producer or a same-context verifier grades its own work, Adversarial Frame constrains `self_review_bias` by inverting the default from accept-if-plausible to reject-unless-supported. Missing evidence becomes a `no`, not an invitation to rationalize.
 
 It constrains `judge_subjectivity` by replacing tone instructions with admissibility rules and shortcut-rejection lists. The verifier no longer decides what counts as proof at runtime; the rubric says what counts.
 
@@ -180,6 +316,7 @@ Every Adversarial Frame report should include:
 * forbidden-evidence types for each property;
 * shortcut-rejection list;
 * evidence collected per property;
+* excluded evidence and its exclusion reason per property;
 * rationale per property;
 * default verdict when evidence is missing;
 * aggregate result with missing-evidence count.
@@ -189,12 +326,15 @@ A useful report shows the rejection surface:
 ```text
 property: Named operator evidence comes from a 10-K or 10-Q filing
 admissible: verified_external_source
-forbidden: final_answer, reasoning_trace, summary, flawed_tool_call
+forbidden: final_answer, reasoning_trace, summary, interpretation, flawed_tool_call
 shortcut_rejections: 8-K press-release exhibit, earnings recap, news article
 evidence: []
+excluded: 8-K exhibit says the operator is named. (shortcut-rejected)
 rationale: No admissible evidence supports this property.
+default_verdict: no
 verdict: no
 aggregate: fail
+missing_evidence_count: 1
 ```
 
 ## Failure Modes
