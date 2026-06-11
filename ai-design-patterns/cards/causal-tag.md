@@ -32,7 +32,7 @@ That is weaker than it looks. Any producer that emits a matching event after the
 ## Forces
 
 * **Framework tracing vs. custom tagging.** Many frameworks already expose run IDs, invocation IDs, or callback parentage. Bypassing that layer creates unnecessary attribution debt.
-* **Time-window attribution vs. identity attribution.** Timestamps narrow the search space; stable IDs prove ownership.
+* **Time-window attribution vs. identity attribution.** Timestamps narrow the search space; fresh, run-scoped IDs support attribution when the verifier requires that ID on the observed effect.
 * **Flat ID vs. tree.** A single run ID groups events. A parent ID reconstructs causality across nested model, tool, retriever, and guardrail calls.
 * **Generated IDs vs. supplied IDs.** Framework-generated IDs reduce caller burden; caller-supplied IDs help join to external payloads.
 * **Propagation cost vs. audit cost.** Carrying IDs through each boundary adds plumbing, but missing IDs make failures expensive to investigate.
@@ -55,7 +55,7 @@ Framework integration is half the pattern. The other half is propagation into th
 2. **Use IDs at every boundary.** Model calls, tool calls, retriever calls, guardrail interventions, and outbound side effects all carry the run or invocation ID.
 3. **Preserve parent links.** Child events record the parent run or event ID so the tree can be reconstructed.
 4. **Stamp emitted artifacts.** Logs, message payloads, API calls, and trace records include the tag in a queryable field.
-5. **Verify the tree.** The report includes ID generation policy, tag propagation, and parent consistency. Orphan events are failures.
+5. **Verify the tree and destination join.** The report includes ID generation policy, tag propagation, and parent consistency, then joins tags read from the destination surface back to the source action. Orphan events are failures.
 
 ## Pattern / Antipattern
 
@@ -97,7 +97,7 @@ ADK's remote trigger tests have this shape: they publish Pub/Sub or Eventarc mes
 
 ### Pattern: run ID tree with parent links
 
-The structured implementation records every event with a run ID and parent run ID, then verifies that the tree can be reconstructed.
+The structured implementation records every event with a run ID and parent run ID, carries the tag into the shared destination log, then verifies the destination entry by identity.
 
 ```python
 from dataclasses import dataclass
@@ -116,8 +116,14 @@ class Tracer:
     def __init__(self):
         self.events: list[TracedEvent] = []
 
-    def start(self, kind: str, parent_run_id: UUID | None = None, **payload) -> UUID:
-        run_id = uuid4()
+    def start(
+        self,
+        kind: str,
+        parent_run_id: UUID | None = None,
+        run_id: UUID | None = None,
+        **payload,
+    ) -> UUID:
+        run_id = run_id or uuid4()
         self.events.append(
             TracedEvent(
                 run_id=run_id,
@@ -153,14 +159,195 @@ class Tracer:
             parent = self.parent_of(parent)
         return path
 
+    def check_tree(self) -> dict[str, int | bool]:
+        known_ids = {event.run_id for event in self.events}
+        parents_by_run: dict[UUID, set[UUID | None]] = {}
+        orphan_events = 0
+        root_parent_errors = 0
+
+        for event in self.events:
+            parents_by_run.setdefault(event.run_id, set()).add(event.parent_run_id)
+            if event.parent_run_id is not None and event.parent_run_id not in known_ids:
+                orphan_events += 1
+            if event.kind == "agent.start" and event.parent_run_id is not None:
+                root_parent_errors += 1
+
+        parent_conflicts = sum(
+            1 for parents in parents_by_run.values() if len(parents) > 1
+        )
+        return {
+            "consistent": (
+                orphan_events == 0
+                and parent_conflicts == 0
+                and root_parent_errors == 0
+            ),
+            "orphan_events": orphan_events,
+            "parent_conflicts": parent_conflicts,
+            "root_parent_errors": root_parent_errors,
+        }
+
+
+def write_handler_log(
+    tracer: Tracer,
+    destination_log: list[dict],
+    run_id: UUID,
+    path: str,
+    *,
+    propagate_tag: bool,
+) -> dict:
+    payload = {"source": "agent"}
+    if propagate_tag:
+        payload["causal_tag"] = str(run_id)
+    else:
+        payload["expected_causal_tag"] = str(run_id)
+
+    entry = {
+        "path": path,
+        "status": 200,
+        "payload": payload,
+    }
+    destination_log.append(entry)
+    if propagate_tag:
+        tracer.emit(
+            run_id,
+            "handler.received",
+            surface="shared_log",
+            causal_tag=str(run_id),
+        )
+    return entry
+
+
+def count_by_path_and_status(destination_log: list[dict], path: str) -> int:
+    return sum(
+        1 for entry in destination_log
+        if entry["path"] == path and entry["status"] == 200
+    )
+
+
+def query_by_causal_tag(destination_log: list[dict], run_id: UUID) -> list[dict]:
+    return [
+        entry for entry in destination_log
+        if entry["payload"].get("causal_tag") == str(run_id)
+    ]
+
+
+def count_missing_destination_tags(destination_log: list[dict]) -> int:
+    return sum(
+        1 for entry in destination_log
+        if "expected_causal_tag" in entry["payload"]
+        and "causal_tag" not in entry["payload"]
+    )
+
+
+def short(run_id: UUID | None) -> str:
+    return "null" if run_id is None else run_id.hex[-4:]
+
+
+def render_report(
+    tracer: Tracer,
+    root_id: UUID,
+    *,
+    destination_tag_missing: int,
+    id_generation_policy: str,
+) -> str:
+    tree = tracer.check_tree()
+    lines = [f"root_run_id: {short(root_id)}"]
+    for event in tracer.events:
+        surfaces = ["trace_store"]
+        if event.payload.get("causal_tag") == str(event.run_id):
+            surfaces.append("shared_log_payload")
+        lines.append(
+            "event: "
+            f"{event.kind} run: {short(event.run_id)} "
+            f"parent: {short(event.parent_run_id)} "
+            f"tag_present: {', '.join(surfaces)}"
+        )
+    lines.extend(
+        [
+            "propagation_surfaces_checked: trace_store, shared_log_payload",
+            "destination_tag_observed: shared_log_payload",
+            f"tree_consistency: {'pass' if tree['consistent'] else 'fail'}",
+            f"orphan_events: {tree['orphan_events']}",
+            f"destination_tag_missing: {destination_tag_missing}",
+            f"id_generation_policy: {id_generation_policy}",
+        ]
+    )
+    return "\n".join(lines)
+
 
 tracer = Tracer()
-root_id = tracer.start("agent", prompt="answer user")
-tool_id = tracer.start("tool", parent_run_id=root_id, name="web_fetch")
-tracer.emit(tool_id, "tool.end", status="ok")
+root_id = tracer.start(
+    "agent",
+    run_id=UUID("00000000-0000-0000-0000-00000000a001"),
+    prompt="answer user",
+)
+tool_id = tracer.start(
+    "tool",
+    parent_run_id=root_id,
+    run_id=UUID("00000000-0000-0000-0000-00000000b002"),
+    name="web_fetch",
+)
+path = "/apps/trigger_echo_agent/trigger/pubsub"
+destination_log = [
+    {
+        "path": path,
+        "status": 200,
+        "payload": {"source": "ambient"},
+    }
+]
 
-assert tracer.parent_of(tool_id) == root_id
-assert tracer.path_to_root(tool_id) == [tool_id, root_id]
+agent_entry = write_handler_log(
+    tracer, destination_log, tool_id, path, propagate_tag=True
+)
+dropped_tag_entry = write_handler_log(
+    tracer, destination_log, tool_id, path, propagate_tag=False
+)
+selected = query_by_causal_tag(destination_log, tool_id)
+
+assert count_by_path_and_status(destination_log, path) > 1
+assert selected == [agent_entry]
+assert agent_entry["payload"]["causal_tag"] == str(tool_id)
+assert "causal_tag" not in destination_log[0]["payload"]
+assert dropped_tag_entry not in selected
+assert count_missing_destination_tags(destination_log) == 1
+assert tracer.check_tree() == {
+    "consistent": True,
+    "orphan_events": 0,
+    "parent_conflicts": 0,
+    "root_parent_errors": 0,
+}
+
+events_with_orphan = list(tracer.events)
+events_with_orphan.append(
+    TracedEvent(
+        run_id=UUID("00000000-0000-0000-0000-00000000c003"),
+        parent_run_id=UUID("00000000-0000-0000-0000-00000000d004"),
+        kind="tool.start",
+        payload={},
+    )
+)
+orphan_demo = Tracer()
+orphan_demo.events = events_with_orphan
+assert orphan_demo.check_tree()["consistent"] is False
+assert orphan_demo.check_tree()["orphan_events"] == 1
+
+expected_report = """root_run_id: a001
+event: agent.start run: a001 parent: null tag_present: trace_store
+event: tool.start run: b002 parent: a001 tag_present: trace_store
+event: handler.received run: b002 parent: a001 tag_present: trace_store, shared_log_payload
+propagation_surfaces_checked: trace_store, shared_log_payload
+destination_tag_observed: shared_log_payload
+tree_consistency: pass
+orphan_events: 0
+destination_tag_missing: 1
+id_generation_policy: caller_supplied"""
+
+assert render_report(
+    tracer,
+    root_id,
+    destination_tag_missing=count_missing_destination_tags(destination_log),
+    id_generation_policy="caller_supplied",
+) == expected_report
 ```
 
 LangChain's tracing APIs demonstrate this at framework level: chat model, tool, and retriever callbacks receive `run_id`, optional `parent_run_id`, tags, and metadata. Event-stream tracing stores run and parent maps, emits events with run IDs and parent IDs, and assigns a UUID when no run ID is supplied.
@@ -182,18 +369,22 @@ Every Causal Tag report should include:
 * propagation surfaces checked, such as trace store, log payload, message attribute, API header;
 * tag presence per surface;
 * tree consistency result;
+* orphan-event count and destination-tag-miss count;
 * ID generation policy (`caller_supplied`, `framework_assigned`, `uuid_on_missing`).
 
 A useful report is a small join table:
 
 ```text
-root_run_id: 6f2c
-event: agent.start parent: null tag_present: trace_store
-event: tool.start parent: 6f2c tag_present: trace_store, http_header
-event: tool.end parent: 6f2c tag_present: trace_store, log_payload
+root_run_id: a001
+event: agent.start run: a001 parent: null tag_present: trace_store
+event: tool.start run: b002 parent: a001 tag_present: trace_store
+event: handler.received run: b002 parent: a001 tag_present: trace_store, shared_log_payload
+propagation_surfaces_checked: trace_store, shared_log_payload
+destination_tag_observed: shared_log_payload
 tree_consistency: pass
 orphan_events: 0
-destination_tag_missing: 0
+destination_tag_missing: 1
+id_generation_policy: caller_supplied
 ```
 
 ## Failure Modes
@@ -234,7 +425,7 @@ When tags cannot propagate, redesign the boundary or fall back to snapshot-based
 
 ## Related Patterns
 
-* **Delta:** works best on tagged events. Delta on untagged shared logs is the Causal Tag antipattern.
+* **Delta:** requires tagged events to attribute changes. Delta on untagged shared logs is the Causal Tag antipattern.
 * **State Baseline:** provides snapshot-based attribution when tag propagation is infeasible.
 * **Trajectory Cursor:** cursor entries should carry causal tags so distributed events can be joined back to steps.
 * **Guardrail Decorator:** guardrail interventions should emit tagged parent events.
