@@ -16,7 +16,9 @@ The decorator is the layer around the call. It is not the prompt instruction tel
 
 ## Problem
 
-Policy is often written as a sentence the model is expected to remember.
+A prompt says never delete without confirmation. The model decides the user's wording counts as confirmation. The deletion runs.
+
+That incident shape starts as prompt-only policy: a sentence the model is expected to remember.
 
 That can look disciplined in code:
 
@@ -25,7 +27,7 @@ That can look disciplined in code:
 * the model decides whether the action satisfies the same policy it is about to cross;
 * when a policy gap appears, the fix is another paragraph in the prompt.
 
-The verifier failure is that enforcement and judgment share the same sampled output. Prompt-only policy asks the model to take the action and decide whether the action is policy compliant. `verification_design.md` Principle 1 rejects that shape: external signals beat self-review. Principle 6 gives the repair direction: put the check in executable structure.
+The verifier failure is that enforcement and judgment share the same sampled output. Prompt-only policy asks the model to take the action and decide whether the action is policy compliant. The strict Guardrail Decorator failure is a call boundary the model can cross with no executable hook on that boundary. `verification_design.md` Principle 1 rejects that shape: external signals beat self-review. Principle 6 gives the repair direction: put the check in executable structure.
 
 Policy that matters belongs at a boundary the model cannot rationalize past.
 
@@ -67,11 +69,11 @@ The same task: put policy around a call boundary the model can cross. The antipa
 
 No credible Guardrail Decorator antipattern was promoted from the OSS bench surveyed for this catalog.
 
-The natural candidate is a no-op callback registration: a decorator-shaped interface that always returns `None`, so the type signature says "guardrail" while the boundary never fires. Sweep D inspected ADK plugin examples and AutoGPT's `validate_url` decorator without finding that instance. We mark the Antipattern as uncovered rather than inventing one.
+The natural candidate is a no-op callback registration: a decorator-shaped interface that always returns `None`, so the type signature says "guardrail" while the boundary never fires. The antipattern cleanup sweep inspected ADK plugin examples and AutoGPT's `validate_url` decorator without finding that instance. We mark the Antipattern as uncovered rather than inventing one.
 
 Prompt-only policy is a real production failure, but it belongs more naturally under **Constitution**: criteria belong in code, not prose. Guardrail Decorator is narrower. It asks whether a call boundary has an executable policy hook that can stop, replace, sanitize, or recover.
 
-When a strict no-op callback instance is mined, re-author this section around a concrete assertion: `before_call(args) is None and not policy.called`.
+When a strict no-op callback instance is mined, re-author this section around a concrete assertion: the callback returns `None` for a destructive call and the destructive side effect executes anyway.
 
 ### Pattern: policy hook around the call
 
@@ -95,6 +97,9 @@ class Override:
 
 @dataclass(frozen=True)
 class CallResult:
+    call_site: str
+    policies: tuple[str, ...]
+    checked: tuple[str, ...]
     decision: Decision
     fired_policy: str
     hook: Hook
@@ -112,15 +117,16 @@ class CallResult:
 @dataclass
 class RecordingPolicy:
     name: str
+    deny_paths: tuple[str, ...] = ()
     calls: list[dict] = field(default_factory=list)
 
     def before(self, args: dict) -> Override | None:
         self.calls.append(dict(args))
-        if args.get("path") == "/etc/passwd":
+        if args.get("path") in self.deny_paths:
             return Override(
                 decision="deny",
                 response={
-                    "error": "destructive operation requires explicit confirmation"
+                    "error": "protected path denied by boundary policy"
                 },
             )
         return None
@@ -133,15 +139,23 @@ class RecordingPolicy:
 
 
 class Guardrail:
-    def __init__(self, policies: Iterable[RecordingPolicy]):
+    def __init__(self, call_site: str, policies: Iterable[RecordingPolicy]):
+        self.call_site = call_site
         self.policies = tuple(policies)
+        self.policy_names = tuple(policy.name for policy in self.policies)
 
     def wrap(self, call: Callable[..., dict]) -> Callable[[dict], CallResult]:
         def guarded(args: dict) -> CallResult:
+            checked: list[str] = []
+
             for policy in self.policies:
+                checked.append(policy.name)
                 override = policy.before(args)
                 if override is not None:
                     return CallResult(
+                        call_site=self.call_site,
+                        policies=self.policy_names,
+                        checked=tuple(checked),
                         decision=override.decision,
                         fired_policy=policy.name,
                         hook="before",
@@ -154,9 +168,13 @@ class Guardrail:
                 original_response = call(**args)
             except Exception as error:
                 for policy in self.policies:
+                    checked.append(policy.name)
                     override = policy.on_error(args, error)
                     if override is not None:
                         return CallResult(
+                            call_site=self.call_site,
+                            policies=self.policy_names,
+                            checked=tuple(checked),
                             decision=override.decision,
                             fired_policy=policy.name,
                             hook="on_error",
@@ -167,9 +185,13 @@ class Guardrail:
                 raise
 
             for policy in self.policies:
+                checked.append(policy.name)
                 override = policy.after(args, original_response)
                 if override is not None:
                     return CallResult(
+                        call_site=self.call_site,
+                        policies=self.policy_names,
+                        checked=tuple(checked),
                         decision=override.decision,
                         fired_policy=policy.name,
                         hook="after",
@@ -179,6 +201,9 @@ class Guardrail:
                     )
 
             return CallResult(
+                call_site=self.call_site,
+                policies=self.policy_names,
+                checked=tuple(checked),
                 decision="pass",
                 fired_policy="none",
                 hook="none",
@@ -190,25 +215,90 @@ class Guardrail:
         return guarded
 
 
+def render_report(result: CallResult) -> str:
+    original_response = result.original_response
+    if result.hook == "before" and original_response is None:
+        rendered_original = "not_invoked"
+    elif original_response is None:
+        rendered_original = "none"
+    else:
+        rendered_original = str(original_response).replace("'", '"')
+
+    override_response = (
+        "none"
+        if result.override is None
+        else str(result.override.response).replace("'", '"')
+    )
+
+    return "\n".join(
+        [
+            f"call_site: {result.call_site}",
+            f"policies: [{', '.join(result.policies)}]",
+            f"checked: [{', '.join(result.checked)}]",
+            f"hook_fired: {result.hook}",
+            f"policy: {result.fired_policy}",
+            f"decision: {result.decision}",
+            f"args: {str(result.original_args).replace(chr(39), chr(34))}",
+            f"original_response: {rendered_original}",
+            f"override_response: {override_response}",
+        ]
+    )
+
+
 calls_recorded: list[dict] = []
 
 def real_delete(path: str) -> dict:
     calls_recorded.append({"path": path})
     return {"deleted": path}
 
-confirm_destructive = RecordingPolicy(name="confirm_destructive")
-guard = Guardrail(policies=[confirm_destructive])
-result = guard.wrap(real_delete)({"path": "/etc/passwd"})
+deny_protected_path = RecordingPolicy(
+    name="deny_protected_path",
+    deny_paths=("/etc/passwd",),
+)
+scope_guard = RecordingPolicy(name="scope_guard")
+audit_logger = RecordingPolicy(name="audit_logger")
+guard = Guardrail(
+    call_site="tool:delete_file",
+    policies=[deny_protected_path, scope_guard, audit_logger],
+)
+guarded_delete = guard.wrap(real_delete)
+result = guarded_delete({"path": "/etc/passwd"})
+expected_report = """call_site: tool:delete_file
+policies: [deny_protected_path, scope_guard, audit_logger]
+checked: [deny_protected_path]
+hook_fired: before
+policy: deny_protected_path
+decision: deny
+args: {"path": "/etc/passwd"}
+original_response: not_invoked
+override_response: {"error": "protected path denied by boundary policy"}"""
 
-assert result.decision == "deny"
-assert result.fired_policy == "confirm_destructive"
 assert result.hook == "before"
-assert result.override is not None
+assert result.decision == "deny"
+assert result.fired_policy == "deny_protected_path"
+assert result.response == {"error": "protected path denied by boundary policy"}
 assert calls_recorded == []
-assert confirm_destructive.calls == [{"path": "/etc/passwd"}]
+assert deny_protected_path.calls == [{"path": "/etc/passwd"}]
+assert scope_guard.calls == []
+assert audit_logger.calls == []
+
+pass_result = guarded_delete({"path": "/tmp/report.txt"})
+assert pass_result.decision == "pass"
+assert pass_result.hook == "none"
+assert pass_result.fired_policy == "none"
+assert calls_recorded == [{"path": "/tmp/report.txt"}]
+assert pass_result.checked == (
+    "deny_protected_path",
+    "scope_guard",
+    "audit_logger",
+    "deny_protected_path",
+    "scope_guard",
+    "audit_logger",
+)
+assert render_report(result) == expected_report
 ```
 
-The six assertions carry the pattern. A guardrail must name a decision, attribute it to a policy, attribute it to a hook, carry a structured override, prevent the original call from running on a deny, and prove the named policy actually saw the original args. Without the last two assertions, a pass-through wrapper or fabricated attribution string can look like enforcement.
+The assertions split the proof. The metadata assertions pin the decision artifact's shape: call site, precedence order, hook, policy, decision, checked policies, and override response. The side-effect and policy-call assertions carry the enforcement claim: a before-hook deny prevents the wrapped call, later policies are not consulted, a benign call reaches every policy and then runs exactly once, and the rendered report matches the observable sample.
 
 ADK gives this shape at both boundaries. Its plugin manager routes model calls through `before_model_callback`, `after_model_callback`, and `on_model_error_callback`; a non-`None` callback return halts later callbacks and propagates up. The same framework routes tool execution through `before_tool_callback` and `after_tool_callback`; a before-tool callback can supply a response and skip the tool call, while an after-tool callback can replace the result. The minimal code shows the mechanic. ADK shows it in framework code across model and tool boundaries.
 
@@ -226,6 +316,7 @@ Every Guardrail Decorator report should include:
 
 * call site, such as model identity, tool name, or retriever name;
 * registered policies in precedence order;
+* policies checked before the decision;
 * hook fired (`before`, `after`, `on_error`, or `none`);
 * policy that fired, or `none`;
 * decision (`pass`, `deny`, `replace`, `sanitize`, `recover`);
@@ -237,13 +328,14 @@ A useful report names the blocked call:
 
 ```text
 call_site: tool:delete_file
-policies: [confirm_destructive, scope_guard, audit_logger]
+policies: [deny_protected_path, scope_guard, audit_logger]
+checked: [deny_protected_path]
 hook_fired: before
-policy: confirm_destructive
+policy: deny_protected_path
 decision: deny
 args: {"path": "/etc/passwd"}
 original_response: not_invoked
-override_response: {"error": "destructive operation requires explicit confirmation"}
+override_response: {"error": "protected path denied by boundary policy"}
 ```
 
 ## Failure Modes
