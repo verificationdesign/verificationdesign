@@ -43,10 +43,10 @@ The orchestrator names a proposer, names a critic, rejects `critic_id == propose
 
 * proposer identity;
 * critic identity;
-* the artifact being critiqued;
-* weaknesses, risks, or rejected assumptions;
+* a reference to the artifact being critiqued;
+* weaknesses, including risks or rejected assumptions;
 * suggestions or next action;
-* a score or verdict;
+* a score or verdict, where this card's sample score is 0-100 and higher means more severe concern;
 * an explicit `no_defect_found` verdict if no weakness is found.
 
 The role label is not enough. The load-bearing structure is identity separation plus a required negative channel.
@@ -56,7 +56,7 @@ The role label is not enough. The load-bearing structure is identity separation 
 1. **Assign role identities.** Give each proposal an `author_id`, and give each critique a distinct `critic_id`.
 2. **Reject self-critique.** The orchestrator refuses to route a proposal back to its author as the adversary.
 3. **Run the critic under a findings schema.** The critic returns structured weaknesses, suggestions, score, and verdict.
-4. **Require a negative channel.** A critique must contain at least one weakness or an explicit `no_defect_found` verdict.
+4. **Require a negative channel.** A `defects_found` verdict must include at least one weakness, and a `no_defect_found` verdict must include zero weaknesses.
 5. **Route findings onward.** Findings gate release, route to Backpressure, or escalate. Routing is outside this card; the adversary only creates the failure signal.
 
 ## Pattern / Antipattern
@@ -73,7 +73,7 @@ This card keeps the Antipattern instance empty rather than inventing a second co
 
 ### Pattern: separate critic with mandatory findings
 
-The structured implementation refuses self-critique and validates that every critique either names weaknesses or records an explicit no-defect verdict.
+The structured implementation refuses self-critique, binds the returned artifact to the routed proposal and critic, and validates that the verdict agrees with the negative channel.
 
 ```python
 from dataclasses import dataclass
@@ -106,18 +106,62 @@ def require_adversary(proposal: Proposal, critic_id: str) -> None:
         raise ValueError("critic must be distinct from proposer")
 
 
+def require_bound_critique(
+    proposal: Proposal, requested_critic_id: str, critique: Critique
+) -> None:
+    if critique.proposal_id != proposal.proposal_id:
+        raise ValueError("critique proposal_id must match proposal")
+    if critique.proposer_id != proposal.author_id:
+        raise ValueError("critique proposer_id must match proposal author")
+    if critique.critic_id == proposal.author_id:
+        raise ValueError("returned critic must be distinct from proposer")
+    if critique.critic_id != requested_critic_id:
+        raise ValueError("critique critic_id must match routed critic")
+
+
 def require_negative_channel(critique: Critique) -> None:
-    has_weakness = len(critique.weaknesses) > 0
-    has_no_defect_verdict = critique.verdict == "no_defect_found"
-    if not (has_weakness or has_no_defect_verdict):
-        raise ValueError("critique must include weaknesses or no_defect_found")
+    if critique.verdict == "defects_found" and not critique.weaknesses:
+        raise ValueError("defects_found requires at least one weakness")
+    if critique.verdict == "no_defect_found" and critique.weaknesses:
+        raise ValueError("no_defect_found requires zero weaknesses")
 
 
 def run_adversary(proposal: Proposal, critic_id: str, critic_fn) -> Critique:
     require_adversary(proposal, critic_id)
     critique = critic_fn(proposal=proposal, critic_id=critic_id)
+    require_bound_critique(proposal, critic_id, critique)
     require_negative_channel(critique)
     return critique
+
+
+def build_adversary_report(proposal: Proposal, critique: Critique) -> dict[str, object]:
+    return {
+        "proposal_id": proposal.proposal_id,
+        "proposer_id": critique.proposer_id,
+        "critic_id": critique.critic_id,
+        "critic_distinct_from_proposer": critique.critic_id != proposal.author_id,
+        "negative_channel_present": bool(critique.weaknesses)
+        or critique.verdict == "no_defect_found",
+        "weakness_count": len(critique.weaknesses),
+        "critique_score": critique.score,
+        "verdict": critique.verdict,
+    }
+
+
+def render_adversary_report(report: dict[str, object]) -> str:
+    lines = [
+        f"proposal_id: {report['proposal_id']}",
+        f"proposer_id: {report['proposer_id']}",
+        f"critic_id: {report['critic_id']}",
+        "critic_distinct_from_proposer: "
+        f"{str(report['critic_distinct_from_proposer']).lower()}",
+        "negative_channel_present: "
+        f"{str(report['negative_channel_present']).lower()}",
+        f"weakness_count: {report['weakness_count']}",
+        f"critique_score: {report['critique_score']}",
+        f"verdict: {report['verdict']}",
+    ]
+    return "\n".join(lines)
 
 
 proposal = Proposal(
@@ -140,12 +184,113 @@ def critic_fn(proposal: Proposal, critic_id: str) -> Critique:
 
 
 critique = run_adversary(proposal, critic_id="critic", critic_fn=critic_fn)
+report = build_adversary_report(proposal, critique)
+
+
+def expect_value_error(expected_message: str, action) -> None:
+    try:
+        action()
+    except ValueError as exc:
+        assert str(exc) == expected_message
+    else:
+        raise AssertionError(f"expected ValueError: {expected_message}")
+
+
+expect_value_error(
+    "critic must be distinct from proposer",
+    lambda: run_adversary(proposal, critic_id="planner", critic_fn=critic_fn),
+)
+
+
+def bad_critique(**overrides) -> Critique:
+    values = {
+        "proposal_id": "p-999",
+        "proposer_id": "other-planner",
+        "critic_id": "critic-shadow",
+        "weaknesses": ("A different flaw is reported.",),
+        "suggestions": ("Route the proposal through the matching reviewer.",),
+        "score": 90,
+        "verdict": "defects_found",
+    }
+    values.update(overrides)
+    return Critique(**values)
+
+
+binding_cases = (
+    (
+        "critique proposal_id must match proposal",
+        bad_critique(
+            proposer_id=proposal.author_id,
+            critic_id="critic",
+        ),
+    ),
+    (
+        "critique proposer_id must match proposal author",
+        bad_critique(
+            proposal_id=proposal.proposal_id,
+            critic_id="critic",
+        ),
+    ),
+    (
+        "critique critic_id must match routed critic",
+        bad_critique(
+            proposal_id=proposal.proposal_id,
+            proposer_id=proposal.author_id,
+        ),
+    ),
+    (
+        "returned critic must be distinct from proposer",
+        bad_critique(
+            proposal_id=proposal.proposal_id,
+            proposer_id=proposal.author_id,
+            critic_id=proposal.author_id,
+        ),
+    ),
+)
+
+for expected_message, returned_critique in binding_cases:
+    expect_value_error(
+        expected_message,
+        lambda returned_critique=returned_critique: run_adversary(
+            proposal,
+            critic_id="critic",
+            critic_fn=lambda **_: returned_critique,
+        ),
+    )
+
+expect_value_error(
+    "no_defect_found requires zero weaknesses",
+    lambda: run_adversary(
+        proposal,
+        critic_id="critic",
+        critic_fn=lambda **_: Critique(
+            proposal_id=proposal.proposal_id,
+            proposer_id=proposal.author_id,
+            critic_id="critic",
+            weaknesses=("Rollback is still unchecked.",),
+            suggestions=("Add the missing rollback gate.",),
+            score=65,
+            verdict="no_defect_found",
+        ),
+    ),
+)
 
 assert critique.critic_id != proposal.author_id
-assert critique.weaknesses or critique.verdict == "no_defect_found"
+assert report["negative_channel_present"] is True
+assert report["critic_distinct_from_proposer"] is True
+assert render_adversary_report(report) == """proposal_id: p-017
+proposer_id: planner
+critic_id: critic
+critic_distinct_from_proposer: true
+negative_channel_present: true
+weakness_count: 1
+critique_score: 42
+verdict: defects_found"""
 ```
 
-AutoGPT's `multi_agent_debate.py` in `classic/original_autogpt/` has this shape as a legacy v1 instance. Its critique artifact records `critic_id`, `target_agent_id`, weaknesses, suggestions, and score. Its critique phase skips self-critique by skipping `j == i`, so a proposal owner does not critique itself.
+AutoGPT's `multi_agent_debate.py` has this shape as a legacy v1 instance. Its critique artifact records `critic_id`, `target_agent_id`, weaknesses, suggestions, and score. Its critique phase skips self-critique by skipping `j == i`, so a proposal owner does not critique itself. A silent skip has different failure semantics from the sample above: it can leave a proposal uncritiqued unless the surrounding debate loop accounts for missing pairings.
+
+That same AutoGPT instance also belongs on Debate. The critique artifact and self-critique exclusion are the Adversary mechanic; the bounded multi-round exchange and consensus behavior are the Debate mechanic.
 
 AutoGen's writer and critic example in the migration guide is a partial instance. The critic is a named role in a `RoundRobinGroupChat`, and `TextMentionTermination("APPROVE")` makes explicit approval the release condition. That shape is also Backpressure because unresolved critic feedback keeps the loop running.
 
@@ -161,14 +306,14 @@ The determinism move is making the negative channel mandatory and the critic's i
 
 Every Adversary report should include:
 
+* proposal id;
 * proposer id;
 * critic id;
-* self-critique skipped boolean;
+* critic distinct from proposer boolean;
 * negative-channel present boolean;
 * weakness count;
-* critique score;
-* verdict;
-* routing decision, such as `release`, `revise`, or `escalate`.
+* critique score, on a 0-100 concern scale where higher means more severe;
+* verdict.
 
 A useful report makes the role boundary visible:
 
@@ -176,13 +321,14 @@ A useful report makes the role boundary visible:
 proposal_id: p-017
 proposer_id: planner
 critic_id: critic
-self_critique_skipped: true
+critic_distinct_from_proposer: true
 negative_channel_present: true
 weakness_count: 1
 critique_score: 42
 verdict: defects_found
-routing_decision: revise
 ```
+
+Downstream orchestration, such as Backpressure or Escalation Chain, records routing decisions separately.
 
 ## Failure Modes
 
@@ -216,7 +362,7 @@ If only a same-family critic is available, label the result as a weak adversaria
 
 * **Verification Design Principles 1 and 7:** the design doc rejects self-review as a verification signal and frames independent verification as stronger than same-family review.
 * **[AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) multi-agent debate:** the orchestration sweep records a direct Adversary instance: `AgentCritique` names critic and target identities, records weaknesses and suggestions, and skips self-critique in the critique phase.
-* **AutoGPT legacy caveat:** the same evidence lives in `classic/original_autogpt/`, so it is treated as a legacy v1 implementation, not a current framework recommendation.
+* **AutoGPT legacy caveat:** the same evidence comes from AutoGPT's legacy v1 codebase, so it is treated as a historical implementation, not a current framework recommendation.
 * **[AutoGen](https://github.com/microsoft/autogen) writer and critic migration guide:** the orchestration sweep records a partial instance where a critic role must emit `APPROVE` before the writer/critic loop terminates.
 * **No promoted antipattern:** the orchestration sweep did not promote a strict Adversary antipattern; this card cross-references Adversarial Frame and Cross-Family instead of inventing one.
 
