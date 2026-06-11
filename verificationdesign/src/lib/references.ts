@@ -21,6 +21,17 @@ type ReferenceInput = {
 
 const ARXIV_RE = /\barXiv:(\d{4}\.\d{4,5})(?:v\d+)?\b/g;
 const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+const SOURCE_LINK_ANCHOR_RE = /<a\b[^>]*class="source-link"[^>]*>/g;
+const HREF_ATTR_RE = /href="(https?:\/\/[^"]+)"/;
+const ARIA_LABEL_ATTR_RE = /aria-label="Source:\s*([^"]+)"/;
+const ARXIV_ABS_HREF_RE = /^https:\/\/arxiv\.org\/abs\/(\d{4}\.\d{4,5})/;
+
+// Site prose pages that cite via superscript source-link anchors.
+const PROSE_PAGES: Array<{ file: string; source: ReferenceSource }> = [
+  { file: 'src/pages/index.astro', source: { title: 'Home', href: '/' } },
+  { file: 'src/pages/about.astro', source: { title: 'About', href: '/about/' } },
+  { file: 'src/pages/principles.astro', source: { title: 'Principles', href: '/principles/' } },
+];
 
 function evidenceSection(markdown: string): string {
   const match = markdown.match(/##\s+Evidence\s*\n([\s\S]*?)(?=\n##\s|\n*$)/);
@@ -76,6 +87,23 @@ function collectFromMarkdown(
   }
 }
 
+function collectFromSourceLinks(
+  references: Map<string, ReferenceEntry>,
+  html: string,
+  source: ReferenceSource,
+) {
+  let anchorMatch;
+  while ((anchorMatch = SOURCE_LINK_ANCHOR_RE.exec(html)) !== null) {
+    const href = anchorMatch[0].match(HREF_ATTR_RE)?.[1];
+    if (!href) continue;
+    const arxivId = href.match(ARXIV_ABS_HREF_RE)?.[1];
+    const label = arxivId
+      ? `arXiv:${arxivId}`
+      : (anchorMatch[0].match(ARIA_LABEL_ATTR_RE)?.[1] ?? href);
+    addReference(references, label, href, source);
+  }
+}
+
 export async function collectReferences(cards: ReferenceInput[]): Promise<ReferenceEntry[]> {
   const references = new Map<string, ReferenceEntry>();
 
@@ -93,6 +121,11 @@ export async function collectReferences(cards: ReferenceInput[]): Promise<Refere
     title: 'Verification Design Principles',
     href: '/principles/',
   });
+
+  for (const page of PROSE_PAGES) {
+    const pageSource = await readFile(resolve(process.cwd(), page.file), 'utf8');
+    collectFromSourceLinks(references, pageSource, page.source);
+  }
 
   return Array.from(references.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
