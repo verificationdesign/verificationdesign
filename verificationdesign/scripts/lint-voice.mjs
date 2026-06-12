@@ -11,10 +11,15 @@
 //
 // Run after `astro build`: node scripts/lint-voice.mjs
 
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const DIST = new URL('../dist', import.meta.url).pathname;
+
+if (!existsSync(DIST)) {
+  console.error('[FAIL] voice lint: dist/ not found; run astro build first');
+  process.exit(1);
+}
 
 // Pages allowed to use first-person singular.
 const ALLOWLIST = new Set(['about/index.html']);
@@ -23,8 +28,9 @@ const ALLOWLIST = new Set(['about/index.html']);
 // (patterns/index.html) is a prose page and stays in scope.
 const CARD_PAGE = /^patterns\/[^/]+\/[^/]+\/index\.html$/;
 
-const FIRST_PERSON = /\b(I|I'm|I've|I'd|I'll|me|my|mine|myself)\b/g;
-const LOWER_ONLY = new Set(['me', 'my', 'mine', 'myself']);
+// Matches lowercase and sentence-start capitalized forms; all-caps tokens
+// (acronyms like "ME") stay unmatched by construction.
+const FIRST_PERSON = /\b(I|I'm|I've|I'd|I'll|[Mm]e|[Mm]y|[Mm]ine|[Mm]yself)\b/g;
 
 function htmlFiles(dir) {
   const out = [];
@@ -58,12 +64,6 @@ for (const file of htmlFiles(DIST)) {
   const hits = [];
   for (const match of text.matchAll(FIRST_PERSON)) {
     const token = match[0];
-    // "Me"/"My" at sentence start are still first person; uppercase "ME"
-    // in an acronym is not. Accept exact lowercase or capitalized forms.
-    const base = token.toLowerCase();
-    if (LOWER_ONLY.has(base) && token !== base && token !== base[0].toUpperCase() + base.slice(1)) {
-      continue;
-    }
     // Roman-numeral "I" after a structural word ("Part I", "Chapter I") is
     // not first person.
     if (token === 'I' && /(?:Part|Chapter|Section|Volume|Appendix)\s+$/.test(text.slice(0, match.index))) {
