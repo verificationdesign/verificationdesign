@@ -17,6 +17,14 @@ A personal research-notes layer: sourced, annotated thinking on agentic AI verif
 
 When unsure whether something is dual-use, leave it out and ask the human. Default to exclusion.
 
+## Delegation discipline (architect and worker)
+
+Claude Code is the architect: plan, design, review, sign off, and direct the Codex worker via dispatch. The architect does not hand-write substrate changes (docs, scripts, site code) in the loop; that is the worker's lane. The architect owns plan docs, review, merge, and sign-off.
+
+- **Default to dispatch.** Delegation is the norm, not the exception. It keeps the cycle cross-model by design (one model implements, another reviews), and the architect can run workers in parallel or keep planning while implementation is in flight.
+- **Skip the governed cycle only for small tasks**: a one-line fix, a typo, a trivial config tweak. If a change needs design judgment or touches more than a couple of files, dispatch it. When unsure, dispatch.
+- Verification discipline applies regardless of who wrote the change: the architect still runs the mechanical checks on worker output before sign-off.
+
 ## Structure
 
 - `README.md`: public-facing front door; what the project is and how it enforces its own rules.
