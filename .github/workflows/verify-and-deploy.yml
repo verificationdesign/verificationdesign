@@ -82,6 +82,9 @@ jobs:
       - name: Card lint (site-side)
         run: npm run lint:cards
 
+      - name: Voice lint (site prose register)
+        run: npm run lint:voice
+
       - name: Accessibility
         run: npm run a11y
 

@@ -68,6 +68,8 @@ When unsure whether something is dual-use, leave it out and ask the human. Defau
 - For UX work, prefer browser automation with screenshots, viewport checks, and accessibility checks. Model visual judgment alone is not enough.
 - If Playwright MCP is available, use it for site navigation, screenshots, and interaction checks before finalizing UI changes.
 - Do not add marketing claims that outpace the research source material. The site can explain the project and organize the material, but empirical claims still need citations in the source docs.
+- Site prose continuity: before publishing new prose, run a continuity pass against the destination page and its neighbors for voice, register, tone, and terminology. The prose pages speak in a collective, declarative register; the About page is the one designated first-person page. Material sourced from interviews or conversation is normalized (person, fat, transitions) to the destination register before implementation, then reviewed by the maintainer. `npm run lint:voice` enforces the first-person boundary mechanically; it is part of `npm run verify` and CI.
+- Pushing to main deploys via CI. Push only on the maintainer's explicit instruction, given after the maintainer has inspected the rendered change. Reviewer sign-off, including an external design or review verdict, does not substitute for that instruction.
 - For Cloudflare Pages, use root directory `verificationdesign`, build command `npm run build`, and output directory `dist`.
 
 When editing the site, run the strongest available subset of:

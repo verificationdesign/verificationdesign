@@ -10,8 +10,9 @@
     "preview": "astro preview",
     "check": "astro check",
     "lint:cards": "python3 ../ai-design-patterns/scripts/lint_patterns.py",
+    "lint:voice": "node scripts/lint-voice.mjs",
     "a11y": "pa11y-ci $(find dist -name '*.html')",
-    "verify": "npm run build && npm run check && npm run lint:cards && npm run a11y",
+    "verify": "npm run build && npm run check && npm run lint:cards && npm run lint:voice && npm run a11y",
     "astro": "astro"
   },
   "dependencies": {
