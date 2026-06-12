@@ -465,6 +465,28 @@ hr {
   margin: 0 auto;
 }
 
+.practice-note {
+  max-width: var(--measure);
+  margin: var(--space-3) 0 var(--space-4);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--border);
+  font-size: 0.95rem;
+}
+.practice-note .practice-label {
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 0 0 var(--space-1);
+}
+.practice-note p { margin-bottom: var(--space-2); }
+.practice-note p:last-child { margin-bottom: 0; }
+
+@media (max-width: 480px) {
+  .practice-note { padding-left: var(--space-2); }
+}
+
 .chooser {
   max-width: var(--measure);
   margin: var(--space-6) 0;

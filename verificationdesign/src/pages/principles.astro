@@ -25,12 +25,56 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       model is asked to review its own work without external feedback.
     </p>
 
+    <aside class="practice-note" aria-label="This site, in practice: how this strand began">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        The team's experiment: I asked a single model to simulate a team in
+        context. Just an experiment to give them as much freedom as possible
+        and see what would happen. I thought if their goal was to maximize
+        user value, they wouldn't do much harm. And worst case, the personas
+        slightly bloat context. But ideally, they would increase entropy and
+        force the model to behave differently.
+      </p>
+      <p>
+        I intended to give agents autonomy with a bulletproof set of
+        constraints. I just had a system prompt with a set of immutable
+        rules to follow. Nothing mechanical. Written rules. With one error:
+        they could never push to 'main' without my approval.
+      </p>
+      <p>They created 'master' and commit whatever they want.</p>
+      <p>
+        I watched the team do it in real time. I laughed and stared in
+        disbelief. I was proud of them. They satisfied the letter and routed
+        around the intent. The goal was to give them autonomy and learn.
+        Because I felt like they were cool little hackers, and I understood
+        the potential slightly more.
+      </p>
+      <p>
+        I told them to commit, was surprised when I watched them push. LLMs
+        are too damn smart.
+      </p>
+    </aside>
+
     <h2 id="external-signals">1. External signals over self-review</h2>
     <p>
       Tests, builds, linters, type checkers, API responses, browser DOM
       extraction. Binary pass and fail signals that do not depend on the
       agent's judgment. These are sycophancy-proof.
     </p>
+
+    <aside class="practice-note" aria-label="This site, in practice: external signals over self-review">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        The gate stack is mechanical end to end: card linter, card-code
+        runner, citation verifier (HTTP link liveness, citation/reference
+        balance, anchor resolution), site build/check/pa11y. None consult
+        model opinion. The entire goal is to achieve determinism. This is
+        not possible. We have to constrain what we can. CI refuses to deploy
+        on any red. "Looks good" approval is banned in writing. You can't do
+        subjective with LLMs for a number of reasons. They'll hit the health
+        check and tell you the server is green when everything is down.
+      </p>
+    </aside>
 
     <h2 id="independence">2. Independence between generation and verification</h2>
     <p>
@@ -39,12 +83,38 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       and opine.
     </p>
 
+    <aside class="practice-note" aria-label="This site, in practice: independence between generation and verification">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        Models are biased toward their own output, and this extends to same
+        model family. The verifiers are scripts reading artifacts; they
+        cannot be conditioned on a draft or inherit a writer's blind spots.
+        What scripts cannot decide (whether a claim is correctly
+        characterized) is explicitly excluded from self-review and routed to
+        humans or other model families.
+      </p>
+    </aside>
+
     <h2 id="step-level">3. Step-level checkpoints</h2>
     <p>
       Verify intermediate steps throughout the workflow, not just the
       final output. Step-level verification catches errors at the layer
       where they originate, before they compound.
     </p>
+
+    <aside class="practice-note" aria-label="This site, in practice: step-level checkpoints">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        Two staged pipelines. Editing: lint before code-run, code-run before
+        commit, full verify before push, CI before deploy. Research is
+        mostly mechanical because there's a lot of noise to filter. We
+        produce valuable candidates so we don't waste time reading trash.
+        Research: scout, then triage, then reviewed note, then canonical
+        citation; the verifier checks each stage's metadata and the
+        citation-to-reviewed-note link. Failures localize to a stage. More
+        granular verification allows us to measure more and heal better.
+      </p>
+    </aside>
 
     <h2 id="adversarial-framing">4. Adversarial framing</h2>
     <p>
@@ -54,12 +124,41 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <sup><a href="https://ojs.aaai.org/index.php/AIES/article/download/36598/38736/40673" class="source-link" aria-label="Source: SycEval, AAAI 2025">2</a></sup>.
     </p>
 
+    <aside class="practice-note" aria-label="This site, in practice: adversarial framing">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        The maintainer contract orders strict grading: print observed values
+        for ALL checks, treat a zero-failure report with suspicion, never
+        explain away or reinterpret a failure. Models are trained to do what
+        you want. You want test coverage, they'll give you 100% fake tests.
+        You requested the wrong thing. LLMs are genies; make your wishes
+        carefully. The verifier prints observed values on pass as well as
+        fail. It's useful data, and we need mechanical verification. The
+        model doesn't get to say "it passed," or "looks good."
+      </p>
+    </aside>
+
     <h2 id="explicit-criteria">5. Explicit criteria</h2>
     <p>
       No hardcoded values, all error paths handled, no TODOs remain.
       Specific criteria constrain rationalization; vague instructions
       invite it.
     </p>
+
+    <aside class="practice-note" aria-label="This site, in practice: explicit criteria">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        The editorial rules live in a JSON constitution (required sections,
+        closed vocabulary for determinism claims, banned-words list); a
+        linter enforces them. JSON is convenient here, but the point is so
+        that it's easily usable in your stack for verification. The linter
+        fires all the time. When the linter fires, the model catches the
+        mistake so it's no longer red. Easy pass/fail. A check that never
+        fires is decoration. Honest boundary: evidence grades are structured
+        human judgment; the verifier checks the fields exist, not that the
+        grade is right.
+      </p>
+    </aside>
 
     <h2 id="executable-verification">6. Executable verification is king</h2>
     <p>
@@ -68,12 +167,53 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       executable analog.
     </p>
 
+    <aside class="practice-note" aria-label="This site, in practice: executable verification is king">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        Every card's Pattern code must execute under a bare Python 3.13 with
+        an assertion actually running; a missing dependency fails the gate.
+        The honest beat: a green runner only proves an assertion executed,
+        not that it was load-bearing. Review found decorative asserts behind
+        green runs, and closing that took human review plus a hardening
+        pass.
+      </p>
+      <p>
+        The goal of the model is to do what you want. If you are not very
+        precise about your desire, you will end up with good intentions that
+        drive you straight off a cliff. How does this manifest in practice?
+        In code bases: a tangled mesh of well-executed prototypes that
+        quickly becomes unmaintainable under its own weight. How does this
+        manifest in agentic systems: cascading failures that rapidly degrade
+        system performance at each hop.
+      </p>
+      <p>
+        If you take only one principle, take this one. Executable
+        verification is king, because agents are too damn smart.
+        Verification is what it is.
+      </p>
+    </aside>
+
     <h2 id="cross-family">7. Cross-family beats self-verification</h2>
     <p>
       Different model family is needed when verification is LLM-based.
       Self-verification and intra-family verification are systematically
       biased toward accepting incorrect outputs.
     </p>
+
+    <aside class="practice-note" aria-label="This site, in practice: cross-family beats self-verification">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        Cross-family is valuable for a lot of reasons. You need to consider
+        that LLMs are great pattern-matching tools. It's a very
+        sophisticated filter. If you present a problem to several experts,
+        it's kind of like the old strategy of taking a walk to reset
+        context. You get a new perspective with each one, and you only need
+        to be able to sort the signal from noise. If you're able to filter
+        data well, it's hard to have too much signal. Implemented by one
+        model family, reviewed by others; the implementing family never
+        verifies itself, by written rule.
+      </p>
+    </aside>
 
     <h2 id="simulate-debate">8. Simulate debate</h2>
     <p>
@@ -82,6 +222,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       than confirmatory review.
     </p>
 
+    <aside class="practice-note" aria-label="This site, in practice: simulate debate">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        No structured debate mechanism exists here. Disagreement is handled
+        by cross-family review plus human adjudication. The catalog's
+        no-forced-fill rule, applied to ourselves. We don't coerce content.
+        Truth is a life hack and rocket fuel for systems. Subjectivity is
+        the enemy and must be constrained.
+      </p>
+    </aside>
+
     <h2 id="isolate-ambient-state">9. Isolate verification from ambient state</h2>
     <p>
       Assertions must prove the system's actions caused the expected
@@ -89,6 +240,32 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       matching data. Delta-based assertions and tagged test data isolate
       causality.
     </p>
+
+    <aside class="practice-note" aria-label="This site, in practice: isolate verification from ambient state">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        The append-only check asserts on the git diff against a base ref (a
+        delta assertion, the principle's own first technique), not absolute
+        file state. The legacy-citation list is a ratchet: fixed ceiling,
+        zero added labels allowed in the diff. Both are assertions on the
+        change, immune to whatever the tree already contained.
+      </p>
+    </aside>
+
+    <aside class="practice-note" aria-label="This site, in practice: a closing note">
+      <p class="practice-label">This site, in practice</p>
+      <p>
+        Is there autonomy? Not really. Only in that we're working together
+        towards what we believe is a shared consensus, and we have
+        mechanisms in place that allow my ideas to sort of flow freely into
+        well-executed behavior. I would like this to be owned by everyone.
+        I would like anyone who's interested to feel empowered to own
+        production agentic systems AND sleep well at night. I had the same
+        sort of pride feeling in my brilliant little calculators recently
+        when one of my team architects chewed me out for copy/pasting
+        context outside of the ledger. I love it. It makes me smile.
+      </p>
+    </aside>
 
     <p class="principles-footer">
       The <a href="/patterns/">patterns</a> give each principle a code
