@@ -141,6 +141,9 @@ const height = Math.round((size / 32) * 24);
     const hasPlayed = window.sessionStorage.getItem('vdComparatorMarkPlayed') === '1';
     const started = performance.now();
     const rgb = colorFromElement(mark);
+    let done = false;
+    let animationFrame: number | undefined;
+    let settleTimeout: number | undefined;
 
     function draw(value: number) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -163,24 +166,64 @@ const height = Math.round((size / 32) * 24);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
 
-    mark.classList.add('is-webgl-ready');
+    function teardown() {
+      if (done) return;
+      done = true;
+      if (animationFrame !== undefined) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = undefined;
+      }
+      if (settleTimeout !== undefined) {
+        clearTimeout(settleTimeout);
+        settleTimeout = undefined;
+      }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }
+
+    function finishSettled() {
+      if (done) return;
+      teardown();
+      draw(1);
+      window.sessionStorage.setItem('vdComparatorMarkPlayed', '1');
+    }
+
+    function handleVisibilityChange() {
+      if (document.hidden) finishSettled();
+    }
+
+    function handleContextLost(event: Event) {
+      event.preventDefault();
+      targetCanvas.removeEventListener('webglcontextlost', handleContextLost);
+      teardown();
+      mark.classList.remove('is-webgl-ready');
+      window.sessionStorage.setItem('vdComparatorMarkPlayed', '1');
+    }
 
     if (prefersReducedMotion || hasPlayed) {
+      targetCanvas.addEventListener('webglcontextlost', handleContextLost);
       draw(1);
+      mark.classList.add('is-webgl-ready');
       return;
     }
 
+    targetCanvas.addEventListener('webglcontextlost', handleContextLost);
+    draw(0);
+    mark.classList.add('is-webgl-ready');
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    settleTimeout = window.setTimeout(finishSettled, 1500);
+
     function frame(now: number) {
+      if (done) return;
       const elapsed = Math.min(1, (now - started) / 950);
       draw(elapsed);
       if (elapsed < 1) {
-        requestAnimationFrame(frame);
+        animationFrame = requestAnimationFrame(frame);
       } else {
-        window.sessionStorage.setItem('vdComparatorMarkPlayed', '1');
+        finishSettled();
       }
     }
 
-    requestAnimationFrame(frame);
+    animationFrame = requestAnimationFrame(frame);
   }
 
   function startComparatorMarks() {
