@@ -124,6 +124,16 @@ Triage notes in `research/triage/` are the judgment layer between scouts and rev
 
 Canonical citations added after the reviewed-note workflow must have a matching source in `research/reviewed/`. `research/reviewed/LEGACY-CITATIONS.md` is only a transition index for citations that predate this workflow; do not add new citations there.
 
+**Fold-in bar.** A reviewed note records the read and the judgment. Folding the finding into the canonical doc is a separate maintainer decision, and this bar is the default decision rule. It is judgment guidance, not a mechanical score; the verifier must not enforce it.
+
+- Claim type sets the bar. Negative or existence findings can fold from one well-documented demonstration, scoped to the tested setting. Effectiveness or generality findings need independent corroboration before folding.
+- Independent corroboration means a different method, dataset, or group, not a second correlated preprint from the same benchmarks and zeitgeist.
+- A checkable mechanism lowers the bar. If the finding follows from a mechanism that can be independently verified or reproduced, ideally executably, the paper is measurement rather than the sole load-bearing evidence. Purely empirical numbers keep the bar high.
+- Corroboration of an already-folded callout counts as the second source. Fold it as a dated note that names the callout it strengthens.
+- Warnings may fold earlier than endorsements. Under-warning costs more than under-endorsing, so "test for X before trusting it" callouts carry a lower bar than "X works" callouts.
+- Separate reproducibility signals from authority signals. Released code, data, or models are reproducibility facts that may bear on the evidence grade because they affect whether the evidence can be checked. Author seniority, dataset-creator overlap, and institutional prestige are authority facts: record them as verifiable facts and let them tune grade confidence, but they do not move the evidence grade or substitute for corroboration.
+- When the bar is ambiguous, hold and watch. The note layer loses nothing, and the hold decision is recorded in the note's Suggested Update section.
+
 ## Right-sizing
 
 This is a local notes repo, not a security harness. Keep verification a lightweight script. Do **not** build isolation / TTL / ledger-grade apparatus for prose. Match verification weight to stakes.
