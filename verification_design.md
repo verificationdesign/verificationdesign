@@ -101,6 +101,8 @@ For non-code systems: find the executable analog. Can you curl an endpoint? Run 
 
 > **2026-06-09 Update**: Executable checks inherit the validity of their oracle. An IRT-based audit of seven preference and multiple-choice benchmarks (20986 items, responses from 114 models) surfaced likely label errors, with its authors reporting 95% precision in the top 200 flagged items against consensus-plus-hand-inspection reference labels. The error sources are instructive for verification design: mechanical construction rules that mark answers correct for satisfying the letter of a format rather than the intent, upstream annotation errors inherited unchanged across downstream variants, and items with no defensible single answer. A test that does not care what the agent thinks is still confidently wrong when its expected value is wrong. Design implication: expected values, labels, and fixtures need their own audit path; "the check passed" is conditional on oracle validity. Source: [arXiv:2605.30504](https://arxiv.org/abs/2605.30504)
 
+> **2026-06-13 Update**: A deterministic comparator can be reliable yet invalid when its oracle under-specifies correctness. In an extractive-QA setting, Ho et al. report that Exact Match and F1 had average correlations with human judgment of 0.220 and 0.404, while an LLM judge reached up to 0.85; they also discarded 39 of 200 sampled instances because the gold answer itself was wrong. The judge is not a free substitute for oracle audit: its own job-title answer correlation was 0.352, a blind spot tied to ambiguous multi-job answers. This strengthens the 2026-06-09 oracle-validity note: executable comparators and learned judges both need evidence that the target they compare against actually represents correctness. [arXiv:2504.11972](https://arxiv.org/abs/2504.11972)
+
 ### 7. Cross-Family Beats Self-Verification
 
 If using LLM-based verification, a different model family is needed. Self-verification and intra-family verification are systematically biased toward accepting incorrect outputs. The same blind spots that caused the error also prevent detecting it.
@@ -231,6 +233,7 @@ When writing a verification system:
 | Gaming the Judge | Khalifa et al., Jan 2026 | [arXiv:2601.14691](https://arxiv.org/abs/2601.14691) |
 | Reward Bias Substitution | Lamparth et al., May 2026 | [arXiv:2605.27996](https://arxiv.org/abs/2605.27996) |
 | Benchmark Label Auditing (IRT) | Land and Bikel, May 2026 | [arXiv:2605.30504](https://arxiv.org/abs/2605.30504) |
+| LLM-as-a-Judge for Extractive QA | Ho et al., Apr 2025 | [arXiv:2504.11972](https://arxiv.org/abs/2504.11972) |
 | Judge Reliability via IRT | Choi et al., Jan 2026 | [arXiv:2602.00521](https://arxiv.org/abs/2602.00521) |
 | Agent-as-a-Judge | ICML 2025 | [arXiv:2410.10934](https://arxiv.org/abs/2410.10934) |
 | ThinkPRM | Apr 2025 | [arXiv:2504.16828](https://arxiv.org/abs/2504.16828) |
