@@ -102,6 +102,7 @@ Derived from `verification_design.md`; this repo follows its own principles.
   3. **Append-not-overwrite**: `git diff HEAD -- verification_design.md` shows research callouts only added, not deleted. Use `--base-ref` or `VERIFY_BASE_REF` for multi-commit branch review. Fail if a prior callout was removed without an explicit, human-approved rationale.
   4. **Format / anchor lint**: markdown lints clean; internal `#anchors` resolve; numbering contiguous.
   5. **Provenance**: each update note names its source.
+- CI gates deploy on the hermetic subset: `scripts/verify.py --skip-links`, the pattern and card-code linters, and the site build/check/lint/a11y steps. Full `scripts/verify.py`, including link liveness, must pass locally before any push because CI runner IPs are blocked by publishers/arXiv and cannot run link liveness reliably.
 - **Substance is not mechanically verifiable.** Whether a finding is *correctly characterized* is a judgment call. Do **not** self-review it. Flag substantive claims for human or cross-family-model review, assemble the diff, and stop; do not auto-approve or auto-merge.
 - **Grade strictly.** Print observed values for *all* checks, not only failures. Treat a zero-failure report with suspicion. Never explain away or reinterpret a failure to make it pass.
 

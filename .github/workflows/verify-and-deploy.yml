@@ -34,23 +34,10 @@ jobs:
           CARD_CODE_PYTHON: python3
         run: python3 ai-design-patterns/scripts/run_card_code.py
 
-      # Link liveness depends on live external hosts; a transient publisher
-      # 503 should not block a release on the first try. Three attempts with
-      # increasing backoff, then fail for real (the escape hatch for
-      # persistently-blocking publishers is research/link-confirmations.txt).
-      - name: Repo verifier (3 attempts with backoff)
-        run: |
-          for attempt in 1 2 3; do
-            if python3 scripts/verify.py; then
-              exit 0
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep $((attempt * 90))
-              echo "verify.py failed (attempt $attempt); retrying"
-            fi
-          done
-          echo "verify.py failed on all 3 attempts"
-          exit 1
+      # CI runs the hermetic subset only. Link liveness is enforced locally
+      # before push because cloud runner IPs are blocked by publishers/arXiv.
+      - name: Repo verifier (hermetic; link liveness gated locally pre-push)
+        run: python3 scripts/verify.py --skip-links
 
   site:
     needs: verify
