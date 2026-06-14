@@ -193,6 +193,12 @@ If a verification system auto-files issues, false-positive assertions create noi
 
 If the report only shows observed values when assertions fail, a passing report has no audit trail. Include observed values for ALL assertions so zero-failure reports can be scrutinized.
 
+### Determinism as a decoding parameter
+
+A verification step that assumes the model can reproduce its own output is unsound when determinism has not been enforced over the execution path. Determinism is an execution invariant across batching, kernels, parallelism, hardware, and framework boundaries, not merely fixed seeds or temperature zero. When reproducibility is load-bearing, the system needs executable invariants over that path.
+
+> **Research**: With the same model, identical AIME24 prompts, and greedy decoding, changing only tensor-parallel size produced different outputs and over 4% accuracy variation for Qwen3-8B on AIME24. The reported mechanism is IEEE 754 floating-point non-associativity: different batching, Split-K kernels, all-reduce trees, and tensor-parallel sharding can change reduction order and therefore logits. The design prescription here is not that the model should be trusted to be "deterministic," but that the numerical path must be made explicit and mechanically constrained when replay or reproducibility is part of the evidence. [arXiv:2511.17826](https://arxiv.org/abs/2511.17826)
+
 ---
 
 ## Applying These Principles in Systems
@@ -228,6 +234,7 @@ When writing a verification system:
 | CorrectBench | Tie et al., NeurIPS 2025 Datasets & Benchmarks | [arXiv:2510.16062](https://arxiv.org/abs/2510.16062) |
 | Self-Correction Bench | Jul 2025 | [arXiv:2507.02778](https://arxiv.org/abs/2507.02778) |
 | When Does Verification Pay Off? | Dec 2025 | [arXiv:2512.02304](https://arxiv.org/html/2512.02304) |
+| Tensor-Parallel Inference Determinism | Nov 2025 | [arXiv:2511.17826](https://arxiv.org/abs/2511.17826) |
 | Self-Verification Limitations | ICLR 2025 | [openreview:4O0v4s3IzY](https://openreview.net/forum?id=4O0v4s3IzY) |
 | Judge Reliability Harness | Dev et al., ICLR 2026 workshop | [arXiv:2603.05399](https://arxiv.org/abs/2603.05399) |
 | Gaming the Judge | Khalifa et al., Jan 2026 | [arXiv:2601.14691](https://arxiv.org/abs/2601.14691) |

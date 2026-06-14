@@ -42,7 +42,10 @@ The performance tradeoff is material. The paper reports end-to-end latency overh
 
 Append a dated operational note under Principle 7: judge calibration should record inference configuration, including serving engine, tensor-parallel size, batch regime, decoding settings, and determinism controls. When that configuration cannot be pinned, repeated judgments or aggregation should be treated as part of the calibration design rather than as optional polish.
 
+2026-06-14: Folded into `verification_design.md` as an Anti-Pattern entry. The maintainer chose anti-pattern framing over the originally proposed Principle 7 operational note.
+
 ## Claims Needing Human Review
 
 - Whether an infrastructure paper belongs in the canonical document's References at all, or should remain background for an operational practice.
 - Whether the over-4% AIME24 accuracy-variation number may be quoted in the canonical document.
+- 2026-06-14: Resolved by maintainer approval to quote the over-4% AIME24 number and include the paper in `verification_design.md` References.
