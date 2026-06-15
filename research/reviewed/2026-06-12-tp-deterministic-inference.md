@@ -5,6 +5,7 @@ Reviewer: Human + Codex
 Source: https://arxiv.org/abs/2511.17826
 Evidence grade: C
 Grade confidence: medium
+Disposition: folded + expand-on (2026-06-14)
 
 ## Why It Matters
 
@@ -43,6 +44,8 @@ The performance tradeoff is material. The paper reports end-to-end latency overh
 Append a dated operational note under Principle 7: judge calibration should record inference configuration, including serving engine, tensor-parallel size, batch regime, decoding settings, and determinism controls. When that configuration cannot be pinned, repeated judgments or aggregation should be treated as part of the calibration design rather than as optional polish.
 
 2026-06-14: Folded into `verification_design.md` as an Anti-Pattern entry. The maintainer chose anti-pattern framing over the originally proposed Principle 7 operational note.
+
+2026-06-14: Disposition is folded + expand-on. Registered seed topics in `research/scouts/config.json`: deterministic inference, nondeterministic inference, batch-invariant inference, batch invariant inference, tensor-parallel invariant, tensor parallel invariant, bitwise reproducibility, bit-wise deterministic, serving configuration determinism, LLM judge reproducibility, judge consistency.
 
 ## Claims Needing Human Review
 

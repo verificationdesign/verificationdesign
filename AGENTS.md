@@ -135,6 +135,15 @@ Canonical citations added after the reviewed-note workflow must have a matching 
 - Separate reproducibility signals from authority signals. Released code, data, or models are reproducibility facts that may bear on the evidence grade because they affect whether the evidence can be checked. Author seniority, dataset-creator overlap, and institutional prestige are authority facts: record them as verifiable facts and let them tune grade confidence, but they do not move the evidence grade or substitute for corroboration.
 - When the bar is ambiguous, hold and watch. The note layer loses nothing, and the hold decision is recorded in the note's Suggested Update section.
 
+**Expand-on.** Expand-on is a reviewed note's discovery posture, separate from the fold decision.
+Hold-and-watch is passive: record the read and wait for corroboration to surface through ordinary scouting.
+Expand-on is active: the note names seed topics, and those topics are registered in `research/scouts/config.json`
+under the `expand_on` block so the next harvest actively hunts associated and corroborating work.
+It is orthogonal to fold or hold. A held note can be expand-on to seek the corroboration the fold-in bar wants before folding,
+and a folded note can be expand-on to seek further corroboration of a callout, which the fold-in bar already counts as a second source toward a strengthening note.
+Record the disposition and seed topics in the note's Suggested Update, and add the matching `expand_on` entry to the scout config.
+The verifier does not enforce this; it is a discovery practice, not a mechanical gate.
+
 ## Right-sizing
 
 This is a local notes repo, not a security harness. Keep verification a lightweight script. Do **not** build isolation / TTL / ledger-grade apparatus for prose. Match verification weight to stakes.

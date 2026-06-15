@@ -103,12 +103,28 @@ class OAIClient:
 
 def load_config(
     path: Path,
-) -> tuple[OrderedDict[str, str], OrderedDict[str, list[str]], list[str]]:
+) -> tuple[
+    OrderedDict[str, str],
+    OrderedDict[str, list[str]],
+    list[str],
+    OrderedDict[str, dict[str, Any]],
+]:
     raw = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=OrderedDict)
     categories = OrderedDict((str(k), str(v)) for k, v in raw["categories"].items())
     groups = OrderedDict((str(k), [str(item) for item in v]) for k, v in raw["keyword_groups"].items())
     anchors = [str(item) for item in raw.get("anchor_phrases", [])]
-    return categories, groups, anchors
+    expand_on = OrderedDict()
+    for slug, entry in raw.get("expand_on", {}).items():
+        slug = str(slug)
+        if slug in groups:
+            raise SystemExit(f"expand_on slug collides with keyword group: {slug}")
+        phrases = [str(item) for item in entry["phrases"]]
+        expand_on[slug] = {
+            "note": str(entry["note"]),
+            "phrases": phrases,
+        }
+        groups[slug] = phrases
+    return categories, groups, anchors, expand_on
 
 
 def select_keys(all_keys: list[str], selected: str | None, label: str) -> list[str]:
@@ -378,8 +394,12 @@ def render_markdown(
     selected_categories: list[str],
     selected_groups: list[str],
     anchors: list[str],
+    expand_on: OrderedDict[str, dict[str, Any]],
 ) -> str:
     new_id_set = set(new_ids)
+    active_expand_on = [
+        f"{slug} ({expand_on[slug]['note']})" for slug in selected_groups if slug in expand_on
+    ]
     lines: list[str] = [
         f"# Scout {end_date.isoformat()}",
         "",
@@ -388,6 +408,7 @@ def render_markdown(
         "Sources: arXiv OAI-PMH",
         f"Categories: {', '.join(selected_categories)}",
         f"Keyword groups: {', '.join(selected_groups)}",
+        f"Expand-on slugs: {', '.join(active_expand_on) if active_expand_on else '(none)'}",
         f"Anchor phrases: {', '.join(anchors) if anchors else '(none)'}",
     ]
     if ledger:
@@ -450,7 +471,7 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true", help="print planned OAI requests without fetching")
     args = parser.parse_args()
 
-    categories, groups, anchors = load_config(args.config)
+    categories, groups, anchors, expand_on = load_config(args.config)
     selected_categories = select_keys(list(categories.keys()), args.categories, "categories")
     selected_groups = select_keys(list(groups.keys()), args.groups, "groups")
     selected_phrases: list[str] = []
@@ -545,6 +566,7 @@ def main() -> int:
         selected_categories,
         selected_groups,
         anchors,
+        expand_on,
     )
 
     outfile = args.outfile or args.outdir / f"scout-{end_date.isoformat()}.md"

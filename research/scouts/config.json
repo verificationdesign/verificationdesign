@@ -6,6 +6,24 @@
     "AI agent",
     "LLM agent"
   ],
+  "expand_on": {
+    "inference_determinism": {
+      "note": "research/reviewed/2026-06-12-tp-deterministic-inference.md",
+      "phrases": [
+        "deterministic inference",
+        "nondeterministic inference",
+        "batch-invariant inference",
+        "batch invariant inference",
+        "tensor-parallel invariant",
+        "tensor parallel invariant",
+        "bitwise reproducibility",
+        "bit-wise deterministic",
+        "serving configuration determinism",
+        "LLM judge reproducibility",
+        "judge consistency"
+      ]
+    }
+  },
   "categories": {
     "cs.AI": "artificial intelligence",
     "cs.CL": "NLP / LLMs",
