@@ -5,6 +5,7 @@ Reviewer: Human + Codex
 Source: https://arxiv.org/abs/2111.09525
 Evidence grade: B
 Grade confidence: high
+Disposition: held + expand-on (2026-06-28)
 
 ## Why It Matters
 
@@ -33,6 +34,8 @@ Metric reliability numbers are model-generation dependent and move over time. Th
 ## Suggested Update
 
 Use this note to corroborate the planned canonical anti-pattern: a gate is not valid until adversarially shown to catch its failure class. The determinism case is the in-house worked example; this note is the independent corroboration. It also disconfirms an automated fidelity gate for the held interview-pattern idea.
+
+2026-06-28: Disposition is held + expand-on. The fold into the canonical determinism-not-validity anti-pattern is deferred (maintainer decision); expand-on actively hunts independent, modern (LLM-judge-era) corroboration so the eventual fold does not rest on a pre-LLM-judge anchor. Registered seed topics in `research/scouts/config.json` under slug `summarization_faithfulness`: faithfulness evaluation, LLM judge faithfulness, factual consistency evaluation, claim-level verification, atomic fact verification, claim decomposition, groundedness evaluation, RAG faithfulness, answer groundedness, reference-free hallucination detection, reference-free faithfulness, factual consistency detection.
 
 ## Claims Needing Human Review
 
