@@ -6,3 +6,5 @@
 2026-05-29 https://direct.mit.edu/tacl/article/doi/10.1162/tacl_a_00713/125177/ -- Valid scholarly publisher link manually confirmed; automated check receives HTTP 403.
 2026-05-29 https://dl.acm.org/doi/10.1145/2635868.2635920 -- Valid scholarly publisher link manually confirmed; automated check receives HTTP 403.
 2026-06-03 https://ojs.aaai.org/index.php/AIES/article/download/36598/38736/40673 -- Valid AAAI PDF manually confirmed; automated check receives HTTP 500 or times out.
+2026-07-03 https://doi.org/10.1177/0018720810376055 -- Valid scholarly publisher link manually confirmed (Crossref: Complacency and Bias in Human Use of Automation, Human Factors 2010); automated check receives HTTP 403 from SAGE.
+2026-07-03 https://doi.org/10.1177/1049732316654870 -- Valid scholarly publisher link manually confirmed (Crossref: Member Checking, Qualitative Health Research 2016); automated check receives HTTP 403 from SAGE.
