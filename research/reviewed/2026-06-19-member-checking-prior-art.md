@@ -12,9 +12,9 @@ Member checking, also called respondent or participant validation, is the closes
 
 ## Method / Evidence
 
-Member checking is recognized as the return of data, results, or interpretations to participants to check accuracy and resonance. Birt et al. define it as a canonical strategy from Lincoln and Guba (1985) [doi:10.1177/1049732316654870]. Vella corroborates the respondent-validation framing [doi:10.1016/j.sapharm.2024.03.005].
+Member checking is recognized as the return of data, results, or interpretations to participants to check accuracy and resonance. Birt et al. define it as a canonical strategy from Lincoln and Guba (1985) [doi:10.1177/1049732316654870]. Vella corroborates the respondent-validation framing [doi:10.1016/j.sapharm.2024.04.001].
 
-Its efficacy is contested. Lloyd, Hyett, and Kenny note recent debate about whether member checking achieves its intended purposes [doi:10.1177/16094069241301383]. Birt et al. frame the doubt in their own title by asking whether member checking is merely a nod to validation, and they propose Synthesized Member Checking [doi:10.1177/1049732316654870]. Vella argues that member checking is not the pinnacle of rigor for hermeneutic phenomenology, as a scoped critique [doi:10.1016/j.sapharm.2024.03.005].
+Its efficacy is contested. Lloyd, Hyett, and Kenny note recent debate about whether member checking achieves its intended purposes [doi:10.1177/16094069241301383]. Birt et al. frame the doubt in their own title by asking whether member checking is merely a nod to validation, and they propose Synthesized Member Checking [doi:10.1177/1049732316654870]. Vella argues that member checking is not the pinnacle of rigor for hermeneutic phenomenology, as a scoped critique [doi:10.1016/j.sapharm.2024.04.001].
 
 Member checking is not cost-free. Lloyd et al. document risks of unintended consequences, including participant distress, embarrassment from verbatim transcripts, triggering memories, disempowerment, and tokenism [doi:10.1177/16094069241301383].
 
