@@ -65,7 +65,7 @@ The same task: revise an output until a downstream validation passes or the retr
 
 No strict Backpressure antipattern was promoted from the OSS bench surveyed for this catalog.
 
-The natural failure shape is downstream-failure-swallowed, upstream-unaware: validation fails, but the system proceeds, logs only, or retries with no feedback context and no budget. That overlaps with **Adversarial Frame** when there is no failure-search rubric, so there is no structured failure to push back.
+The natural failure shape is downstream-failure-swallowed, upstream-unaware: validation fails, but the system proceeds, logs only, or retries with no feedback context and no budget. That overlaps with **Admissibility Gate** when there is no failure-search rubric, so there is no structured failure to push back.
 
 This card keeps the Antipattern instance empty rather than inventing one. When a strict instance is mined, re-author this section around the assertion `attempts > 1 and rerun_context is None`, or `verifier_failed and proceeded_downstream is True`.
 
@@ -295,6 +295,6 @@ If the failure cannot be turned into structured rerun context, route to Escalati
 
 * **Escalation Chain:** receives control when the retry budget is exhausted.
 * **Adversary:** produces critic findings that can become the backpressure signal.
-* **Adversarial Frame:** defines the failure-search rubric that gives the loop useful failures.
+* **Admissibility Gate:** defines the failure-search rubric that gives the loop useful failures.
 * **Comparator:** supplies the named operator that can drive pass/fail backpressure.
 * **Causal Tag:** tags each retry attempt so the revision trail is auditable.

@@ -507,4 +507,4 @@ In those cases, first collect candidate criteria from practice. Promote them int
 * **Executable Analog**: converts subjective-looking checks into runnable measurements.
 * **Escalation Chain**: routes criteria from executable checks to LLM judges to human review.
 * **Causal Tag**: gives criteria a scoped evidence source by marking generated artifacts or test traffic.
-* **Adversarial Frame**: defines the stance verifiers should take when applying criteria.
+* **Admissibility Gate**: defines the stance verifiers should take when applying criteria.

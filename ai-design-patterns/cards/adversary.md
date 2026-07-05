@@ -67,7 +67,7 @@ The same task: evaluate a proposal before it can advance. The antipattern side i
 
 No strict Adversary antipattern was promoted from the OSS bench surveyed for this catalog.
 
-The natural failure shape is a confirmatory critic: a role named `critic` or `adversary` that shares the proposer's context, asks for constructive feedback, and can approve without recording weaknesses or an explicit no-defect verdict. That shape is already covered by **Adversarial Frame**. A same-family critic that is treated as independent evidence is already covered by **Cross-Family**.
+The natural failure shape is a confirmatory critic: a role named `critic` or `adversary` that shares the proposer's context, asks for constructive feedback, and can approve without recording weaknesses or an explicit no-defect verdict. That shape is already covered by **Admissibility Gate**. A same-family critic that is treated as independent evidence is already covered by **Cross-Family**.
 
 This card keeps the Antipattern instance empty rather than inventing a second copy of those failures. When a strict instance is mined, re-author this section around the assertion `critic_id == proposal.author_id or negative_channel_present is False`.
 
@@ -332,7 +332,7 @@ Downstream orchestration, such as Backpressure or Escalation Chain, records rout
 
 ## Failure Modes
 
-* **Confirmatory Critic:** the role is named critic, but the prompt asks for constructive feedback and approval. Use Adversarial Frame so the critic must search for failure before approval.
+* **Confirmatory Critic:** the role is named critic, but the prompt asks for constructive feedback and approval. Use Admissibility Gate so the critic must search for failure before approval.
 * **Self-Critique:** the critic and proposer are the same role or model call. Assert identity separation before routing the critique.
 * **Optional Negative Channel:** the critic can return empty feedback with no recorded `no_defect_found` verdict. Reject empty critiques unless the no-defect verdict is explicit.
 * **Toothless Adversary:** findings are produced but never gate, revise, or escalate. Connect the report to Backpressure or Escalation Chain.
@@ -364,11 +364,11 @@ If only a same-family critic is available, label the result as a weak adversaria
 * **[AutoGPT](https://github.com/Significant-Gravitas/AutoGPT) multi-agent debate:** the orchestration sweep records a direct Adversary instance: `AgentCritique` names critic and target identities, records weaknesses and suggestions, and skips self-critique in the critique phase.
 * **AutoGPT legacy caveat:** the same evidence comes from AutoGPT's legacy v1 codebase, so it is treated as a historical implementation, not a current framework recommendation.
 * **[AutoGen](https://github.com/microsoft/autogen) writer and critic migration guide:** the orchestration sweep records a partial instance where a critic role must emit `APPROVE` before the writer/critic loop terminates.
-* **No promoted antipattern:** the orchestration sweep did not promote a strict Adversary antipattern; this card cross-references Adversarial Frame and Cross-Family instead of inventing one.
+* **No promoted antipattern:** the orchestration sweep did not promote a strict Adversary antipattern; this card cross-references Admissibility Gate and Cross-Family instead of inventing one.
 
 ## Related Patterns
 
-* **Adversarial Frame:** defines the default-no and admissibility logic an adversary applies to each finding.
+* **Admissibility Gate**: defines the default-no and admissibility logic an adversary applies to each finding.
 * **Cross-Family:** strengthens the adversary by making the critic come from a different model family.
 * **Debate:** generalizes Adversary into multi-round, multi-critic disagreement.
 * **Escalation Chain:** receives unresolved adversary findings when the critic cannot safely approve.

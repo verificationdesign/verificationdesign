@@ -2,6 +2,12 @@
   "version": "0.2.0",
   "rationale": "Editorial constitution for the AI Design Patterns book. Data, not prose. Edit this file to change what the linter enforces. See cards/constitution.md for the pattern this artifact implements.",
 
+  "naming_rules": {
+    "rule": "Card names name mechanisms, not attitudes, goals, or virtues. A shared word root between two card names is a namespace defect unless the cards form a declared variant family with cross-references in both cards' Related Patterns sections.",
+    "added": "2026-07-05",
+    "origin": "adversarial-frame renamed admissibility-gate: a blind cross-family naming panel disqualified the old name for a root collision with adversary and for naming an attitude."
+  },
+
   "forbidden_characters": {
     "rationale": "Characters the manuscript may never contain. Repo convention forbids em dashes; use colon, semicolon, comma, or period. Specified by Unicode codepoint so this file stays ASCII-clean.",
     "items": [
@@ -72,7 +78,7 @@
       "self_review_bias": {
         "definition": "A producer grading its own output is biased toward accepting it; applies when the same agent or the same context both generates and verifies.",
         "boundary": "Requires producer-as-verifier or same-context review. Distinct from same_family_bias (a different agent sharing a model family) and from judge_subjectivity (interpretation drift by any judge). Do not list for an arbitrary weak or cross-family judge.",
-        "canonical": "adversarial-frame"
+        "canonical": "admissibility-gate"
       },
       "same_family_bias": {
         "definition": "A verifier from the same model family as the producer shares its training-data blind spots, so it accepts errors a different family would catch.",

@@ -195,7 +195,7 @@ The load-bearing move is the call order and function boundary. `derive_expected_
 
 Anthropic's outcome-grader notebook is the closest OSS instance. It runs the grader as a second agent with its own context window, cannot see the writer's reasoning, and re-reads the artifact against a rubric. It is adjacent rather than pure Blind Oracle because the grader does not derive a separately channelled expected value before grading. It still operationalizes the key separation: the grader's evidence path is structurally independent of the writer's evidence path.
 
-Outcome grading also composes with **Adversarial Frame**. Blind Oracle separates the derivation channel; Adversarial Frame defines what evidence is admissible for acceptance.
+Outcome grading also composes with **Admissibility Gate**. Blind Oracle separates the derivation channel; Admissibility Gate defines what evidence is admissible for acceptance.
 
 ## Determinism Move
 
@@ -256,7 +256,7 @@ Do not reach for Blind Oracle when:
 
 * expected cannot be derived without reading the draft;
 * **Executable Analog** can specialize the pattern with compilation, execution, or runtime traces;
-* no expected exists and the right pattern is **Adversarial Frame** or a calibrated **Judge Harness**;
+* no expected exists and the right pattern is **Admissibility Gate** or a calibrated **Judge Harness**;
 * the artifact and the spec are the same object and derivation must reference the artifact.
 
 If derivation independence cannot be enforced, label the verification as draft-anchored and escalate to a Judge Harness with perturbation, repetition, and calibration.
@@ -272,7 +272,7 @@ If derivation independence cannot be enforced, label the verification as draft-a
 ## Related Patterns
 
 * **Comparator:** provides the named operator that decides verdict from `expected` and `observed`.
-* **Adversarial Frame:** defines admissibility for acceptance; Blind Oracle defines the upstream derivation channel.
+* **Admissibility Gate:** defines admissibility for acceptance; Blind Oracle defines the upstream derivation channel.
 * **Cross-Family:** addresses which model verifies; Blind Oracle addresses what the verifier is allowed to see.
 * **Executable Analog:** is the executable specialization, and strongest form, of Blind Oracle when expected can be derived by executing the spec.
 * **Judge Harness:** wraps a Blind Oracle judge with perturbation, repetition, and calibration when the derivation channel still has subjective slack.

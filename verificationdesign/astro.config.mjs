@@ -5,6 +5,9 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   site: 'https://verificationdesign.com',
   trailingSlash: 'always',
+  redirects: {
+    '/patterns/verification/adversarial-frame/': '/patterns/verification/admissibility-gate/',
+  },
   integrations: [
     mdx(),
     sitemap({

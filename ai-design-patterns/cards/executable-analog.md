@@ -228,4 +228,4 @@ When no executable analog exists, route the claim explicitly to a validated judg
 * **Constitution:** an Executable Analog is how one codified rule becomes a runnable check instead of a prose instruction.
 * **Blind Oracle:** Blind Oracle protects the expected value from draft contamination; Executable Analog is its executable specialization, the strongest form when the comparison can run as code.
 * **Judge Harness:** when no executable analog exists, route the claim to a validated judge harness rather than an inline LLM judgment.
-* **Adversarial Frame:** keeps the challenge independent of the producer, which reduces the risk that the agent writes a tautological check for its own work.
+* **Admissibility Gate:** keeps the challenge independent of the producer, which reduces the risk that the agent writes a tautological check for its own work.

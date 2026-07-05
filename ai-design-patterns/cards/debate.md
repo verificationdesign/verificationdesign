@@ -359,4 +359,4 @@ If the debate cannot create independent positions or a counted stopping rule, do
 * **Cross-Family:** makes debater diversity stronger by separating model families.
 * **Escalation Chain:** receives unresolved debate outcomes when no safe consensus is reached.
 * **Backpressure:** routes debate findings back to revision.
-* **Adversarial Frame:** defines the default-no posture each debater can apply to other positions.
+* **Admissibility Gate:** defines the default-no posture each debater can apply to other positions.

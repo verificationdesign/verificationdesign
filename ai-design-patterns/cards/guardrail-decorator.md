@@ -380,4 +380,4 @@ If hook surfaces are unavailable, label the policy as advisory and add a separat
 * **Tool Adapter:** normalizes call shape. Guardrail Decorator enforces call policy. Same wrapper surface, different job.
 * **Causal Tag:** callback context carries IDs that make the decision log queryable. The guardrail decision becomes another stamped event on the trace.
 * **Trajectory Cursor:** cursor and policy hooks share the same boundary. The cursor advances after the policy permits, not before.
-* **Adversarial Frame:** post-call sanitization can execute default-no rejection rules on tool or model outputs.
+* **Admissibility Gate:** post-call sanitization can execute default-no rejection rules on tool or model outputs.

@@ -200,6 +200,6 @@ If only one family is reachable, label the result as informal and maximize execu
 
 * **Judge Harness:** cross-family is necessary, not sufficient; the verifier still needs perturbation, repetition, calibration, and reporting around it.
 * **Constitution:** a shared rubric makes cross-family verdicts comparable across runs.
-* **Adversarial Frame:** same-family verification with a confirmatory prompt doubles the antipattern; adversarial framing on a cross-family judge is the additive form.
+* **Admissibility Gate:** same-family verification with a confirmatory prompt doubles the antipattern; adversarial framing on a cross-family judge is the additive form.
 * **Blind Oracle:** Cross-Family addresses which model verifies; Blind Oracle addresses what the verifier is allowed to see.
 * **Adversary:** an adversary role drawn from the same family as the proposer reproduces the Cross-Family antipattern at the role boundary.

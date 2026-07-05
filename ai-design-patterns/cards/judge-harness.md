@@ -390,6 +390,6 @@ If a harness is infeasible, label the judge verdict as informal and report the s
 
 * **Blind Oracle:** derives expected without conditioning on the draft; Judge Harness wraps the judge's verdict with structural N and calibration.
 * **Cross-Family:** addresses which model judges; Judge Harness addresses how the judge's output is sampled, aggregated, and anchored.
-* **Adversarial Frame:** defines admissibility for acceptance; Judge Harness measures the judge's reliability under perturbation.
+* **Admissibility Gate:** defines admissibility for acceptance; Judge Harness measures the judge's reliability under perturbation.
 * **Constitution:** provides the shared rubric the harness can calibrate against.
 * **Comparator:** replaces Judge Harness when a deterministic comparison operator can decide the verdict without invoking an LLM judge.

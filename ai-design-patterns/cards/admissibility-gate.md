@@ -1,12 +1,12 @@
-# Adversarial Frame
+# Admissibility Gate
 
 *(Verification Pattern)*
 
 ## Name
 
-**Adversarial Frame**
+**Admissibility Gate**
 
-Also known as: Operationalized Skepticism, Evidence-First Verification, Default-No Rubric.
+Also known as: Adversarial Frame (former name), Operationalized Skepticism, Evidence-First Verification, Default-No Rubric.
 
 ## Intent
 
@@ -25,7 +25,7 @@ Those instructions describe a desired attitude, not a verification procedure. Th
 
 `verification_design.md` Principle 4 names the frame shift: ask "what could fail?" rather than "does this look right?" The same principle cites SycEval's 58.19% sycophancy rate as a measured majority-rate finding, so agreement pressure is not a small edge case (AAAI 2025). A verifier that starts from plausibility will often rationalize acceptance.
 
-Adversarial Frame makes skepticism structural. It names what evidence is admissible, names what evidence is forbidden, lists common shortcuts to reject, and makes the default verdict `no` when evidence is missing.
+Admissibility Gate makes skepticism structural. It names what evidence is admissible, names what evidence is forbidden, lists common shortcuts to reject, and makes the default verdict `no` when evidence is missing.
 
 ## Forces
 
@@ -88,7 +88,7 @@ This is adversarial in role label only. It can improve an answer, but it does no
 
 The AutoGen Chainlit sample has this shape: a `critic` agent gives constructive feedback and the team terminates on `APPROVE`. This is sample code, not the library core, but examples are how patterns spread. A critic role with a confirmatory prompt can look like verification in code review while producing acceptance at runtime.
 
-Evaluator-optimizer loops need a different caveat. The Anthropic evaluator-optimizer notebook is a valid iteration pattern: the evaluator can return PASS, NEEDS_IMPROVEMENT, or FAIL and provide feedback for regeneration. The antipattern appears only when that improvement loop is misclassified as Adversarial Frame. "Has suggestions" is a weaker gate than "survived adversarial checks." Iteration and disconfirmation are separate patterns.
+Evaluator-optimizer loops need a different caveat. The Anthropic evaluator-optimizer notebook is a valid iteration pattern: the evaluator can return PASS, NEEDS_IMPROVEMENT, or FAIL and provide feedback for regeneration. The antipattern appears only when that improvement loop is misclassified as Admissibility Gate. "Has suggestions" is a weaker gate than "survived adversarial checks." Iteration and disconfirmation are separate patterns.
 
 ### Pattern: evidence admissibility with default-no verdict
 
@@ -304,13 +304,13 @@ The Anthropic outcome-grader notebook is the shortcut-list variant. Its rubric f
 
 ## Determinism Move
 
-When the producer or a same-context verifier grades its own work, Adversarial Frame constrains `self_review_bias` by inverting the default from accept-if-plausible to reject-unless-supported. Missing evidence becomes a `no`, not an invitation to rationalize.
+When the producer or a same-context verifier grades its own work, Admissibility Gate constrains `self_review_bias` by inverting the default from accept-if-plausible to reject-unless-supported. Missing evidence becomes a `no`, not an invitation to rationalize.
 
 It constrains `judge_subjectivity` by replacing tone instructions with admissibility rules and shortcut-rejection lists. The verifier no longer decides what counts as proof at runtime; the rubric says what counts.
 
 ## Observable Signal
 
-Every Adversarial Frame report should include:
+Every Admissibility Gate report should include:
 
 * admissible-evidence types for each property;
 * forbidden-evidence types for each property;
@@ -356,7 +356,7 @@ Use this pattern when:
 
 ## Do Not Use When
 
-Do not reach for Adversarial Frame when:
+Do not reach for Admissibility Gate when:
 
 * the task is genuinely iterative and evaluator-optimizer is the desired loop;
 * the output is exploratory and no one has defined what "wrong" means yet;
@@ -374,8 +374,9 @@ Do not reach for Adversarial Frame when:
 
 ## Related Patterns
 
-* **Judge Harness:** wraps the rubric with perturbation, repetition, calibration, and consistency checks.
-* **Blind Oracle:** derives expected evidence without conditioning on the draft; Adversarial Frame defines admissibility for acceptance.
-* **Cross-Family:** reduces shared blind spots when the adversarial rubric is judged by a different model family.
-* **Comparator:** should replace Adversarial Frame when a named comparison operator can decide the check.
+* **Adversary:** the orchestration role that applies this gate's admissibility and default-no logic through a mandatory negative channel.
+* **Blind Oracle:** derives expected evidence without conditioning on the draft; Admissibility Gate defines admissibility for acceptance.
+* **Comparator:** should replace Admissibility Gate when a named comparison operator can decide the check.
 * **Constitution:** can require admissibility rules and default-no posture as part of the criteria contract.
+* **Cross-Family:** reduces shared blind spots when the adversarial rubric is judged by a different model family.
+* **Judge Harness:** wraps the rubric with perturbation, repetition, calibration, and consistency checks.
