@@ -56,8 +56,8 @@ const height = Math.round((size / 32) * 24);
     }
 
     void main() {
-      vec2 p = gl_FragCoord.xy;
-      p.y = u_resolution.y - p.y;
+      vec2 p = gl_FragCoord.xy * vec2(32.0, 24.0) / u_resolution;
+      p.y = 24.0 - p.y;
 
       float settle = smoothstep(0.0, 1.0, u_progress);
       float drift = (1.0 - settle) * 2.2;
