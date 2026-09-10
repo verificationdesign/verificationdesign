@@ -20,13 +20,17 @@ Verifier model: fixture author, no model review
 
 - verification-path: The executable fixture check and its documented completion signal.
 
+## Measurements
+
+- fixture-check: command `python3 artifact/check.py`; env `{}`; exit 0; artifact revision ``; log none; note: Later fixture build ran with exit 0 and empty stdout; this does not rewrite the spec-stage verdict.
+
 ## Summary
 
-Apply: 1; reject: 16; undecided: 0; unknown verdicts: 0.
+Apply: 0; reject: 16; undecided: 1; unknown verdicts: 1.
 
 Operator decisions:
 
-None.
+- Executable Analog: the extractor would be more brittle than the LLM judgment it replaces Resolution recorded 2026-09-10.
 
 ## Workflow characterization
 
@@ -42,26 +46,7 @@ None recorded.
 
 ## Patterns applied
 
-### Executable Analog
-
-[Executable Analog][executable-analog] ([pinned source][executable-analog-src])
-
-An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-
-- use_when: the claim being verified can be expressed as a deterministic check (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: the output has structure (DOM, JSON, exit code, log line) that can be queried (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: you can write a test rather than just describe one (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: the same check will run repeatedly (regression, CI, multi-agent loops) (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-
-Observable signals:
-
-- check_id: the named check being run
-- expected: the value the executable analog is checking against
-- observed: the raw value returned by the extractor, before judgment
-- passed: the strict comparison result
-- error: the exception text when extraction fails, otherwise None.
-
-Determinism move: Executable Analog constrains `self_review_bias` (the same agent that produced the artifact no longer judges whether it satisfies the check) and `judge_subjectivity` (the verdict comes from a deterministic equality on extracted values, not from a model's interpretation of rendered output). By forcing extract-then-compare instead of interpret-and-decide, the system loses the freedom to rationalize a coincidental pass.
+None.
 
 ## Patterns rejected
 
@@ -212,14 +197,20 @@ No model-produced tool arguments cross a boundary; the function is called intern
 
 ## Not verified
 
-None in the judgment record.
+### Executable Analog
+
+[Executable Analog][executable-analog] ([pinned source][executable-analog-src])
+
+Decision: undecided
+
+- do_not_use_when: the extractor would be more brittle than the LLM judgment it replaces. Reason: The spec-stage evidence does not establish the implemented extractor's behavior.
+
+Resolution (2026-09-10): The later fixture build uses direct integer assertions and both pass with exit 0. Evidence: artifact/check.py:1-6 records the function and assertions. Measurement: fixture-check
 
 ## Sources
 
 Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 
-[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
-[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md
 [constitution]: https://verificationdesign.com/patterns/context-and-state/constitution/
 [constitution-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/constitution.md
 [guardrail-decorator]: https://verificationdesign.com/patterns/context-and-state/guardrail-decorator/
@@ -252,3 +243,5 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 [backpressure-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/backpressure.md
 [tool-adapter]: https://verificationdesign.com/patterns/orchestration/tool-adapter/
 [tool-adapter-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/tool-adapter.md
+[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
+[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md

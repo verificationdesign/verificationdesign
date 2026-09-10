@@ -21,20 +21,29 @@ def strings(value, entry="$", field=None):
         yield entry, value
 
 
-def check(record, root):
+def check(record, roots):
     counts = dict(found=0, missing=0, **{"out-of-bounds": 0})
     failures, seen, sizes = [], set(), {}
+    resolved, entries = [], {}
     for entry, text in strings(record):
         for match in CITATION.finditer(text):
             path, start, end = match.groups()
             if not ("." in path or "/" in path):
                 continue
             citation = match.group()
+            entries.setdefault(citation, set()).add(entry)
             if citation in seen:
                 continue
             seen.add(citation)
             file = Path(path)
-            file = file if file.is_absolute() else Path(root) / file
+            root = None
+            if not file.is_absolute():
+                root = next((r for r in roots if (Path(r) / file).is_file()), None)
+                if root is None:
+                    counts["missing"] += 1
+                    failures.append(dict(citation=citation, entry=entry, status="missing"))
+                    continue
+                file = Path(root) / file
             if file not in sizes:
                 try:
                     with file.open("rb") as stream:
@@ -47,13 +56,17 @@ def check(record, root):
             counts[status] += 1
             if status != "found":
                 failures.append(dict(citation=citation, entry=entry, status=status))
-    return dict(counts=counts, citations=failures)
+            else:
+                resolved.append(dict(citation=citation, root=root))
+    repeated = [dict(citation=c, entries=len(paths)) for c, paths in entries.items() if len(paths) >= 3]
+    repeated.sort(key=lambda item: (-item["entries"], item["citation"]))
+    return dict(counts=counts, citations=failures, roots=roots, resolved=resolved, repeated=repeated)
 
 
 def main():
-    p = parser(__doc__, "python3 scripts/check_citations.py record.json --root /path/to/project")
+    p = parser(__doc__ + " Repeated citations are reported for the operator's eye and are not a failure, because one line can legitimately bear on several conditions.", "python3 scripts/check_citations.py record.json --root /path/to/project --root /path/to/evidence")
     p.add_argument("record", help="JSON record; only evidence, reason, statement, note and instantiation strings are scanned")
-    p.add_argument("--root", required=True, help="resolve relative citation paths here")
+    p.add_argument("--root", action="append", required=True, help="repeat for several roots; first file match wins, so order roots deliberately")
     p.add_argument("--output", default="-", metavar="FILE|-")
     args = p.parse_args()
     resolve_output(args.output, args.record)

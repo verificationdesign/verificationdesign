@@ -136,7 +136,7 @@ def fixture_checks(report):
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
     report.check("fixture validators", positive, 4, errors)
     report.check("fixture renders", rendered, 4, render_errors)
-    report.check("negative fixtures", negative, 14, negative_errors)
+    report.check("negative fixtures", negative, 18, negative_errors)
 
 
 def helper_checks(report):
@@ -145,6 +145,10 @@ def helper_checks(report):
     with tempfile.TemporaryDirectory(prefix="verification-helpers-") as tmp:
         root = Path(tmp)
         (root / "example.txt").write_text("first\nsecond\n")
+        second = root / "second"
+        second.mkdir()
+        (second / "later.txt").write_text("later\n")
+        (second / "example.txt").write_text("shorter\n")
         for name in NAMES:
             scripts = SKILLS / name / "scripts"
             design = name.endswith("design")
@@ -166,17 +170,22 @@ def helper_checks(report):
             scaffolds += good
             if not good:
                 scaffold_errors.append(name + ": " + result.stdout + result.stderr + validation.stdout + validation.stderr)
-            path.write_text(json.dumps({"evidence": "example.txt:1-2 absent.txt:1 example.txt:3 example.txt:1-2"}))
-            result = run([sys.executable, str(scripts / "check_citations.py"), str(path), "--root", str(root)])
+            path.write_text(json.dumps({"evidence": "example.txt:1-2 absent.txt:1 example.txt:3 example.txt:1-2 later.txt:1",
+                                        "checks": [{"evidence": "example.txt:1-2"}, {"evidence": "example.txt:1-2"}]}))
+            result = run([sys.executable, str(scripts / "check_citations.py"), str(path), "--root", str(root), "--root", str(second)])
             try:
                 data = json.loads(result.stdout)
-                good = result.returncode == 3 and data["counts"] == {"found": 1, "missing": 1, "out-of-bounds": 1} and len(data["citations"]) == 2
+                good = (result.returncode == 3 and data["counts"] == {"found": 2, "missing": 1, "out-of-bounds": 1}
+                        and len(data["citations"]) == 2 and data["roots"] == [str(root), str(second)]
+                        and data["resolved"] == [{"citation": "example.txt:1-2", "root": str(root)}, {"citation": "later.txt:1", "root": str(second)}]
+                        and data["repeated"] == [{"citation": "example.txt:1-2", "entries": 3}])
             except (ValueError, KeyError, TypeError):
                 good = False
             citations += good
             if not good:
                 citation_errors.append(name + ": " + result.stdout + result.stderr)
             print(f'INFO {name} scaffold counts: {scaffold_receipt}; citation self-test counts: {json.dumps(data.get("counts"), sort_keys=True) if good else result.stdout.strip()}')
+            print(f'INFO {name} citation roots/resolved/repeated counts: {len(data.get("roots", []))}/{len(data.get("resolved", []))}/{len(data.get("repeated", []))}')
     report.check("scaffolds fail validation", scaffolds, 2, scaffold_errors)
     report.check("citation checker self-tests", citations, 2, citation_errors)
 

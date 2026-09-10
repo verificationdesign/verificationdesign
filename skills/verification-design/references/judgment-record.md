@@ -10,6 +10,9 @@ Each catalog card appears exactly once by `id`. Its `use_when` and `do_not_use_w
 lists copy every condition verbatim in catalog order, in objects with `condition`,
 `verdict` (`holds`, `does-not-hold`, `unknown`) and string `evidence`.
 Non-unknown verdicts require non-empty evidence. Every card has a non-empty `reason`.
+For `unknown`, evidence is the reason the condition could not be judged. When no source
+bears on it, write `No source in the evidence set addresses this condition.` Do not cite
+an unrelated passage; a citation on an unknown verdict must bear on the condition.
 
 - `apply`: at least one use_when holds and every exclusion does-not-hold.
 - `reject`: any exclusion holds, or every use_when does-not-hold with none unknown.
@@ -18,7 +21,7 @@ Non-unknown verdicts require non-empty evidence. Every card has a non-empty `rea
 Rules: `structure`, `coverage`, `conditions`, `verdicts`, `decision-apply`,
 `decision-reject`, `decision-undecided`, plus the shared rules `skill`, `models`,
 `assumptions`, `measurements`, `artifact-identity`, `unavailable-sources`, `priority`
-and `instantiation`. Errors name card, rule and message; exit 3.
+and `instantiation`, plus `resolution`. Errors name card, rule and message; exit 3.
 Success reports cards, apply, reject, undecided and unknown verdict counts; exit 0.
 
 Design requires at least one `verification-path` assumption (rule `assumptions`).
@@ -29,6 +32,16 @@ once (rule `priority`); the Summary renders it as Recommended order.
 An emitted scaffold fails `assumptions`, `structure` and `models`: its verification-path
 statement, workflow, model families and card reasons are unfilled. Fill verdicts and
 decisions too before validation.
+
+Per-card optional `resolution` (rule `resolution`) is allowed only when `decision` is
+`undecided`. It is an object with exactly `date` (valid calendar date `YYYY-MM-DD`),
+`observation` (non-empty string describing what the build or run showed), `evidence`
+(non-empty string locating that observation, with `path:N` citations), and `measurement`
+(string matching an id in `measurements`, or null). Wrong keys or types, invalid dates,
+non-undecided cards and unknown measurement ids fail that rule. The scaffold omits it.
+The plan records what was judgeable at spec stage; a resolution records what a later
+build showed beside the original verdict, so the reader sees both without rewriting
+the plan. Resolution never changes verdicts, decisions or the decision rule.
 
 ## Shared record fields
 
@@ -73,11 +86,17 @@ Run `scaffold_record.py --artifact TEXT --scope TEXT --output FILE|-` before jud
 It copies fields and judges nothing. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
-Run `check_citations.py record.json --root DIR [--output FILE|-]` after validation.
+Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). Relative paths use DIR; absolute paths
-are used as given. Each citation is counted once as found, missing or out-of-bounds.
-The JSON reports counts and non-found citations with their record entry. Exit 0 means
+`path:N-M` (paths must contain a dot or slash). Several roots may be given; the first
+file match wins, so order them deliberately. Absolute paths are used as given. Each
+citation is counted once as found, missing or out-of-bounds.
+The JSON reports counts, non-found citations with their record entry, `roots` as given,
+and `resolved` citations with their root (null for absolute paths), in first-seen order.
+`repeated` lists citations appearing in at least three distinct record entries, sorted
+by entry count descending then citation. Repeated citations are reported for the
+operator's eye and are not a failure, because one line can bear on several conditions.
+Exit 0 means
 all found, exit 3 means some were not. This checks existence and bounds only, nothing
 about meaning. It reads line counts, not artifact semantics. A failure requires repair
 or an explanation in assumptions, followed by validation again.

@@ -194,6 +194,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual("checklist_sha256" in record["skill"], kind == "audit")
                 if kind == "design":
                     self.assertEqual([c["id"] for c in record["cards"]], [c["id"] for c in catalog["cards"]])
+                    self.assertTrue(all("resolution" not in c for c in record["cards"]))
                     for card, source in zip(record["cards"], catalog["cards"]):
                         for group in ("use_when", "do_not_use_when"):
                             self.assertEqual([c["condition"] for c in card[group]], source[group])
@@ -229,6 +230,111 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(good.returncode, 0)
                 self.assertEqual(json.loads(good.stdout)["counts"], {"found": 1, "missing": 0, "out-of-bounds": 0})
                 path.write_text(json.dumps(record))
+
+    def test_resolution_positive_and_four_negative_fixtures(self):
+        folder = ROOT / "skills/fixtures/design-applicability-violation"
+        record = json.loads((folder / "record.json").read_text())
+        self.assertEqual(validate(record), [])
+        for name in ("applied", "bad-date", "unknown-measurement", "extra-key"):
+            with self.subTest(name=name):
+                path = folder / f"negative-resolution-{name}.json"
+                result = self.run_script("design", "validate_judgments.py", path)
+                self.assertEqual(result.returncode, 3, result.stderr)
+                self.assertEqual({e["rule"] for e in json.loads(result.stdout)}, {"resolution"})
+
+    def test_resolution_types_calendar_dates_and_absent_measurements(self):
+        original = json.loads((ROOT / "skills/fixtures/design-applicability-violation/record.json").read_text())
+        for field, value in (("date", None), ("date", "20260910"), ("date", "2026-W37-4"),
+                             ("date", "2025-02-29"), ("observation", " "), ("observation", 1),
+                             ("evidence", ""), ("evidence", []), ("measurement", False)):
+            with self.subTest(field=field, value=value):
+                record = copy.deepcopy(original)
+                card = next(c for c in record["cards"] if "resolution" in c)
+                card["resolution"][field] = value
+                self.assertEqual({e["rule"] for e in validate(record)}, {"resolution"})
+        for value in (None, [], {}, {"date": "2026-09-10"}):
+            record = copy.deepcopy(original)
+            next(c for c in record["cards"] if "resolution" in c)["resolution"] = value
+            self.assertEqual({e["rule"] for e in validate(record)}, {"resolution"})
+        record = copy.deepcopy(original)
+        record.pop("measurements")
+        self.assertEqual({e["rule"] for e in validate(record)}, {"resolution"})
+        card = next(c for c in record["cards"] if "resolution" in c)
+        card["resolution"].update(measurement=None, date="2024-02-29")
+        self.assertEqual(validate(record), [])
+        card.pop("resolution")
+        self.assertEqual(validate(record), [])
+
+    def test_resolution_render_preserves_decision_and_position(self):
+        from render_plan import render
+        from load_catalog import load_catalog
+        catalog, meta = load_catalog()
+        record = json.loads((ROOT / "skills/fixtures/design-applicability-violation/record.json").read_text())
+        card = next(c for c in record["cards"] if "resolution" in c)
+        card["instantiation"] = "Direct assertions on the integer return."
+        before = copy.deepcopy(record)
+        text = render(record, catalog, meta)
+        self.assertEqual(record, before)
+        summary = text.split("## Summary", 1)[1].split("## Workflow", 1)[0]
+        self.assertIn(" Resolution recorded 2026-09-10.\n", summary)
+        prefix, uncertain = text.split("## Not verified", 1)
+        resolution = card["resolution"]
+        line = f'Resolution ({resolution["date"]}): {resolution["observation"]} Evidence: {resolution["evidence"]}'
+        self.assertNotIn(line, prefix)
+        self.assertIn(line + " Measurement: fixture-check\n", uncertain)
+        self.assertLess(uncertain.index("Decision: undecided"), uncertain.index("- do_not_use_when:"))
+        self.assertLess(uncertain.index("- do_not_use_when:"), uncertain.index(line))
+        self.assertLess(uncertain.index(line), uncertain.index("Determinism move:"))
+        self.assertLess(uncertain.index("Determinism move:"), uncertain.index("Instantiation:"))
+        self.assertEqual(text, render(record, catalog, meta))
+        card["resolution"]["measurement"] = None
+        self.assertIn(line + "\n", render(record, catalog, meta))
+
+    def test_citation_multiple_roots_first_match_and_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first, second = root / "first", root / "second"
+            first.mkdir(); second.mkdir()
+            (first / "both.txt").write_text("one\n")
+            (second / "both.txt").write_text("one\ntwo\n")
+            (second / "later.txt").write_text("one\n")
+            absolute = str(second / "later.txt") + ":1"
+            path = root / "record.json"
+            path.write_text(json.dumps({"resolution": {"evidence": "later.txt:1 both.txt:1 both.txt:2 absent.txt:1 " + absolute,
+                                                       "observation": "ignored.txt:99"}}))
+            for kind in ("design", "audit"):
+                result = self.run_script(kind, "check_citations.py", path, "--root", first, "--root", second)
+                self.assertEqual(result.returncode, 3, result.stderr)
+                data = json.loads(result.stdout)
+                self.assertEqual(data["roots"], [str(first), str(second)])
+                self.assertEqual(data["counts"], {"found": 3, "missing": 1, "out-of-bounds": 1})
+                self.assertEqual(data["resolved"], [{"citation": "later.txt:1", "root": str(second)},
+                                                    {"citation": "both.txt:1", "root": str(first)},
+                                                    {"citation": absolute, "root": None}])
+                self.assertEqual([c["status"] for c in data["citations"]], ["out-of-bounds", "missing"])
+                reversed_result = self.run_script(kind, "check_citations.py", path, "--root", second, "--root", first)
+                self.assertEqual(json.loads(reversed_result.stdout)["counts"], {"found": 4, "missing": 1, "out-of-bounds": 0})
+
+    def test_repeated_citations_threshold_distinct_entries_and_exit_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name in ("a.txt", "b.txt", "c.txt"):
+                (root / name).write_text("one\n")
+            path = root / "record.json"
+            for kind in ("design", "audit"):
+                for count in (2, 3, 4):
+                    record = {"checks": [{"evidence": "b.txt:1 a.txt:1 a.txt:1 c.txt:1"} for _ in range(count)]}
+                    if count == 4:
+                        record["checks"][-1]["evidence"] = "b.txt:1"
+                    path.write_text(json.dumps(record))
+                    result = self.run_script(kind, "check_citations.py", path, "--root", root)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    data = json.loads(result.stdout)
+                    expected = [] if count == 2 else ([{"citation": "b.txt:1", "entries": 4},
+                        {"citation": "a.txt:1", "entries": 3}, {"citation": "c.txt:1", "entries": 3}] if count == 4 else
+                        [{"citation": c + ".txt:1", "entries": 3} for c in ("a", "b", "c")])
+                    self.assertEqual(data["repeated"], expected)
+                    self.assertEqual(data["counts"], {"found": 3, "missing": 0, "out-of-bounds": 0})
 
     def test_positive_summaries_sources_and_repeatability(self):
         import re

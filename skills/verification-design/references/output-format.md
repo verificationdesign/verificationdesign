@@ -18,7 +18,14 @@ Section order:
 
 Summary counts apply, reject, undecided and unknown verdicts; Operator decisions names
 each undecided card and its unknown conditions. Recommended order appears when priority
-is present. Self-review points use bullets. Instantiation follows Determinism move.
+is present. An undecided card with a resolution ends its Operator decisions bullet
+with `Resolution recorded YYYY-MM-DD.` Self-review points use bullets. Instantiation
+follows Determinism move.
+
+In Not verified only, after unknown-condition bullets and before any Determinism move
+or Instantiation, render `Resolution (YYYY-MM-DD): <observation> Evidence: <evidence>`
+when present, appending ` Measurement: <id>` when measurement is a string. The Decision
+line is unchanged.
 
 Evidence labels apply to sound and defect entries and holding or not-holding conditions.
 Reason labels apply to not-checked, not-applicable, insufficient-evidence, out-of-scope

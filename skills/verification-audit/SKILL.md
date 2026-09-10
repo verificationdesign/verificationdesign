@@ -79,11 +79,12 @@ Run commands from this skill directory, with absolute paths for operator-visible
 
 6. Check artifact citation existence and bounds. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
+   Several roots may be given; first file match wins, so order them deliberately.
    Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
    before final validation and rendering.
 
    ```bash
-   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact
+   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
    ```
 
 7. Route validated defects through the packaged failure map:
@@ -130,6 +131,17 @@ and prints a JSON destination receipt. Exit codes: 0 ok, 2 usage, 3 validation f
 that resolves to their input record or to a file inside the skill directory.
 
 ## Limitations
+
+The installed package carries no tests or fixtures; those and `check_skills.py` live
+only in the publishing repository and are not portable. An installed copy can check
+its pins with `load_catalog.py --check` and its records with the validators. Compare
+its files against the tagged repository tree to establish whether it matches a release;
+nothing in the package performs that comparison.
+
+The no-fix rule is enforced by the procedure and the operator's read, not by scripts.
+A mechanical scan for fix language was considered too weak to justify a false sense
+of enforcement. A fix proposal in a rendered document is a procedure failure, not
+a validator gap.
 
 Offline means catalog-only operation: intent, conditions, determinism moves,
 observable signals and the failure map remain available, but source prose does not.

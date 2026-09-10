@@ -59,6 +59,8 @@ Run commands from this skill directory, with absolute paths for operator-visible
    and self-review points. Declare the `verification-path` assumption before judging.
    Preserve every catalog condition verbatim and in order. Record each verdict and
    its artifact evidence. Unknown exclusions block apply; keep unknowns visible.
+   For unknowns, explain why judgment is unavailable, write `No source in the evidence set addresses this condition.` when none does, and cite only text bearing on the condition.
+   Record post-plan evidence in an undecided card's optional `resolution`, beside its original verdict.
    This is a judgment step, not an executable inference from prose.
    Fill the record-level fields as well:
    - `models`: the model family producing this record as `verifier`, and the family that
@@ -77,11 +79,12 @@ Run commands from this skill directory, with absolute paths for operator-visible
 
 6. Check artifact citation existence and bounds. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
+   Several roots may be given; first file match wins, so order them deliberately.
    Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
    before final validation and rendering.
 
    ```bash
-   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact
+   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
    ```
 
 7. Render the validated record:
@@ -124,6 +127,12 @@ The rendered plan is the deliverable. A companion document is allowed only if it
 
 ## Limitations
 
+The installed package carries no tests or fixtures; those and `check_skills.py` live
+only in the publishing repository and are not portable. An installed copy can check
+its pins with `load_catalog.py --check` and its records with the validators. Compare
+its files against the tagged repository tree to establish whether it matches a release;
+nothing in the package performs that comparison.
+
 Offline means catalog-only operation: intent, conditions, determinism moves,
 observable signals and the failure map remain available, but source prose does not.
 Set `VERIFICATION_SKILLS_OFFLINE=1` or use `--offline` to prevent retrieval and drift
@@ -144,5 +153,5 @@ invocation controls do not prevent a model from opening it as a file.
 - `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
-- Unknown judgments and unavailable evidence remain visible.
+- Unknown judgments and unavailable evidence remain visible; post-plan evidence belongs in `resolution` on undecided cards.
 - Output rendered to the requested file and substantive judgments left for operator review.

@@ -21,6 +21,20 @@ fields mean v1.1.0 records do not validate unchanged.
 - The record references no longer cite repository fixture paths the package does not
   ship; the audit reference carries two inline example entries instead.
 
+- The audit no-fix rule is an accepted procedural limit, enforced by the operator's
+  read; a fix proposal is a procedure failure, not a missing validator rule.
+- Package verification remains repository-only: installed copies carry no tests or
+  fixtures, check pins and records only, and require a tagged-tree comparison to
+  establish release identity.
+- Optional per-card `resolution` preserves post-plan evidence beside an undecided
+  design verdict, validates its date and measurement id, and appears in Not verified
+  and the Summary without changing the original decision.
+- Unknown and insufficient-evidence judgments explain missing evidence without filler
+  citations; the citation checker reports citations repeated across three or more
+  entries for operator review without changing its exit code.
+- Citation checking accepts several `--root` arguments in order, uses the first file
+  match, and reports the given roots and each found citation's resolving root.
+
 Compatibility line unchanged pending host reruns; the hosts named were tested on v1.1.0.
 
 ## skills/v1.1.0 (2026-09-08)

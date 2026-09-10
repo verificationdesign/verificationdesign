@@ -23,10 +23,17 @@ Every entry has non-empty string `evidence`, `status`, and `severity`:
   in Defects only if it is in scope. These observations never count as defects or replace
   checklist coverage.
 
+For `insufficient-evidence`, explain why judgment is unavailable, write `No source in the evidence set addresses this condition.` when none does, and cite only text bearing on the condition.
+
 Additional in-scope defects use `free: true`, principle 1 to 9 and an original question.
 Free entries never substitute for checklist questions. Non-defects may use null failure
 and empty failure_note; not-applicable and out-of-scope require these absent or empty
 and cannot carry cards or routed fields. No fix proposals anywhere.
+
+The no-fix rule is enforced by the procedure and the operator's read, not by scripts.
+A mechanical scan for fix language was considered too weak to justify a false sense
+of enforcement. A fix proposal in a rendered document is a procedure failure, not
+a validator gap.
 
 `failure_note` is an optional string on mapped defects, rendered whenever non-empty.
 Use it to say several defects share one cause. The six mapped failures are routing aids,
@@ -83,11 +90,17 @@ Run `scaffold_record.py --artifact TEXT --scope TEXT --output FILE|-` before jud
 It copies fields and judges nothing. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
-Run `check_citations.py record.json --root DIR [--output FILE|-]` after validation.
+Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). Relative paths use DIR; absolute paths
-are used as given. Each citation is counted once as found, missing or out-of-bounds.
-The JSON reports counts and non-found citations with their record entry. Exit 0 means
+`path:N-M` (paths must contain a dot or slash). Several roots may be given; the first
+file match wins, so order them deliberately. Absolute paths are used as given. Each
+citation is counted once as found, missing or out-of-bounds.
+The JSON reports counts, non-found citations with their record entry, `roots` as given,
+and `resolved` citations with their root (null for absolute paths), in first-seen order.
+`repeated` lists citations appearing in at least three distinct record entries, sorted
+by entry count descending then citation. Repeated citations are reported for the
+operator's eye and are not a failure, because one line can bear on several conditions.
+Exit 0 means
 all found, exit 3 means some were not. This checks existence and bounds only, nothing
 about meaning. It reads line counts, not artifact semantics. A failure requires repair
 or an explanation in assumptions, followed by validation again.

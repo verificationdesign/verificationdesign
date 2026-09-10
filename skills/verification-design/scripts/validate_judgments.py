@@ -5,6 +5,8 @@ sys.dont_write_bytecode = True
 from load_catalog import cli_main, emit, load_catalog, parser, read_record
 
 from record_fields import validate_common
+import datetime
+import re
 
 VERDICTS = {"holds", "does-not-hold", "unknown"}
 
@@ -64,6 +66,29 @@ def validate(record, catalog=None, meta=None):
             continue
         if "instantiation" in card and not isinstance(card["instantiation"], str):
             fail(card["id"], "instantiation", "instantiation must be a string")
+        if "resolution" in card:
+            resolution = card["resolution"]
+            if card.get("decision") != "undecided":
+                fail(card["id"], "resolution", "resolution is allowed only on an undecided card")
+            if not isinstance(resolution, dict) or set(resolution) != {"date", "observation", "evidence", "measurement"}:
+                fail(card["id"], "resolution", "resolution must be an object with exactly date, observation, evidence and measurement")
+            else:
+                if (not isinstance(resolution["date"], str)
+                        or not nonempty(resolution["observation"])
+                        or not nonempty(resolution["evidence"])
+                        or not (resolution["measurement"] is None or isinstance(resolution["measurement"], str))):
+                    fail(card["id"], "resolution", "resolution requires a string date, non-empty observation and evidence, and string or null measurement")
+                if isinstance(resolution["date"], str):
+                    try:
+                        if not re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", resolution["date"]):
+                            raise ValueError
+                        datetime.date.fromisoformat(resolution["date"])
+                    except ValueError:
+                        fail(card["id"], "resolution", "resolution date must be a valid YYYY-MM-DD calendar date")
+                measurements = record.get("measurements", [])
+                ids = [m.get("id") for m in measurements if isinstance(m, dict)] if isinstance(measurements, list) else []
+                if isinstance(resolution["measurement"], str) and resolution["measurement"] not in ids:
+                    fail(card["id"], "resolution", "resolution measurement must name an id in measurements")
         if not nonempty(card.get("reason")):
             fail(card["id"], "structure", "reason must be non-empty")
         for group in ("use_when", "do_not_use_when"):

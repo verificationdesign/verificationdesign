@@ -18,6 +18,8 @@ def render(record, catalog, meta):
     for card in undecided:
         unknowns = [c["condition"] for g in ("use_when", "do_not_use_when") for c in by_id[card["id"]][g] if c["verdict"] == "unknown"]
         lines += [f'- {card["title"]}: ' + "; ".join(unknowns)]
+        if "resolution" in by_id[card["id"]]:
+            lines[-1] += f' Resolution recorded {by_id[card["id"]]["resolution"]["date"]}.'
     if not undecided:
         lines += ["None."]
     lines.append("")
@@ -67,6 +69,12 @@ def render(record, catalog, meta):
             lines += ["### " + card["title"], "", sources.card(card), "", "Decision: " + judgment["decision"], ""]
             lines += [f'- {group}: {c["condition"].rstrip(".")}. Reason: {c["evidence"] or "Not recorded."}' for group, c in unknowns]
             lines.append("")
+            if "resolution" in judgment:
+                resolution = judgment["resolution"]
+                line = f'Resolution ({resolution["date"]}): {resolution["observation"]} Evidence: {resolution["evidence"]}'
+                if isinstance(resolution["measurement"], str):
+                    line += " Measurement: " + resolution["measurement"]
+                lines += [line, ""]
             if judgment["decision"] == "undecided" and "instantiation" in judgment:
                 lines += ["Determinism move: " + card["determinism_move"], "",
                           "Instantiation: " + judgment["instantiation"], ""]

@@ -10,8 +10,12 @@ They do not establish the truth of agent judgments or replace blind host tests.
 
 Each directory contains a small raw artifact, a filled record and expected markdown.
 Negative records have a sibling expected JSON file with `exit_code` and exact `rules`.
-The checker validates all four positive records, compares all rendered bytes and checks all fourteen negatives.
+The checker validates all four positive records, compares all rendered bytes and checks all eighteen negatives.
 
 Version 1.1.0 also covers assumptions, priority, measurements, unavailable sources,
 instantiation, six audit statuses and unfilled scaffold rejection. Individual READMEs
 name each new positive field and negative boundary.
+
+Version 1.2.0 adds post-plan resolution and a referenced measurement to the undecided
+Executable Analog in design-applicability-violation, plus four resolution negatives
+for an applied card, invalid date, unknown measurement id and extra key.

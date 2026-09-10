@@ -348,7 +348,7 @@
       "decision": "undecided",
       "reason": "Applicability remains undecided at spec stage because the implemented extractor has not been examined.",
       "resolution": {
-        "date": "2026-09-10",
+        "date": "2026-02-30",
         "observation": "The later fixture build uses direct integer assertions and both pass with exit 0.",
         "evidence": "artifact/check.py:1-6 records the function and assertions.",
         "measurement": "fixture-check"

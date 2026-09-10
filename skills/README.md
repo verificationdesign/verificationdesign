@@ -107,6 +107,12 @@ From this repository, run `python3 scripts/check_skills.py`. The checker verifie
 pins against git, fixtures and loopback retrieval tests. `--links` adds live checks;
 `--skills-ref` adds the external spec reference validator. Neither is used in CI.
 
+The installed package carries no tests or fixtures; those and `check_skills.py` live
+only in the publishing repository and are not portable. An installed copy can check
+its pins with `load_catalog.py --check` and its records with the validators. Compare
+its files against the tagged repository tree to establish whether it matches a release;
+nothing in the package performs that comparison.
+
 ## Record helpers and output location
 
 - `scripts/scaffold_record.py`: emit an unfilled record from the catalog or checklist,
@@ -117,7 +123,9 @@ pins against git, fixtures and loopback retrieval tests. `--links` adds live che
 - Every record names the generator and verifier model families in `models`, with
   `unknown` written explicitly when a family is not recorded.
 - `scripts/check_citations.py`: check evidence citation file existence and line bounds,
-  without judging what the cited text means.
+  without judging what the cited text means; several `--root` arguments are allowed,
+  first file match wins, so order them deliberately. Repeated citations are reported
+  for operator review and do not fail the check.
 
 Records and outputs go in a dated directory the operator can see, beside the artifact
 or where the operator says, never in system temp storage or inside the skill directory.

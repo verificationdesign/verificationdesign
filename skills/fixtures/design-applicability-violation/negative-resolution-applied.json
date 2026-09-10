@@ -331,8 +331,8 @@
         },
         {
           "condition": "the extractor would be more brittle than the LLM judgment it replaces",
-          "verdict": "unknown",
-          "evidence": "The spec-stage evidence does not establish the implemented extractor's behavior."
+          "verdict": "does-not-hold",
+          "evidence": "artifact/check.py:1-6 uses direct integer assertions."
         },
         {
           "condition": "the cost of writing the executable check exceeds the cost of one-off human review",
@@ -345,7 +345,7 @@
           "evidence": "artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check."
         }
       ],
-      "decision": "undecided",
+      "decision": "apply",
       "reason": "Applicability remains undecided at spec stage because the implemented extractor has not been examined.",
       "resolution": {
         "date": "2026-09-10",
