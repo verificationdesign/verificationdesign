@@ -9,6 +9,10 @@ def header(title, record, catalog, meta):
     lines = ["# " + title, "", f'Artifact: {record["artifact"]}', "",
              f'Scope: {record["scope"]}', "", f'Corpus revision: `{catalog["revision"]}`', "",
              f'Corpus tag: `{meta["corpus-tag"]}`', ""]
+    skill = record["skill"]
+    pins = "; ".join(f'{key.removesuffix("_sha256")} `{value}`' for key, value in skill.items() if key.endswith("_sha256"))
+    lines += [f'Skill: {skill["name"]} {skill["version"]}', "", f'Skill pins: {pins}', "",
+              f'Generator model: {record["models"]["generator"]}', "", f'Verifier model: {record["models"]["verifier"]}', ""]
     if "artifact_identity" in record:
         identity = record["artifact_identity"]
         lines += [f'Artifact identity: revision {identity["revision"] or "not recorded"}; {len(identity["files"])} files', ""]

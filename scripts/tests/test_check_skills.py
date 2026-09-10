@@ -180,14 +180,18 @@ class ReleaseTests(unittest.TestCase):
     def test_scaffolds_copy_fields_and_fail_validation(self):
         catalog = json.loads((DESIGN / "assets/catalog.json").read_text())
         with tempfile.TemporaryDirectory() as tmp:
-            for kind, counts, rules in (("design", {"cards": 17, "conditions": 156}, {"assumptions", "structure"}),
-                                        ("audit", {"checks": 18}, {"status", "evidence"})):
+            for kind, counts, rules in (("design", {"cards": 17, "conditions": 156}, {"assumptions", "structure", "models"}),
+                                        ("audit", {"checks": 18}, {"status", "evidence", "models"})):
                 path = Path(tmp) / (kind + ".json")
                 result = self.run_script(kind, "scaffold_record.py", "--artifact", "test artifact", "--scope", "test scope", "--output", path)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(json.loads(result.stdout)["counts"], counts)
                 record = json.loads(path.read_text())
                 self.assertEqual(record["corpus_revision"], catalog["revision"])
+                self.assertEqual(record["models"], {"generator": "", "verifier": ""})
+                self.assertEqual(record["skill"]["name"], "verification-" + kind)
+                self.assertEqual(record["skill"]["version"], checker.parse_frontmatter((DESIGN / "SKILL.md").read_text())["metadata"]["version"])
+                self.assertEqual("checklist_sha256" in record["skill"], kind == "audit")
                 if kind == "design":
                     self.assertEqual([c["id"] for c in record["cards"]], [c["id"] for c in catalog["cards"]])
                     for card, source in zip(record["cards"], catalog["cards"]):
@@ -270,7 +274,13 @@ class ReleaseTests(unittest.TestCase):
         for kind, folder, validator in (("design", "design-sound", "validate_judgments.py"),
                                         ("audit", "audit-known-defect", "validate_findings.py")):
             original = json.loads((ROOT / "skills/fixtures" / folder / "record.json").read_text())
-            bad_values = [("assumptions", None, "assumptions"),
+            bad_values = [("skill", None, "skill"),
+                          ("skill", dict(original["skill"], version="0.0.0"), "skill"),
+                          ("skill", dict(original["skill"], catalog_sha256="0" * 64), "skill"),
+                          ("models", None, "models"),
+                          ("models", {"generator": "unknown", "verifier": ""}, "models"),
+                          ("models", {"generator": "unknown"}, "models"),
+                          ("assumptions", None, "assumptions"),
                           ("assumptions", [{"topic": "x", "statement": " "}], "assumptions"),
                           ("measurements", [{"id": "m", "command": "x", "env": {}, "exit_code": True,
                                               "artifact_revision": "", "log": None, "note": ""}], "measurements"),
@@ -320,6 +330,87 @@ class ReleaseTests(unittest.TestCase):
                         self.assertIn("a" * 64, text)
                     if kind == "design":
                         self.assertIn("Instantiation:", text)
+
+    def test_output_path_refused_when_it_is_the_input_or_inside_the_skill(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for kind, folder in (("design", "design-sound"), ("audit", "audit-known-defect")):
+                skill = ROOT / "skills" / ("verification-" + kind)
+                record = Path(tmp) / (kind + ".json")
+                record.write_text((ROOT / "skills/fixtures" / folder / "record.json").read_text())
+                if kind == "audit":
+                    routed = self.run_script(kind, "route_failures.py", record)
+                    self.assertEqual(routed.returncode, 0, routed.stdout + routed.stderr)
+                    record.write_text(routed.stdout)
+                before = record.read_bytes()
+                renderer = "render_plan.py" if kind == "design" else "render_findings.py"
+                scripts = [(renderer, [record]), ("check_citations.py", [record, "--root", tmp])]
+                if kind == "audit":
+                    scripts.append(("route_failures.py", [record]))
+                for name, args in scripts:
+                    for output in (record, Path(tmp) / "sub" / ".." / record.name):
+                        with self.subTest(kind=kind, script=name, output=str(output)):
+                            result = self.run_script(kind, name, *args, "--output", output)
+                            self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                            self.assertEqual(json.loads(result.stdout)[0]["rule"], "usage")
+                            self.assertEqual(record.read_bytes(), before)
+                    inside = skill / "assets" / "never-written.md"
+                    with self.subTest(kind=kind, script=name, output="inside skill"):
+                        result = self.run_script(kind, name, *args, "--output", inside)
+                        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                        self.assertFalse(inside.exists())
+                artifact = Path(tmp) / "artifact.txt"
+                artifact.write_text("artifact\n")
+                for output in (artifact, skill / "SKILL.md"):
+                    with self.subTest(kind=kind, script="scaffold_record.py", output=str(output)):
+                        result = self.run_script(kind, "scaffold_record.py", "--artifact", artifact, "--scope", "s", "--output", output)
+                        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertEqual(artifact.read_text(), "artifact\n")
+                self.assertEqual((skill / "SKILL.md").read_text(), (ROOT / "skills" / ("verification-" + kind) / "SKILL.md").read_text())
+                result = self.run_script(kind, "load_catalog.py", "--check", "--output", skill / "assets" / "never-written.json")
+                self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                self.assertFalse((skill / "assets" / "never-written.json").exists())
+
+    def test_checklist_pin_is_enforced_by_the_loader(self):
+        import shutil
+        audit = ROOT / "skills/verification-audit"
+        with tempfile.TemporaryDirectory() as tmp:
+            copy = Path(tmp) / "verification-audit"
+            shutil.copytree(audit, copy)
+            catalog, meta = checker.loader.load_catalog(copy)
+            self.assertEqual(meta["name"], "verification-audit")
+            self.assertIn("checklist_sha256", checker.loader.skill_pins(meta))
+            checklist = copy / checker.loader.CHECKLIST_PATH
+            checklist.write_text(checklist.read_text() + "\n- An extra question nobody pinned.\n")
+            with self.assertRaises(checker.loader.SnapshotError):
+                checker.loader.load_catalog(copy)
+            checklist.unlink()
+            with self.assertRaises(checker.loader.SnapshotError):
+                checker.loader.load_catalog(copy)
+            design = Path(tmp) / "verification-design"
+            shutil.copytree(ROOT / "skills/verification-design", design)
+            self.assertNotIn("checklist_sha256", checker.loader.skill_pins(checker.loader.load_catalog(design)[1]))
+            shutil.copy(audit / checker.loader.CHECKLIST_PATH, design / "references" / "principles-checklist.md")
+            with self.assertRaises(checker.loader.SnapshotError):
+                checker.loader.load_catalog(design)
+
+    def test_rendered_header_names_skill_pins_and_model_families(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for kind, folder, renderer in (("design", "design-sound", "render_plan.py"), ("audit", "audit-known-defect", "render_findings.py")):
+                record = json.loads((ROOT / "skills/fixtures" / folder / "record.json").read_text())
+                record["models"] = {"generator": "Family G", "verifier": "Family V"}
+                path, output = Path(tmp) / "record.json", Path(tmp) / "out.md"
+                path.write_text(json.dumps(record))
+                if kind == "audit":
+                    path.write_text(self.run_script(kind, "route_failures.py", path).stdout)
+                result = self.run_script(kind, renderer, path, "--output", output)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                head = output.read_text().split("## Assumptions", 1)[0]
+                self.assertIn(f'Skill: verification-{kind} {record["skill"]["version"]}', head)
+                for key, value in record["skill"].items():
+                    if key.endswith("_sha256"):
+                        self.assertIn(f'{key.removesuffix("_sha256")} `{value}`', head)
+                self.assertIn("Generator model: Family G", head)
+                self.assertIn("Verifier model: Family V", head)
 
     def test_outside_observation_cannot_replace_coverage_or_route(self):
         record = json.loads((ROOT / "skills/fixtures/audit-known-defect/record.json").read_text())

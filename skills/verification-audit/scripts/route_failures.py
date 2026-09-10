@@ -3,7 +3,7 @@
 import copy
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import cli_main, emit, load_catalog, parser, read_record
+from load_catalog import cli_main, emit, load_catalog, parser, read_record, resolve_output
 from validate_findings import validate
 
 
@@ -26,9 +26,10 @@ def main():
     p.add_argument("record", help="JSON findings record")
     p.add_argument("--output", default="-", metavar="FILE|-", help="routed JSON destination (default stdout)")
     args = p.parse_args()
+    resolve_output(args.output, args.record)
     record = read_record(args.record)
-    catalog, _ = load_catalog()
-    errors = validate(record, catalog)
+    catalog, meta = load_catalog()
+    errors = validate(record, catalog, meta=meta)
     if errors:
         emit(errors)
         return 3

@@ -71,7 +71,8 @@ unflagged control activating. This table describes host invocation controls, not
 correctness of these skills' judgments. Blind task-level tests of skills/v1.0.0
 (four fixtures, records and expected outputs withheld) passed on both tested hosts on
 2026-09-08; the maintainer judged each output against the fixture's expected file.
-The maintainer reruns blind host tests for v1.1.0 before tagging.
+The maintainer reruns blind host tests for each release before tagging it; the
+compatibility line names only versions on which the probes were actually rerun.
 
 SKILL.md is an ordinary readable file. The invocation flag does not prevent a model
 from opening it as a file. The package carries one non-spec top-level field,
@@ -81,7 +82,7 @@ temporary copy with exactly that one top-level line removed and verifies the dif
 
 ## Corpus and offline behavior
 
-Release `skills/v1.1.0` pins `corpus/v1.0.0`, revision
+Release `skills/v1.2.0` pins `corpus/v1.0.0`, revision
 `e632a86b2ca8fbb7f83b3130ba083784c7817667`. The packaged catalog is the only catalog
 used for decisions. A live drift report never replaces it. See [CHANGELOG.md](CHANGELOG.md).
 
@@ -98,7 +99,9 @@ Run commands from the installed skill directory. Scripts offer `--help`, never p
 and use exit codes 0 (ok), 2 (usage), 3 (validation), 4 (unavailable), 5 (internal).
 Stdout is JSON; text retrieval and markdown rendering use a `text` envelope with
 `--output -`. With `--output FILE`, the file contains source text or markdown, and
-stdout reports the destination. Output files are written only at the requested path.
+stdout reports the destination. Output files are written only at the requested path,
+and a path that resolves to the script's input record or to a file inside the skill
+directory is refused with exit 2 before anything is written.
 
 From this repository, run `python3 scripts/check_skills.py`. The checker verifies
 pins against git, fixtures and loopback retrieval tests. `--links` adds live checks;
@@ -107,7 +110,12 @@ pins against git, fixtures and loopback retrieval tests. `--links` adds live che
 ## Record helpers and output location
 
 - `scripts/scaffold_record.py`: emit an unfilled record from the catalog or checklist,
-  with counts; fill and validate it before rendering.
+  with counts; fill and validate it before rendering. The scaffold carries a `skill`
+  object naming the package, its version and its pinned hashes (catalog, Principles
+  and, for the audit skill, the question checklist); validation requires an exact match,
+  and every rendered document states them, so a reader knows which question set judged it.
+- Every record names the generator and verifier model families in `models`, with
+  `unknown` written explicitly when a family is not recorded.
 - `scripts/check_citations.py`: check evidence citation file existence and line bounds,
   without judging what the cited text means.
 

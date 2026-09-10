@@ -23,3 +23,5 @@ scripts/triage_scout.py
 
 
 .beads/
+
+.agents/

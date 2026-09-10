@@ -31,9 +31,10 @@ def checklist(path=None):
     return rows
 
 
-def validate(record, catalog=None, questions=None):
-    if catalog is None:
-        catalog, _ = load_catalog()
+def validate(record, catalog=None, questions=None, meta=None):
+    if catalog is None or meta is None:
+        loaded_catalog, loaded_meta = load_catalog()
+        catalog, meta = catalog or loaded_catalog, meta or loaded_meta
     questions = checklist() if questions is None else questions
     errors = []
     def fail(index, rule, message):
@@ -41,7 +42,7 @@ def validate(record, catalog=None, questions=None):
     if not isinstance(record, dict):
         fail(None, "structure", "record must be an object")
         return errors
-    validate_common(record, fail)
+    validate_common(record, fail, meta)
     for key in ("corpus_revision", "artifact", "scope"):
         if not nonempty(record.get(key)):
             fail(None, "structure", key + " must be a non-empty string")
@@ -119,7 +120,8 @@ def main():
     p.add_argument("record", help="JSON findings record")
     args = p.parse_args()
     record = read_record(args.record)
-    errors = validate(record)
+    catalog, meta = load_catalog()
+    errors = validate(record, catalog, meta=meta)
     if errors:
         emit(errors)
         print("findings validation failed", file=sys.stderr)

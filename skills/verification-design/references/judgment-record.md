@@ -1,7 +1,8 @@
 # Judgment record
 
-A JSON object has non-empty `corpus_revision` (the packaged revision), `artifact`,
-one-line `scope`, `workflow`, `assumptions`, and `cards`.
+A JSON object has non-empty `corpus_revision` (the packaged revision), `skill` and
+`models` (see Shared record fields), `artifact`, one-line `scope`, `workflow`,
+`assumptions`, and `cards`.
 `workflow` has non-empty strings `generated`, `generator`, `completion_signal`, and
 `self_review_points`, a list of non-empty strings (may be empty).
 
@@ -15,7 +16,9 @@ Non-unknown verdicts require non-empty evidence. Every card has a non-empty `rea
 - `undecided`: all other cases. Unknown exclusions block apply.
 
 Rules: `structure`, `coverage`, `conditions`, `verdicts`, `decision-apply`,
-`decision-reject`, `decision-undecided`. Errors name card, rule and message; exit 3.
+`decision-reject`, `decision-undecided`, plus the shared rules `skill`, `models`,
+`assumptions`, `measurements`, `artifact-identity`, `unavailable-sources`, `priority`
+and `instantiation`. Errors name card, rule and message; exit 3.
 Success reports cards, apply, reject, undecided and unknown verdict counts; exit 0.
 
 Design requires at least one `verification-path` assumption (rule `assumptions`).
@@ -23,11 +26,22 @@ Per-card optional string `instantiation` describes this artifact's observable si
 and determinism move (rule `instantiation`), rendered after Determinism move.
 Optional record-level `priority` is an ordered list of applied card ids, each at most
 once (rule `priority`); the Summary renders it as Recommended order.
-An emitted scaffold fails `assumptions` and `structure`: its verification-path statement,
-workflow and card reasons are unfilled. Fill verdicts and decisions too before validation.
+An emitted scaffold fails `assumptions`, `structure` and `models`: its verification-path
+statement, workflow, model families and card reasons are unfilled. Fill verdicts and
+decisions too before validation.
 
 ## Shared record fields
 
+- `skill` (required, rule `skill`): the identity of the package that judged the record,
+  emitted by `scaffold_record.py` and never edited by hand: `name`, `version`,
+  `catalog_sha256`, `principles_sha256`, and for the audit skill `checklist_sha256`.
+  Validation requires it to equal the installed package exactly, so a record produced
+  under another version or question set fails until it is re-judged, and a rendered
+  document always states which question set produced its verdicts.
+- `models` (required, rule `models`): object with non-empty strings `generator` and
+  `verifier`, the model families involved (Principle 7). `verifier` is the model family
+  producing this record. `generator` is the family that produced, or will produce, the
+  artifact. Write `unknown` when a family is not recorded anywhere; never leave it blank.
 - `assumptions` (required, rule `assumptions`): list of objects with non-empty string
   `topic` and `statement`. Topics are free text. Named topics: `verification-path`
   identifies which path judgments cover when multiple verification paths exist;
@@ -71,8 +85,9 @@ or an explanation in assumptions, followed by validation again.
 ## Partial example
 
 Three selected cards below illustrate different evidence for individual conditions;
-this excerpt is not a complete valid record. The complete repository example is
-`skills/fixtures/design-sound/record.json`. Preserve all conditions in actual records.
+this excerpt is not a complete valid record. The package ships no complete record; the
+publishing repository keeps worked fixtures under `skills/fixtures/`, outside the
+installed skill. Preserve all conditions in actual records.
 
 ```json
 {

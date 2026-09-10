@@ -1,7 +1,8 @@
 # Findings record
 
-A JSON object has `corpus_revision` equal to the packaged revision, non-empty `artifact`,
-one-line non-empty `scope`, `assumptions` (may be empty), and `checks`.
+A JSON object has `corpus_revision` equal to the packaged revision, `skill` and `models`
+(see Shared record fields), non-empty `artifact`, one-line non-empty `scope`,
+`assumptions` (may be empty), and `checks`.
 Every checklist bullet appears exactly once as its whole text (including citation,
 excluding `- `) in `question`, with its integer `principle` (1 to 9).
 
@@ -33,13 +34,24 @@ not an exhaustive taxonomy. The router computes cards and routed only for defect
 the renderer rejects incorrect routing.
 
 Rules: `structure`, `coverage` (including free out-of-scope restrictions), `status`
-(the six statuses above), `evidence`, `failure`, `severity`, `routing`.
-Errors report card (null), check index, rule and message; exit 3.
+(the six statuses above), `evidence`, `failure`, `severity`, `routing`, plus the shared
+rules `skill`, `models`, `assumptions`, `measurements`, `artifact-identity` and
+`unavailable-sources`. Errors report card (null), check index, rule and message; exit 3.
 Success reports checks, defects, counts per status and defects by severity; exit 0.
-An emitted scaffold fails `status` and `evidence`, never passing as a finished audit.
+An emitted scaffold fails `status`, `evidence` and `models`, never passing as a finished audit.
 
 ## Shared record fields
 
+- `skill` (required, rule `skill`): the identity of the package that judged the record,
+  emitted by `scaffold_record.py` and never edited by hand: `name`, `version`,
+  `catalog_sha256`, `principles_sha256`, and for the audit skill `checklist_sha256`.
+  Validation requires it to equal the installed package exactly, so a record produced
+  under another version or question set fails until it is re-judged, and a rendered
+  document always states which question set produced its verdicts.
+- `models` (required, rule `models`): object with non-empty strings `generator` and
+  `verifier`, the model families involved (Principle 7). `verifier` is the model family
+  producing this record. `generator` is the family that produced, or will produce, the
+  artifact. Write `unknown` when a family is not recorded anywhere; never leave it blank.
 - `assumptions` (required, rule `assumptions`): list of objects with non-empty string
   `topic` and `statement`. Topics are free text. Named topics: `verification-path`
   identifies which path judgments cover when multiple verification paths exist;
@@ -80,4 +92,37 @@ all found, exit 3 means some were not. This checks existence and bounds only, no
 about meaning. It reads line counts, not artifact semantics. A failure requires repair
 or an explanation in assumptions, followed by validation again.
 
-See `skills/fixtures/audit-known-defect/record.json` in the repository for a complete example.
+## Example entries
+
+The package ships no complete record; the publishing repository keeps worked fixtures
+under `skills/fixtures/`, outside the installed skill. Two entries show the shape. Every
+other checklist question needs an entry of the same form, and `skill` comes from the
+scaffold unchanged.
+
+```json
+{
+  "principle": 2,
+  "question": "Who evaluates the generated output, and what evidence separates that evaluator from the generator? [Principles](<pinned principles url>#2-independence-between-generation-and-verification)",
+  "status": "defect",
+  "evidence": "artifact/workflow.md:12-14: the same agent that writes the summary marks it approved; no second evaluator appears anywhere in the artifact.",
+  "failure": "The agent reviews itself and misses obvious problems.",
+  "failure_note": "",
+  "severity": "high"
+}
+```
+
+```json
+{
+  "principle": 6,
+  "question": "Which claims are checked by executable assertions or comparisons, and where are their results? [Principles](<pinned principles url>#6-executable-verification-is-king)",
+  "status": "sound",
+  "evidence": "artifact/generate.py:40-52 asserts the row count against the manifest; measurement m1 ran it with exit 0.",
+  "failure": null,
+  "failure_note": "",
+  "severity": null
+}
+```
+
+The `failure` string on a defect must be one of the six strings in `catalog.failures`
+or `unmapped`; the `question` must be a checklist bullet verbatim, including its real
+pinned citation.

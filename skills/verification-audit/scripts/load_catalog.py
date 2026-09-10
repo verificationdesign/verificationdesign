@@ -31,11 +31,17 @@ ROOT = Path(__file__).resolve().parent.parent
 BASE_URL = "https://raw.githubusercontent.com"
 LIVE_URL = "https://verificationdesign.com/catalog.json"
 PIN_KEYS = ("version", "corpus-revision", "corpus-tag", "catalog-sha256", "principles-sha256")
-EXIT_HELP = "Exit codes: 0 ok; 2 usage; 3 validation failed; 4 unavailable; 5 internal."
+CHECKLIST_KEY = "checklist-sha256"
+CHECKLIST_PATH = Path("references") / "principles-checklist.md"
+EXIT_HELP = "Exit codes: 0 ok; 2 usage (including an output path that is the input or inside the skill); 3 validation failed; 4 unavailable; 5 internal."
 
 
 class SnapshotError(ValueError):
     """The packaged dependency or record cannot be validated."""
+
+
+class UsageError(ValueError):
+    """The command line asks for something the scripts refuse to do."""
 
 
 class Unavailable(Exception):
@@ -126,19 +132,29 @@ def valid_source_url(url, revision, base_url=BASE_URL):
 
 
 def load_catalog(root=None, *, base_url=BASE_URL):
+    """Return the packaged catalog and the SKILL.md metadata map with the skill name added."""
     root = Path(root) if root is not None else ROOT
     try:
-        meta = parse_frontmatter((root / "SKILL.md").read_text(encoding="utf-8")).get("metadata")
+        frontmatter = parse_frontmatter((root / "SKILL.md").read_text(encoding="utf-8"))
+        meta = frontmatter.get("metadata")
         if not isinstance(meta, dict) or any(not isinstance(meta.get(k), str) or not meta[k] for k in PIN_KEYS):
             raise SnapshotError("missing pin field")
+        if not isinstance(frontmatter.get("name"), str) or not frontmatter["name"]:
+            raise SnapshotError("missing skill name")
+        meta = dict(meta, name=frontmatter["name"])
         if not re.fullmatch(r"[0-9a-f]{40}", meta["corpus-revision"]):
             raise SnapshotError("invalid corpus revision")
-        for key in ("catalog-sha256", "principles-sha256"):
-            if not re.fullmatch(r"[0-9a-f]{64}", meta[key]):
+        for key in ("catalog-sha256", "principles-sha256", CHECKLIST_KEY):
+            if key in meta and not re.fullmatch(r"[0-9a-f]{64}", meta[key]):
                 raise SnapshotError("invalid hash: " + key)
         raw = (root / "assets" / "catalog.json").read_bytes()
         if hashlib.sha256(raw).hexdigest() != meta["catalog-sha256"]:
             raise SnapshotError("catalog file hash mismatch")
+        checklist = root / CHECKLIST_PATH
+        if checklist.exists() != (CHECKLIST_KEY in meta):
+            raise SnapshotError("checklist and its pin must be packaged together")
+        if checklist.exists() and hashlib.sha256(checklist.read_bytes()).hexdigest() != meta[CHECKLIST_KEY]:
+            raise SnapshotError("checklist file hash mismatch")
         catalog = json.loads(raw)
         if not isinstance(catalog, dict) or catalog.get("revision") != meta["corpus-revision"]:
             raise SnapshotError("catalog revision mismatch")
@@ -230,6 +246,28 @@ def drift(catalog, *, live_url=LIVE_URL, offline=False, timeout=10):
     return {"pinned": catalog["revision"], "live": live, "newer_available": live != catalog["revision"]}
 
 
+def skill_pins(meta):
+    """The identity a record must carry: which skill, version and question set judged it."""
+    pins = {"name": meta["name"], "version": meta["version"], "catalog_sha256": meta["catalog-sha256"],
+            "principles_sha256": meta["principles-sha256"]}
+    if CHECKLIST_KEY in meta:
+        pins["checklist_sha256"] = meta[CHECKLIST_KEY]
+    return pins
+
+
+def resolve_output(output, *inputs):
+    """Refuse a destination that would overwrite an input or land inside the skill directory."""
+    if output == "-":
+        return output
+    target = Path(output).resolve()
+    for path in inputs:
+        if path is not None and Path(path).exists() and Path(path).resolve() == target:
+            raise UsageError("output must not overwrite the input: " + str(path))
+    if target == ROOT or ROOT in target.parents:
+        raise UsageError("output must not be inside the skill directory: " + str(ROOT))
+    return output
+
+
 def parser(description, example):
     return argparse.ArgumentParser(description=description, epilog=EXIT_HELP + " Example: " + example)
 
@@ -262,6 +300,10 @@ def write_text(text, output="-"):
 def cli_main(fn):
     try:
         return fn()
+    except UsageError as exc:
+        emit([{"card": None, "rule": "usage", "message": str(exc)}])
+        print(str(exc), file=sys.stderr)
+        return 2
     except SnapshotError as exc:
         emit([{"card": None, "rule": "structure", "message": str(exc)}])
         print(str(exc), file=sys.stderr)
@@ -302,6 +344,7 @@ def main():
     args = p.parse_args()
     if sum((args.check, args.drift, args.command == "fetch")) != 1 or bool(args.name) != (args.command == "fetch"):
         p.error("choose --check, --drift, or fetch <card-id|principles>")
+    resolve_output(args.output)
     try:
         catalog, meta = load_catalog()
     except SnapshotError as exc:
@@ -310,7 +353,7 @@ def main():
         raise
     if args.check:
         emit({"python": ".".join(map(str, sys.version_info[:3])), "valid": True, "revision": catalog["revision"], "cards": len(catalog["cards"]),
-              "catalog_sha256": meta["catalog-sha256"]}, args.output)
+              "skill": skill_pins(meta)}, args.output)
     elif args.drift:
         emit(drift(catalog, live_url=args.live_url, offline=args.offline, timeout=args.timeout), args.output)
     else:

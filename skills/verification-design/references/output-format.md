@@ -1,8 +1,9 @@
 # Output format
 
-Header: artifact, scope, corpus revision and tag, then optional Artifact identity with
-revision, file count and files. Assumptions is the first section, then Measurements
-only when present, then Summary.
+Header: artifact, scope, corpus revision and tag, then the skill name and version, its
+pinned hashes, the generator and verifier model families, then optional Artifact
+identity with revision, file count and files. Assumptions is the first section, then
+Measurements only when present, then Summary.
 
 Section order:
 

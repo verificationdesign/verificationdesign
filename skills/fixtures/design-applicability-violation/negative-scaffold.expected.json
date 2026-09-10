@@ -2,6 +2,7 @@
   "exit_code": 3,
   "rules": [
     "assumptions",
+    "models",
     "structure"
   ]
 }

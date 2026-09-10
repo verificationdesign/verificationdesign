@@ -1,14 +1,21 @@
 """Shared record field validation within this self-contained skill."""
+import json
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import emit
+from load_catalog import emit, skill_pins
 
 
 def nonempty(value):
     return isinstance(value, str) and bool(value.strip())
 
 
-def validate_common(record, fail, design=False):
+def validate_common(record, fail, meta, design=False):
+    expected = skill_pins(meta)
+    if record.get("skill") != expected:
+        fail(None, "skill", "skill must equal the packaged identity emitted by scaffold_record.py: " + json.dumps(expected, sort_keys=True))
+    models = record.get("models")
+    if not isinstance(models, dict) or set(models) != {"generator", "verifier"} or not all(nonempty(models[k]) for k in models):
+        fail(None, "models", "models must name the generator and verifier model families as non-empty strings; use unknown when not recorded")
     assumptions = record.get("assumptions")
     if not isinstance(assumptions, list) or any(
         not isinstance(x, dict) or not nonempty(x.get("topic")) or not nonempty(x.get("statement"))

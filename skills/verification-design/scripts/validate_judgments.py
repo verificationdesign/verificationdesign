@@ -21,16 +21,17 @@ def decision(use, exclude):
     return "undecided"
 
 
-def validate(record, catalog=None):
-    if catalog is None:
-        catalog, _ = load_catalog()
+def validate(record, catalog=None, meta=None):
+    if catalog is None or meta is None:
+        loaded_catalog, loaded_meta = load_catalog()
+        catalog, meta = catalog or loaded_catalog, meta or loaded_meta
     errors = []
     def fail(card, rule, message):
         errors.append({"card": card, "rule": rule, "message": message})
     if not isinstance(record, dict):
         fail(None, "structure", "record must be an object")
         return errors
-    validate_common(record, fail, design=True)
+    validate_common(record, fail, meta, design=True)
     for key in ("corpus_revision", "artifact", "scope"):
         if not nonempty(record.get(key)):
             fail(None, "structure", key + " must be a non-empty string")
@@ -119,7 +120,8 @@ def main():
     p.add_argument("record", help="JSON judgment record")
     args = p.parse_args()
     record = read_record(args.record)
-    errors = validate(record)
+    catalog, meta = load_catalog()
+    errors = validate(record, catalog, meta)
     if errors:
         emit(errors)
         print("judgment validation failed", file=sys.stderr)

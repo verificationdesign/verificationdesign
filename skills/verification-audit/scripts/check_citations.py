@@ -2,7 +2,7 @@
 """Check citation file existence and line bounds only, never evidence meaning."""
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import cli_main, emit, parser, read_record
+from load_catalog import cli_main, emit, parser, read_record, resolve_output
 from pathlib import Path
 import re
 
@@ -56,6 +56,7 @@ def main():
     p.add_argument("--root", required=True, help="resolve relative citation paths here")
     p.add_argument("--output", default="-", metavar="FILE|-")
     args = p.parse_args()
+    resolve_output(args.output, args.record)
     result = check(read_record(args.record), args.root)
     emit(result, args.output)
     return 3 if result["citations"] else 0

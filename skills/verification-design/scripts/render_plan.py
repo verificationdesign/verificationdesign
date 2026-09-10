@@ -2,7 +2,7 @@
 """Render a verification plan from a valid applicability record."""
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import cli_main, emit, load_catalog, parser, read_record, write_text
+from load_catalog import cli_main, emit, load_catalog, parser, read_record, resolve_output, write_text
 from validate_judgments import validate, counts
 from render_fields import header, unavailable, Sources
 
@@ -82,9 +82,10 @@ def main():
     p.add_argument("record", help="JSON judgment record")
     p.add_argument("--output", default="-", metavar="FILE|-", help="markdown file; - emits a JSON text envelope")
     args = p.parse_args()
+    resolve_output(args.output, args.record)
     record = read_record(args.record)
     catalog, meta = load_catalog()
-    errors = validate(record, catalog)
+    errors = validate(record, catalog, meta)
     if errors:
         emit(errors)
         return 3

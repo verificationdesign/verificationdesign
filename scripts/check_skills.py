@@ -157,7 +157,7 @@ def helper_checks(report):
             except ValueError:
                 pass
             validation = run([sys.executable, str(validator), str(path)])
-            expected = {"assumptions", "structure"} if design else {"status", "evidence"}
+            expected = {"assumptions", "structure", "models"} if design else {"status", "evidence", "models"}
             expected_counts = {"cards": 17, "conditions": 156} if design else {"checks": 18}
             try:
                 good = result.returncode == 0 and json.loads(result.stdout)["counts"] == expected_counts and validation.returncode == 3 and {e["rule"] for e in json.loads(validation.stdout)} == expected
@@ -260,6 +260,10 @@ def main():
             report.check(name + " snapshot", 0, 17, [str(exc)])
     same = sum(metas[0].get(k) == metas[1].get(k) and isinstance(metas[0].get(k), str) and bool(metas[0][k]) for k in loader.PIN_KEYS)
     report.check("pin consistency", same, 5)
+    checklist_file = SKILLS / NAMES[1] / loader.CHECKLIST_PATH
+    observed = hashlib.sha256(checklist_file.read_bytes()).hexdigest() if checklist_file.exists() else "absent"
+    report.check("checklist pin", observed, metas[1].get(loader.CHECKLIST_KEY),
+                 [] if loader.CHECKLIST_KEY not in metas[0] else ["design skill must not carry a checklist pin"])
     for path, label in (("assets/catalog.json", "snapshot byte identity"), ("scripts/load_catalog.py", "loader byte identity")):
         report.check(label, int((SKILLS/NAMES[0]/path).read_bytes() == (SKILLS/NAMES[1]/path).read_bytes()), 1)
     if not catalogs:

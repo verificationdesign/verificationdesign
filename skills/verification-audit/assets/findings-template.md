@@ -8,6 +8,14 @@ Corpus revision: <pin>
 
 Corpus tag: <tag>
 
+Skill: <name> <version>
+
+Skill pins: <pinned hashes>
+
+Generator model: <model family or unknown>
+
+Verifier model: <model family>
+
 Artifact identity: <optional revision, count and files>
 
 ## Assumptions

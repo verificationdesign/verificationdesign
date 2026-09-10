@@ -1,5 +1,28 @@
 # Changelog
 
+## skills/v1.2.0 (unreleased)
+
+Pins unchanged `corpus/v1.0.0`. Source: the audit skill run against its own package on
+2026-09-09 (twelve defects, six reproduced by the maintainer). Two new required record
+fields mean v1.1.0 records do not validate unchanged.
+
+- `skill` (required): name, version and pinned hashes of the package that judged the
+  record, emitted by the scaffold and checked for an exact match by the validators. The
+  audit skill now pins its question checklist with `metadata.checklist-sha256`, verified
+  by `load_catalog.py` beside the catalog and Principles hashes; `--check` reports all of
+  them. Rendered documents carry a Skill line and a Skill pins line.
+- `models` (required): generator and verifier model families, `unknown` when not
+  recorded, rendered in the header. The record now answers its own Principle 7 question.
+- Output collision refused: every script with `--output` exits 2 and writes nothing when
+  the destination resolves to its input record, to the scaffold's artifact, or to a file
+  inside the skill directory.
+- Both procedures route to `models`, `artifact_identity` and `measurements` in step 4
+  and in the closing checklist; before, the fields existed only in the record reference.
+- The record references no longer cite repository fixture paths the package does not
+  ship; the audit reference carries two inline example entries instead.
+
+Compatibility line unchanged pending host reruns; the hosts named were tested on v1.1.0.
+
 ## skills/v1.1.0 (2026-09-08)
 
 Pins unchanged `corpus/v1.0.0`. Required `assumptions` means v1.0.0 records do not

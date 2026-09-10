@@ -2,16 +2,16 @@
 """Scaffold an unfilled record from packaged fields without making judgments."""
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import cli_main, emit, load_catalog, parser
+from load_catalog import cli_main, emit, load_catalog, parser, resolve_output, skill_pins
 import json
 from pathlib import Path
 from validate_findings import checklist
 
 
 def scaffold(artifact, scope):
-    catalog, _ = load_catalog()
-    record = dict(corpus_revision=catalog["revision"], artifact=artifact, scope=scope,
-                  assumptions=[])
+    catalog, meta = load_catalog()
+    record = dict(corpus_revision=catalog["revision"], skill=skill_pins(meta), artifact=artifact, scope=scope,
+                  models=dict(generator="", verifier=""), assumptions=[])
     record["checks"] = [dict(principle=p, question=q, status="", evidence="", failure=None,
                              failure_note="", severity=None) for p, q in checklist()]
     return record
@@ -23,6 +23,7 @@ def main():
     p.add_argument("--scope", required=True)
     p.add_argument("--output", required=True, metavar="FILE|-", help="JSON record destination; stdout includes record and counts in one envelope")
     args = p.parse_args()
+    resolve_output(args.output, args.artifact)
     record = scaffold(args.artifact, args.scope)
     counts = {"checks": len(record["checks"])}
     if args.output == "-":

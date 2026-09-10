@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.1.0"
+  version: "1.2.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -46,7 +46,9 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/load_catalog.py --check
    ```
 
-3. Scaffold the record at an operator-visible path:
+3. Scaffold the record at an operator-visible path. The scaffold carries the `skill`
+   identity (name, version and the pinned hashes) so the record states which condition
+   set judged it; do not edit that object.
 
    ```bash
    python3 scripts/scaffold_record.py --artifact "resolved artifact" --scope "resolved scope" --output /absolute/path/record.json
@@ -58,6 +60,14 @@ Run commands from this skill directory, with absolute paths for operator-visible
    Preserve every catalog condition verbatim and in order. Record each verdict and
    its artifact evidence. Unknown exclusions block apply; keep unknowns visible.
    This is a judgment step, not an executable inference from prose.
+   Fill the record-level fields as well:
+   - `models`: the model family producing this record as `verifier`, and the family that
+     will produce the work as `generator`, or `unknown` when it is not decided or recorded.
+   - `artifact_identity`: the artifact revision and a sha256 per file read, so a reader
+     can tell which bytes were judged. Omit only when nothing readable was examined.
+   - `measurements`: one entry per command run against the artifact, with its exit code,
+     cited by id from evidence. A measurement shows what the artifact does; it is not
+     evidence that the artifact records anything.
 5. Validate; correct record errors and rerun until exit 0. If the packaged dependency
    fails, stop and report it without changing the pin.
 
@@ -107,7 +117,8 @@ and paste the JSON into the record's `unavailable_sources` list. The renderer pl
 Use [output-format.md](references/output-format.md) and [the template](assets/plan-template.md). Every script supports `--help`; stdout is JSON, including a `text` envelope for
 source text or markdown when `--output -` is used. `--output FILE` writes the document
 and prints a JSON destination receipt. Exit codes: 0 ok, 2 usage, 3 validation failed,
-4 unavailable, 5 internal. Do not overwrite the input record with an output path.
+4 unavailable, 5 internal. Scripts refuse, with exit 2 and no write, an output path
+that resolves to their input record or to a file inside the skill directory.
 
 The rendered plan is the deliverable. A companion document is allowed only if its top states that it is not skill output and was not validated.
 
@@ -130,6 +141,7 @@ invocation controls do not prevent a model from opening it as a file.
 - Artifact and scope echoed; scope came from the operator, not a guess.
 - Snapshot check and record validator exited 0; every required condition or question covered.
 - Assumptions recorded, including verification path for design and any scope expansion.
+- `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Unknown judgments and unavailable evidence remain visible.
