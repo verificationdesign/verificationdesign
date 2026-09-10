@@ -28,7 +28,8 @@ fields mean v1.1.0 records do not validate unchanged.
   establish release identity.
 - Optional per-card `resolution` preserves post-plan evidence beside an undecided
   design verdict, validates its date and measurement id, and appears in Not verified
-  and the Summary without changing the original decision.
+  and the Summary without changing the original decision, shown by the new
+  `design-resolved` fixture.
 - Unknown and insufficient-evidence judgments explain missing evidence without filler
   citations; the citation checker reports citations repeated across three or more
   entries for operator review without changing its exit code.

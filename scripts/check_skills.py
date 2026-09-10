@@ -95,7 +95,7 @@ class Reporter:
 def fixture_checks(report):
     positive, rendered, negative = 0, 0, 0
     errors, render_errors, negative_errors = [], [], []
-    names = ("design-sound", "design-applicability-violation", "audit-known-defect", "audit-missing-evidence")
+    names = ("design-sound", "design-applicability-violation", "design-resolved", "audit-known-defect", "audit-missing-evidence")
     with tempfile.TemporaryDirectory(prefix="verification-fixtures-") as tmp:
         for name in names:
             folder = SKILLS / "fixtures" / name
@@ -134,8 +134,8 @@ def fixture_checks(report):
                     negative += 1
                 else:
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
-    report.check("fixture validators", positive, 4, errors)
-    report.check("fixture renders", rendered, 4, render_errors)
+    report.check("fixture validators", positive, 5, errors)
+    report.check("fixture renders", rendered, 5, render_errors)
     report.check("negative fixtures", negative, 18, negative_errors)
 
 

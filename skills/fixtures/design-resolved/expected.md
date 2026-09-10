@@ -1,8 +1,8 @@
 # Verification plan
 
-Artifact: skills/fixtures/design-applicability-violation/artifact
+Artifact: skills/fixtures/design-resolved/artifact
 
-Scope: Verify the pure square function against its exact integer specification.
+Scope: Verify the design-resolved pure square function against its exact integer specification, preserving the spec-stage judgment beside later build evidence.
 
 Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
@@ -20,13 +20,21 @@ Verifier model: fixture author, no model review
 
 - verification-path: The executable fixture check and its documented completion signal.
 
+## Measurements
+
+- fixture-check: command `python3 artifact/check.py`; env `{}`; exit 0; artifact revision ``; log none; note: Later fixture build ran with exit 0 and empty stdout; this does not rewrite the spec-stage verdict.
+
 ## Summary
 
-Apply: 1; reject: 16; undecided: 0; unknown verdicts: 0.
+Apply: 1; reject: 15; undecided: 1; unknown verdicts: 1.
 
 Operator decisions:
 
-None.
+- Executable Analog: the extractor would be more brittle than the LLM judgment it replaces Resolution recorded 2026-09-10.
+
+Recommended order:
+
+1. Comparator
 
 ## Workflow characterization
 
@@ -34,7 +42,7 @@ Generated: A pure Python square function.
 
 Generator: A one-shot code-generating agent.
 
-Completion signal: Existing local equality assertions exit successfully.
+Completion signal: Planned local equality assertions exit successfully.
 
 Self-review points:
 
@@ -42,26 +50,28 @@ None recorded.
 
 ## Patterns applied
 
-### Executable Analog
+### Comparator
 
-[Executable Analog][executable-analog] ([pinned source][executable-analog-src])
+[Comparator][comparator] ([pinned source][comparator-src])
 
-An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
+Expected and observed integers are separate and equality is the named comparison operator.
 
-- use_when: the claim being verified can be expressed as a deterministic check (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: the output has structure (DOM, JSON, exit code, log line) that can be queried (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: you can write a test rather than just describe one (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
-- use_when: the same check will run repeatedly (regression, CI, multi-agent loops) (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
+- use_when: the check has a known expected value, pattern, reference object, or expected event sequence (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
+- use_when: the observed value can be extracted separately from the comparison (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
+- use_when: a named operator covers the comparison or can be defined cheaply (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
+- use_when: the same comparison will run repeatedly in CI, regression tests, or agent loops. (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
 
 Observable signals:
 
-- check_id: the named check being run
-- expected: the value the executable analog is checking against
-- observed: the raw value returned by the extractor, before judgment
-- passed: the strict comparison result
-- error: the exception text when extraction fails, otherwise None.
+- operator name
+- expected value or reference
+- observed value extracted before comparison
+- normalization steps applied before comparison
+- notes for recorded parse or pattern failures
+- score and threshold
+- pass/fail verdict.
 
-Determinism move: Executable Analog constrains `self_review_bias` (the same agent that produced the artifact no longer judges whether it satisfies the check) and `judge_subjectivity` (the verdict comes from a deterministic equality on extracted values, not from a model's interpretation of rendered output). By forcing extract-then-compare instead of interpret-and-decide, the system loses the freedom to rationalize a coincidental pass.
+Determinism move: Comparator constrains `judge_subjectivity` by making the verdict a deterministic function of expected value, observed value, operator, threshold, and normalization. It constrains `criteria_drift` because a named operator is stable across runs in a way that a prompt-based judge's interpretation is not.
 
 ## Patterns rejected
 
@@ -71,7 +81,7 @@ Determinism move: Executable Analog constrains `self_review_bias` (the same agen
 
 The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs.
 
-- use_when: multiple agents or tools evaluate the same artifact (does-not-hold). Evidence: artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs.
+- use_when: multiple agents or tools evaluate the same artifact (does-not-hold). Evidence: artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs. Measurement fixture-check records the executable run.
 - use_when: verification reports need to be auditable (does-not-hold). Evidence: artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs.
 - use_when: criteria drift is causing inconsistent judgments (does-not-hold). Evidence: artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs.
 - use_when: prompts contain repeated pass/fail language (does-not-hold). Evidence: artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs.
@@ -123,14 +133,6 @@ The property is internal to a deterministic function; there is no mutable enviro
 Expected can be derived, but the executable assertion specializes the pattern and no model judge is used.
 
 - do_not_use_when: Executable Analog can specialize the pattern with compilation, execution, or runtime traces (holds). Evidence: artifact/workflow.md:3-16: Expected can be derived, but the executable assertion specializes the pattern and no model judge is used.
-
-### Comparator
-
-[Comparator][comparator] ([pinned source][comparator-src])
-
-The one-off cost exclusion holds despite applicable comparison conditions.
-
-- do_not_use_when: designing a comparator costs more than a one-off human review (holds). Evidence: artifact/workflow.md:18-19 explicitly states that a general Comparator costs more than one-off human review.
 
 ### Delta
 
@@ -212,14 +214,34 @@ No model-produced tool arguments cross a boundary; the function is called intern
 
 ## Not verified
 
-None in the judgment record.
+### Executable Analog
+
+[Executable Analog][executable-analog] ([pinned source][executable-analog-src])
+
+Decision: undecided
+
+- do_not_use_when: the extractor would be more brittle than the LLM judgment it replaces. Reason: artifact/workflow.md:7: the extractor is unwritten, so its brittleness relative to the model judgment cannot be judged until it exists.
+
+Resolution (2026-09-10): The later fixture build uses direct integer assertions and both pass with exit 0. Evidence: artifact/check.py:1-6 records the function and assertions. Measurement: fixture-check
+
+Determinism move: Executable Analog constrains `self_review_bias` (the same agent that produced the artifact no longer judges whether it satisfies the check) and `judge_subjectivity` (the verdict comes from a deterministic equality on extracted values, not from a model's interpretation of rendered output). By forcing extract-then-compare instead of interpret-and-decide, the system loses the freedom to rationalize a coincidental pass.
+
+Instantiation: The fixture check emits a pass only after its asserted comparison holds.
+
+```json
+{
+  "unavailable": true,
+  "source_url": "https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md",
+  "reason": "offline"
+}
+```
 
 ## Sources
 
 Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 
-[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
-[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md
+[comparator]: https://verificationdesign.com/patterns/verification/comparator/
+[comparator-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/comparator.md
 [constitution]: https://verificationdesign.com/patterns/context-and-state/constitution/
 [constitution-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/constitution.md
 [guardrail-decorator]: https://verificationdesign.com/patterns/context-and-state/guardrail-decorator/
@@ -232,8 +254,6 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 [state-baseline-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/state-baseline.md
 [blind-oracle]: https://verificationdesign.com/patterns/verification/blind-oracle/
 [blind-oracle-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/blind-oracle.md
-[comparator]: https://verificationdesign.com/patterns/verification/comparator/
-[comparator-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/comparator.md
 [delta]: https://verificationdesign.com/patterns/verification/delta/
 [delta-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/delta.md
 [judge-harness]: https://verificationdesign.com/patterns/verification/judge-harness/
@@ -252,3 +272,5 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 [backpressure-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/backpressure.md
 [tool-adapter]: https://verificationdesign.com/patterns/orchestration/tool-adapter/
 [tool-adapter-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/tool-adapter.md
+[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
+[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md

@@ -6,8 +6,8 @@
     "catalog_sha256": "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f",
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a"
   },
-  "artifact": "skills/fixtures/design-applicability-violation/artifact",
-  "scope": "Verify the pure square function against its exact integer specification.",
+  "artifact": "skills/fixtures/design-resolved/artifact",
+  "scope": "Verify the design-resolved pure square function against its exact integer specification, preserving the spec-stage judgment beside later build evidence.",
   "models": {
     "generator": "unknown",
     "verifier": "fixture author, no model review"
@@ -15,7 +15,7 @@
   "workflow": {
     "generated": "A pure Python square function.",
     "generator": "A one-shot code-generating agent.",
-    "completion_signal": "Existing local equality assertions exit successfully.",
+    "completion_signal": "Planned local equality assertions exit successfully.",
     "self_review_points": []
   },
   "cards": [
@@ -25,7 +25,7 @@
         {
           "condition": "multiple agents or tools evaluate the same artifact",
           "verdict": "does-not-hold",
-          "evidence": "artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs."
+          "evidence": "artifact/workflow.md:3-16: The small local harness has one executable check, no audit report consumer, no drifting prompt criteria and no comparison of failures across runs. Measurement fixture-check records the executable run."
         },
         {
           "condition": "verification reports need to be auditable",
@@ -332,7 +332,7 @@
         {
           "condition": "the extractor would be more brittle than the LLM judgment it replaces",
           "verdict": "unknown",
-          "evidence": "The spec-stage evidence does not establish the implemented extractor's behavior."
+          "evidence": "artifact/workflow.md:7: the extractor is unwritten, so its brittleness relative to the model judgment cannot be judged until it exists."
         },
         {
           "condition": "the cost of writing the executable check exceeds the cost of one-off human review",
@@ -346,12 +346,13 @@
         }
       ],
       "decision": "undecided",
-      "reason": "Applicability remains undecided at spec stage because the implemented extractor has not been examined.",
+      "reason": "The extractor is unwritten at spec stage, so its brittleness relative to model judgment cannot yet be judged.",
+      "instantiation": "The fixture check emits a pass only after its asserted comparison holds.",
       "resolution": {
-        "date": "2026-09-10",
+        "date": "2026-02-30",
         "observation": "The later fixture build uses direct integer assertions and both pass with exit 0.",
         "evidence": "artifact/check.py:1-6 records the function and assertions.",
-        "measurement": "not-recorded"
+        "measurement": "fixture-check"
       }
     },
     {
@@ -450,8 +451,8 @@
         },
         {
           "condition": "designing a comparator costs more than a one-off human review",
-          "verdict": "holds",
-          "evidence": "artifact/workflow.md:18-19 explicitly states that a general Comparator costs more than one-off human review."
+          "verdict": "does-not-hold",
+          "evidence": "artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator."
         },
         {
           "condition": "the comparison needs a calibrated model judge. Use Judge Harness instead of an inline fused judgment.",
@@ -459,8 +460,8 @@
           "evidence": "artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator."
         }
       ],
-      "decision": "reject",
-      "reason": "The one-off cost exclusion holds despite applicable comparison conditions."
+      "decision": "apply",
+      "reason": "Expected and observed integers are separate and equality is the named comparison operator."
     },
     {
       "id": "verification/delta",
@@ -963,6 +964,16 @@
     {
       "topic": "verification-path",
       "statement": "The executable fixture check and its documented completion signal."
+    }
+  ],
+  "priority": [
+    "verification/comparator"
+  ],
+  "unavailable_sources": [
+    {
+      "unavailable": true,
+      "source_url": "https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md",
+      "reason": "offline"
     }
   ],
   "measurements": [

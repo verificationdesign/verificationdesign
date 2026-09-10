@@ -232,7 +232,7 @@ class ReleaseTests(unittest.TestCase):
                 path.write_text(json.dumps(record))
 
     def test_resolution_positive_and_four_negative_fixtures(self):
-        folder = ROOT / "skills/fixtures/design-applicability-violation"
+        folder = ROOT / "skills/fixtures/design-resolved"
         record = json.loads((folder / "record.json").read_text())
         self.assertEqual(validate(record), [])
         for name in ("applied", "bad-date", "unknown-measurement", "extra-key"):
@@ -243,7 +243,7 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual({e["rule"] for e in json.loads(result.stdout)}, {"resolution"})
 
     def test_resolution_types_calendar_dates_and_absent_measurements(self):
-        original = json.loads((ROOT / "skills/fixtures/design-applicability-violation/record.json").read_text())
+        original = json.loads((ROOT / "skills/fixtures/design-resolved/record.json").read_text())
         for field, value in (("date", None), ("date", "20260910"), ("date", "2026-W37-4"),
                              ("date", "2025-02-29"), ("observation", " "), ("observation", 1),
                              ("evidence", ""), ("evidence", []), ("measurement", False)):
@@ -269,7 +269,7 @@ class ReleaseTests(unittest.TestCase):
         from render_plan import render
         from load_catalog import load_catalog
         catalog, meta = load_catalog()
-        record = json.loads((ROOT / "skills/fixtures/design-applicability-violation/record.json").read_text())
+        record = json.loads((ROOT / "skills/fixtures/design-resolved/record.json").read_text())
         card = next(c for c in record["cards"] if "resolution" in c)
         card["instantiation"] = "Direct assertions on the integer return."
         before = copy.deepcopy(record)
