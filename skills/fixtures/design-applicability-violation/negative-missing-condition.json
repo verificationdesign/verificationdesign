@@ -953,5 +953,25 @@
       "topic": "verification-path",
       "statement": "The executable fixture check and its documented completion signal."
     }
-  ]
+  ],
+  "plan": {
+    "design": "An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion. In this hypothetical variant, adapting the general Comparator costs more than one-off human review.",
+    "source": "artifact/workflow.md",
+    "requirements": [
+      {
+        "id": "V1",
+        "statement": "The returned integer equals the expected integer on every regression run.",
+        "check": "Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.",
+        "patterns": [
+          "verification/executable-analog"
+        ]
+      },
+      {
+        "id": "V2",
+        "statement": "The check exits non-zero on any mismatch and the run log records it.",
+        "check": "Run the assertion harness with a mismatching return and capture its exit code and failure output in the run log. Pass only when the exit code is non-zero and the log records the mismatch; a zero exit or missing failure record fails. This failure-path log check is planned, not recorded as executed.",
+        "patterns": []
+      }
+    ]
+  }
 }

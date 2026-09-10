@@ -16,6 +16,26 @@ Generator model: unknown
 
 Verifier model: fixture author, no model review
 
+## Design
+
+An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion. The extractor is not yet written at design time; a later build will exercise it through the same assertions.
+
+Source: artifact/workflow.md
+
+## Verification requirements
+
+### V1: The returned integer equals the expected integer on every regression run.
+
+Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.
+
+Patterns: [Comparator][comparator] ([pinned source][comparator-src])
+
+### V2: The extractor, once written, is exercised by the same check.
+
+Once the extractor exists, run python3 artifact/check.py and inspect its direct calls to the generated function and equality assertions. Pass when the same check exercises the returned values and both assertions hold; fail if extraction is bypassed or either comparison fails.
+
+Patterns: none
+
 ## Assumptions
 
 - verification-path: The executable fixture check and its documented completion signal.
@@ -27,6 +47,8 @@ Verifier model: fixture author, no model review
 ## Summary
 
 Apply: 1; reject: 15; undecided: 1; unknown verdicts: 1.
+
+Requirements: 2
 
 Operator decisions:
 
@@ -55,6 +77,10 @@ None recorded.
 [Comparator][comparator] ([pinned source][comparator-src])
 
 Expected and observed integers are separate and equality is the named comparison operator.
+
+Decision: apply
+
+Serves: V1
 
 - use_when: the check has a known expected value, pattern, reference object, or expected event sequence (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
 - use_when: the observed value can be extracted separately from the comparison (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.

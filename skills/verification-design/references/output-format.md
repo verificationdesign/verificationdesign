@@ -2,21 +2,29 @@
 
 Header: artifact, scope, corpus revision and tag, then the skill name and version, its
 pinned hashes, the generator and verifier model families, then optional Artifact
-identity with revision, file count and files. Assumptions is the first section, then
-Measurements only when present, then Summary.
+identity with revision, file count and files. Design and Verification requirements lead;
+Assumptions, optional Measurements and Summary follow.
 
 Section order:
 
-1. Assumptions
-2. Measurements
-3. Summary
-4. Workflow characterization
-5. Patterns applied
-6. Patterns rejected
-7. Not verified
-8. Sources
+1. Design
+2. Verification requirements
+3. Assumptions
+4. Measurements (when present)
+5. Summary
+6. Workflow characterization
+7. Patterns applied
+8. Patterns rejected
+9. Not verified
+10. Sources
 
-Summary counts apply, reject, undecided and unknown verdicts; Operator decisions names
+Design renders `plan.design`, followed by `Source: <source>` when present.
+Each requirement has a `### V1: <statement>` heading, its check paragraph, and
+`Patterns: ` with reference-style card citations in requirement order, or `Patterns: none`.
+Each applied entry has `Decision: apply` followed directly by `Serves: V1, V3`, listing
+its requirement ids in id order.
+
+Summary counts apply, reject, undecided and unknown verdicts, followed by `Requirements: N`; Operator decisions names
 each undecided card and its unknown conditions. Recommended order appears when priority
 is present. An undecided card with a resolution ends its Operator decisions bullet
 with `Resolution recorded YYYY-MM-DD.` Self-review points use bullets. Instantiation

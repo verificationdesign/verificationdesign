@@ -3,6 +3,7 @@
   "rules": [
     "assumptions",
     "models",
+    "plan",
     "structure"
   ]
 }

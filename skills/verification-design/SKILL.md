@@ -1,6 +1,6 @@
 ---
 name: verification-design
-description: Design a verification plan for work being built, using the verificationdesign.com pattern catalog at a pinned revision. Needs a scope line. Do not run without an explicit request.
+description: "Write a verification plan for work that is being designed or built: what it is, numbered verification requirements, and the checks that serve them, each justified by an applicability judgment against the verificationdesign.com pattern catalog at a pinned revision. Not an audit of existing code. Needs a scope line. Do not run without an explicit request."
 license: MIT
 compatibility: Python 3.11 or later, standard library only. Explicit-only invocation verified on Claude Code 2.1.263, 2.1.265 and 2.1.267 (.claude/skills) and Codex CLI 0.153.4 (.agents/skills, ~/.agents/skills), 2026-09-08 and 2026-09-10. Other hosts untested and may model-activate this skill.
 disable-model-invocation: true
@@ -17,7 +17,7 @@ metadata:
 
 ## Purpose
 
-Design a verification plan from recorded applicability judgments and a pinned catalog. Scripts check the record and render the plan; the operator reviews the judgments.
+Write a verification plan for the scoped work, leading with its design and numbered verification requirements, followed by the applicability judgments that justify the chosen patterns. This is neither an audit of existing code nor a mechanical inference from prose. Scripts check the record and render the plan; the operator reviews the design and judgments.
 
 ## When not to use
 
@@ -28,7 +28,9 @@ The skill reads the artifact and takes no part in the host repository's workflow
 ## Inputs
 
 - Artifact: default is the current working tree. Override: a path or URL given as the
-  invocation argument or named in the conversation. Never asked for.
+  invocation argument or named in the conversation. Never asked for. The artifact may
+  be absent or a description only; then write the design from the scope and conversation
+  and record that in an assumption with topic `design-source`.
 - Scope: one line naming the part or behavior in question. Taken from the invocation
   argument text or from the conversation if the operator already said it. If neither
   supplies it, ask exactly one question and stop until answered. Never guess scope.
@@ -54,13 +56,20 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/scaffold_record.py --artifact "resolved artifact" --scope "resolved scope" --output /absolute/path/record.json
    ```
 
-4. Read `assets/catalog.json` and [judgment-record.md](references/judgment-record.md).
+4. Write `plan.design` (two to eight sentences describing the components and workflow)
+   and numbered `plan.requirements`, each stating what must be true and naming the
+   check, its inputs, and what pass and fail look like. Read an existing design document
+   in the artifact when available and cite it in `plan.source`; otherwise write the
+   design from the scope and conversation, omit `source`, and record a `design-source`
+   assumption stating that origin.
+5. Read `assets/catalog.json` and [judgment-record.md](references/judgment-record.md).
    Fill the scaffold: characterize what is generated, by whom, the completion signal,
    and self-review points. Declare the `verification-path` assumption before judging.
    Preserve every catalog condition verbatim and in order. Record each verdict and
    its artifact evidence. Unknown exclusions block apply; keep unknowns visible.
    For unknowns, explain why judgment is unavailable, write `No source in the evidence set addresses this condition.` when none does, and cite only text bearing on the condition.
    Record post-plan evidence in an undecided card's optional `resolution`, beside its original verdict.
+   Every applied card must serve at least one requirement; list it in that requirement's `patterns`.
    This is a judgment step, not an executable inference from prose.
    Fill the record-level fields as well:
    - `models`: the model family producing this record as `verifier`, and the family that
@@ -70,14 +79,14 @@ Run commands from this skill directory, with absolute paths for operator-visible
    - `measurements`: one entry per command run against the artifact, with its exit code,
      cited by id from evidence. A measurement shows what the artifact does; it is not
      evidence that the artifact records anything.
-5. Validate; correct record errors and rerun until exit 0. If the packaged dependency
+6. Validate; correct record errors and rerun until exit 0. If the packaged dependency
    fails, stop and report it without changing the pin.
 
    ```bash
    python3 scripts/validate_judgments.py /absolute/path/record.json
    ```
 
-6. Check artifact citation existence and bounds. Require exit 0 or record an explanation
+7. Check artifact citation existence and bounds. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    Several roots may be given; first file match wins, so order them deliberately.
    Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
@@ -87,13 +96,13 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
    ```
 
-7. Render the validated record:
+8. Render the validated record:
 
    ```bash
-   python3 scripts/render_plan.py /absolute/path/record.json --output /absolute/path/plan.md
+   python3 scripts/render_plan.py /absolute/path/record.json --output /absolute/path/verification-plan.md
    ```
 
-8. Complete the closing checklist. Validation does not verify substantive judgments.
+9. Complete the closing checklist. Validation does not verify substantive judgments.
 
 Source text is optional. If a question needs prose beyond the structured catalog,
 retrieve it only through this command (replace `principles` with a catalog card id
@@ -123,9 +132,11 @@ and prints a JSON destination receipt. Exit codes: 0 ok, 2 usage, 3 validation f
 4 unavailable, 5 internal. Scripts refuse, with exit 2 and no write, an output path
 that resolves to their input record or to a file inside the skill directory.
 
-The rendered plan is the deliverable. A companion document is allowed only if its top states that it is not skill output and was not validated.
+The rendered verification plan is the deliverable; the record is its evidence and stays beside it.
 
 ## Limitations
+
+Card evidence may cite requirement ids in prose (for example, `V3: the returned integer is compared by equality`), but `check_citations.py` checks only `path:line` citations and ignores requirement-id references.
 
 The installed package carries no tests or fixtures; those and `check_skills.py` live
 only in the publishing repository and are not portable. An installed copy can check
@@ -148,6 +159,7 @@ invocation controls do not prevent a model from opening it as a file.
 ## Closing checklist
 
 - Artifact and scope echoed; scope came from the operator, not a guess.
+- Plan present: design written or sourced, every applied pattern serves a requirement.
 - Snapshot check and record validator exited 0; every required condition or question covered.
 - Assumptions recorded, including verification path for design and any scope expansion.
 - `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.

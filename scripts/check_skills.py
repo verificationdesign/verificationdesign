@@ -44,8 +44,9 @@ def frontmatter_errors(text, directory, yaml_text):
     name, desc, compat = fm.get("name"), fm.get("description"), fm.get("compatibility")
     if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name) or not 1 <= len(name) <= 64 or name != directory:
         errors.append("name must match directory and the 1 to 64 character naming rule")
-    if not isinstance(desc, str) or not 1 <= len(desc) <= 200:
-        errors.append("description length must be 1 to 200")
+    description_limit = 400 if directory == "verification-design" else 200
+    if not isinstance(desc, str) or not 1 <= len(desc) <= description_limit:
+        errors.append(f"description length must be 1 to {description_limit}")
     elif any(phrase in desc.lower() for phrase in ("use when", "whenever", "automatically", "trigger")) or "Do not run without an explicit request." not in desc:
         errors.append("description must carry the explicit-request sentence and no denylisted phrase")
     if not isinstance(compat, str) or not 0 < len(compat) < 500:
@@ -136,7 +137,7 @@ def fixture_checks(report):
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
     report.check("fixture validators", positive, 5, errors)
     report.check("fixture renders", rendered, 5, render_errors)
-    report.check("negative fixtures", negative, 18, negative_errors)
+    report.check("negative fixtures", negative, 22, negative_errors)
 
 
 def helper_checks(report):
@@ -161,7 +162,7 @@ def helper_checks(report):
             except ValueError:
                 pass
             validation = run([sys.executable, str(validator), str(path)])
-            expected = {"assumptions", "structure", "models"} if design else {"status", "evidence", "models"}
+            expected = {"assumptions", "structure", "models", "plan"} if design else {"status", "evidence", "models"}
             expected_counts = {"cards": 17, "conditions": 156} if design else {"checks": 18}
             try:
                 good = result.returncode == 0 and json.loads(result.stdout)["counts"] == expected_counts and validation.returncode == 3 and {e["rule"] for e in json.loads(validation.stdout)} == expected

@@ -3,9 +3,13 @@
 ## skills/v1.2.0 (2026-09-10)
 
 Pins unchanged `corpus/v1.0.0`. Source: the audit skill run against its own package on
-2026-09-09 (twelve defects, six reproduced by the maintainer). Two new required record
+2026-09-09 (twelve defects, six reproduced by the maintainer). New required record
 fields mean v1.1.0 records do not validate unchanged.
 
+- `plan` (required, design only): design prose, optional source, and numbered
+  verification requirements, each naming the applied patterns that serve it; the
+  renderer leads with Design and Verification requirements and every applied pattern
+  states which requirements it serves. The companion-document rule is withdrawn.
 - `skill` (required): name, version and pinned hashes of the package that judged the
   record, emitted by the scaffold and checked for an exact match by the validators. The
   audit skill now pins its question checklist with `metadata.checklist-sha256`, verified

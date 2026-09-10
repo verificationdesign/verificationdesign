@@ -16,6 +16,26 @@ Generator model: unknown
 
 Verifier model: fixture author, no model review
 
+## Design
+
+An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion. In this hypothetical variant, adapting the general Comparator costs more than one-off human review.
+
+Source: artifact/workflow.md
+
+## Verification requirements
+
+### V1: The returned integer equals the expected integer on every regression run.
+
+Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.
+
+Patterns: [Executable Analog][executable-analog] ([pinned source][executable-analog-src])
+
+### V2: The check exits non-zero on any mismatch and the run log records it.
+
+Run the assertion harness with a mismatching return and capture its exit code and failure output in the run log. Pass only when the exit code is non-zero and the log records the mismatch; a zero exit or missing failure record fails. This failure-path log check is planned, not recorded as executed.
+
+Patterns: none
+
 ## Assumptions
 
 - verification-path: The executable fixture check and its documented completion signal.
@@ -23,6 +43,8 @@ Verifier model: fixture author, no model review
 ## Summary
 
 Apply: 1; reject: 16; undecided: 0; unknown verdicts: 0.
+
+Requirements: 2
 
 Operator decisions:
 
@@ -47,6 +69,10 @@ None recorded.
 [Executable Analog][executable-analog] ([pinned source][executable-analog-src])
 
 An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
+
+Decision: apply
+
+Serves: V1
 
 - use_when: the claim being verified can be expressed as a deterministic check (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
 - use_when: the output has structure (DOM, JSON, exit code, log line) that can be queried (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.

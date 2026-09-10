@@ -13,6 +13,7 @@ def scaffold(artifact, scope):
     record = dict(corpus_revision=catalog["revision"], skill=skill_pins(meta), artifact=artifact, scope=scope,
                   models=dict(generator="", verifier=""),
                   assumptions=[{"topic": "verification-path", "statement": ""}])
+    record["plan"] = dict(design="", requirements=[])
     record["workflow"] = dict(generated="", generator="", completion_signal="", self_review_points=[])
     record["cards"] = [dict(id=c["id"], decision="", reason="", **{
         group: [dict(condition=text, verdict="", evidence="") for text in c[group]]

@@ -2,9 +2,26 @@
 
 A JSON object has non-empty `corpus_revision` (the packaged revision), `skill` and
 `models` (see Shared record fields), `artifact`, one-line `scope`, `workflow`,
-`assumptions`, and `cards`.
+`assumptions`, `plan`, and `cards`.
 `workflow` has non-empty strings `generated`, `generator`, `completion_signal`, and
 `self_review_points`, a list of non-empty strings (may be empty).
+
+`plan` (required, rule `plan`) is an object with non-empty string `design` (two to
+eight sentences describing the components and workflow), optional non-empty string
+`source` (an existing design document path or path:lines), and a non-empty `requirements`
+list, with no other keys. Omit `source` when the design is written from the scope and
+conversation; record that origin in a `design-source` assumption.
+
+Each requirement has exactly `id`, `statement`, `check` and `patterns`: ids are `V1`,
+`V2`, and so on, contiguous in list order; statement and check are non-empty strings.
+The check names what will run, what it reads, and pass and fail outcomes. `patterns`
+is a list of applied card ids without duplicates; it may be empty for a check motivated
+by the design alone. Every applied card must serve at least one requirement. Rejected
+and undecided cards cannot appear in this list. Example requirement:
+
+```json
+{"id": "V1", "statement": "The returned integer equals the expected integer.", "check": "Run the regression assertions on the function return and expected values; equality passes, any mismatch fails.", "patterns": ["verification/comparator"]}
+```
 
 Each catalog card appears exactly once by `id`. Its `use_when` and `do_not_use_when`
 lists copy every condition verbatim in catalog order, in objects with `condition`,
@@ -21,7 +38,7 @@ an unrelated passage; a citation on an unknown verdict must bear on the conditio
 Rules: `structure`, `coverage`, `conditions`, `verdicts`, `decision-apply`,
 `decision-reject`, `decision-undecided`, plus the shared rules `skill`, `models`,
 `assumptions`, `measurements`, `artifact-identity`, `unavailable-sources`, `priority`
-and `instantiation`, plus `resolution`. Errors name card, rule and message; exit 3.
+and `instantiation`, plus `resolution` and `plan`. Errors name card, rule and message; exit 3.
 Success reports cards, apply, reject, undecided and unknown verdict counts; exit 0.
 
 Design requires at least one `verification-path` assumption (rule `assumptions`).
@@ -29,8 +46,9 @@ Per-card optional string `instantiation` describes this artifact's observable si
 and determinism move (rule `instantiation`), rendered after Determinism move.
 Optional record-level `priority` is an ordered list of applied card ids, each at most
 once (rule `priority`); the Summary renders it as Recommended order.
-An emitted scaffold fails `assumptions`, `structure` and `models`: its verification-path
-statement, workflow, model families and card reasons are unfilled. Fill verdicts and
+An emitted scaffold fails `assumptions`, `structure`, `models` and `plan`: its verification-path
+statement, workflow, model families, card reasons and design are unfilled, and its
+requirements list is empty. Fill verdicts and
 decisions too before validation.
 
 Per-card optional `resolution` (rule `resolution`) is allowed only when `decision` is

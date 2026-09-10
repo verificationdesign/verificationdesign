@@ -6,3 +6,5 @@ Comparator is rejected on the recorded cost exclusion. Five negative records iso
 Version 1.1.0 records include assumptions and summary/reference-style rendering.
 Design records declare the verification path.
 New negatives reject missing assumptions/path, rejected priority, duplicate measurements and an unfilled scaffold.
+
+Requirements: V1 checks exact integer equality on every regression run; V2 checks non-zero failure exit and its run-log record.

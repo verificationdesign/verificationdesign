@@ -32,7 +32,7 @@ class ParserTests(unittest.TestCase):
     def test_bad_description(self):
         for phrase in ("use when", "whenever", "automatically", "trigger"):
             with self.subTest(phrase=phrase):
-                bad = self.text.replace("Design a verification plan", phrase + " a verification plan")
+                bad = self.text.replace("Write a verification plan", phrase + " a verification plan")
                 self.assertTrue(checker.frontmatter_errors(bad, DESIGN.name, self.yaml))
 
     def test_missing_explicit_request_sentence(self):
@@ -93,6 +93,128 @@ class DecisionTests(unittest.TestCase):
         card = next(c for c in record["cards"] if c["decision"] == "apply")
         card["do_not_use_when"][0]["verdict"] = "unknown"
         self.assertIn("decision-undecided", {error["rule"] for error in validate(record)})
+
+
+class PlanTests(unittest.TestCase):
+    def setUp(self):
+        self.record = json.loads((ROOT / "skills/fixtures/design-sound/record.json").read_text())
+
+    def assert_plan_error(self):
+        self.assertEqual({error["rule"] for error in validate(self.record)}, {"plan"})
+
+    def test_missing_or_non_object_plan(self):
+        self.record.pop("plan")
+        self.assert_plan_error()
+        for value in (None, [], "design"):
+            self.record["plan"] = value
+            self.assert_plan_error()
+
+    def test_plan_keys(self):
+        original = copy.deepcopy(self.record["plan"])
+        for key in ("design", "requirements"):
+            self.record["plan"] = copy.deepcopy(original)
+            self.record["plan"].pop(key)
+            self.assert_plan_error()
+        self.record["plan"] = dict(original, extra=True)
+        self.assert_plan_error()
+
+    def test_plan_design_nonempty_string(self):
+        for value in (None, [], 1, "", " "):
+            self.record["plan"]["design"] = value
+            self.assert_plan_error()
+
+    def test_plan_source_nonempty_string_when_present(self):
+        for value in (None, [], 1, "", " "):
+            self.record["plan"]["source"] = value
+            self.assert_plan_error()
+        self.record["plan"].pop("source")
+        self.assertEqual(validate(self.record), [])
+
+    def test_requirements_nonempty_list(self):
+        for value in (None, {}, "V1", []):
+            self.record["plan"]["requirements"] = value
+            self.assert_plan_error()
+
+    def test_requirement_object_and_exact_keys(self):
+        original = copy.deepcopy(self.record["plan"]["requirements"][0])
+        variants = [None, [], {}, dict(original, extra=True)]
+        variants += [{k: v for k, v in original.items() if k != key} for key in original]
+        for value in variants:
+            self.record["plan"]["requirements"][0] = value
+            self.assert_plan_error()
+
+    def test_requirement_ids_contiguous_in_order(self):
+        for value in ("V3", "V1", "v2", 2, None, []):
+            self.record["plan"]["requirements"][1]["id"] = value
+            self.assert_plan_error()
+        self.record["plan"]["requirements"][1]["id"] = "V2"
+        self.record["plan"]["requirements"].reverse()
+        self.assert_plan_error()
+
+    def test_requirement_statement_nonempty_string(self):
+        for value in (None, [], 1, "", " "):
+            self.record["plan"]["requirements"][0]["statement"] = value
+            self.assert_plan_error()
+
+    def test_requirement_check_nonempty_string(self):
+        for value in (None, [], 1, "", " "):
+            self.record["plan"]["requirements"][0]["check"] = value
+            self.assert_plan_error()
+
+    def test_patterns_must_be_list(self):
+        for value in (None, {}, "verification/comparator"):
+            self.record["plan"]["requirements"][1]["patterns"] = value
+            self.assert_plan_error()
+
+    def test_patterns_name_only_applied_cards(self):
+        for value in (None, [], {}, "missing/card", "context-and-state/constitution"):
+            self.record["plan"]["requirements"][1]["patterns"] = [value]
+            self.assert_plan_error()
+        self.record = json.loads((ROOT / "skills/fixtures/design-resolved/record.json").read_text())
+        self.record["plan"]["requirements"][1]["patterns"] = ["verification/executable-analog"]
+        self.assert_plan_error()
+
+    def test_patterns_no_duplicates_within_requirement(self):
+        patterns = self.record["plan"]["requirements"][0]["patterns"]
+        patterns.append(patterns[0])
+        self.assert_plan_error()
+
+    def test_every_applied_card_serves_requirement(self):
+        self.record["plan"]["requirements"][0]["patterns"].pop()
+        self.assert_plan_error()
+
+    def test_empty_patterns_and_card_serving_multiple_requirements(self):
+        self.assertEqual(validate(self.record), [])
+        self.record["plan"]["requirements"][1]["patterns"] = ["verification/comparator"]
+        self.assertEqual(validate(self.record), [])
+
+    def test_plan_render_order_sources_and_served_requirements(self):
+        from render_plan import render
+        from load_catalog import load_catalog
+        catalog, meta = load_catalog()
+        self.record["plan"]["requirements"][1]["patterns"] = ["verification/comparator"]
+        before = copy.deepcopy(self.record)
+        text = render(self.record, catalog, meta)
+        self.assertEqual(self.record, before)
+        self.assertEqual([line for line in text.splitlines() if line.startswith("## ")], [
+            "## Design", "## Verification requirements", "## Assumptions", "## Measurements",
+            "## Summary", "## Workflow characterization", "## Patterns applied",
+            "## Patterns rejected", "## Not verified", "## Sources"])
+        self.assertIn("Source: artifact/workflow.md", text)
+        self.assertIn("Requirements: 2", text)
+        applied = text.split("## Patterns applied", 1)[1].split("## Patterns rejected", 1)[0]
+        self.assertIn("Decision: apply\n\nServes: V1, V2", applied)
+        requirements = text.split("## Verification requirements", 1)[1].split("## Assumptions", 1)[0]
+        self.assertLess(requirements.index("[Comparator][comparator]"), requirements.index("[Executable Analog][executable-analog]"))
+        self.assertEqual(text.count("[comparator]: "), 1)
+        self.assertEqual(text, render(self.record, catalog, meta))
+        self.record["plan"].pop("source")
+        self.record.pop("measurements")
+        self.record["plan"]["requirements"][1]["patterns"] = []
+        text = render(self.record, catalog, meta)
+        self.assertNotIn("Source: artifact/workflow.md", text)
+        self.assertNotIn("## Measurements", text)
+        self.assertIn("Patterns: none", text)
 
 
 class OutputBoundaryTests(unittest.TestCase):
@@ -180,7 +302,7 @@ class ReleaseTests(unittest.TestCase):
     def test_scaffolds_copy_fields_and_fail_validation(self):
         catalog = json.loads((DESIGN / "assets/catalog.json").read_text())
         with tempfile.TemporaryDirectory() as tmp:
-            for kind, counts, rules in (("design", {"cards": 17, "conditions": 156}, {"assumptions", "structure", "models"}),
+            for kind, counts, rules in (("design", {"cards": 17, "conditions": 156}, {"assumptions", "structure", "models", "plan"}),
                                         ("audit", {"checks": 18}, {"status", "evidence", "models"})):
                 path = Path(tmp) / (kind + ".json")
                 result = self.run_script(kind, "scaffold_record.py", "--artifact", "test artifact", "--scope", "test scope", "--output", path)
@@ -195,6 +317,7 @@ class ReleaseTests(unittest.TestCase):
                 if kind == "design":
                     self.assertEqual([c["id"] for c in record["cards"]], [c["id"] for c in catalog["cards"]])
                     self.assertTrue(all("resolution" not in c for c in record["cards"]))
+                    self.assertEqual(record["plan"], {"design": "", "requirements": []})
                     for card, source in zip(record["cards"], catalog["cards"]):
                         for group in ("use_when", "do_not_use_when"):
                             self.assertEqual([c["condition"] for c in card[group]], source[group])

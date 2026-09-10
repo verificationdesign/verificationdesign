@@ -16,6 +16,26 @@ Generator model: unknown
 
 Verifier model: fixture author, no model review
 
+## Design
+
+An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion.
+
+Source: artifact/workflow.md
+
+## Verification requirements
+
+### V1: The returned integer equals the expected integer on every regression run.
+
+Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.
+
+Patterns: [Comparator][comparator] ([pinned source][comparator-src]), [Executable Analog][executable-analog] ([pinned source][executable-analog-src])
+
+### V2: The check exits non-zero on any mismatch and the run log records it.
+
+Run the assertion harness with a mismatching return and capture its exit code and failure output in the run log. Pass only when the exit code is non-zero and the log records the mismatch; a zero exit or missing failure record fails. This failure-path log check is planned, not recorded as executed.
+
+Patterns: none
+
 ## Assumptions
 
 - verification-path: The executable fixture check and its documented completion signal.
@@ -27,6 +47,8 @@ Verifier model: fixture author, no model review
 ## Summary
 
 Apply: 2; reject: 15; undecided: 0; unknown verdicts: 0.
+
+Requirements: 2
 
 Operator decisions:
 
@@ -57,6 +79,10 @@ None recorded.
 
 An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
 
+Decision: apply
+
+Serves: V1
+
 - use_when: the claim being verified can be expressed as a deterministic check (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
 - use_when: the output has structure (DOM, JSON, exit code, log line) that can be queried (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
 - use_when: you can write a test rather than just describe one (holds). Evidence: artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.
@@ -79,6 +105,10 @@ Instantiation: The fixture check emits a pass only after its asserted comparison
 [Comparator][comparator] ([pinned source][comparator-src])
 
 Expected and observed integers are separate and equality is the named comparison operator.
+
+Decision: apply
+
+Serves: V1
 
 - use_when: the check has a known expected value, pattern, reference object, or expected event sequence (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
 - use_when: the observed value can be extracted separately from the comparison (holds). Evidence: artifact/workflow.md:3-16: Expected and observed integers are separate and equality is the named comparison operator.
@@ -252,10 +282,10 @@ None in the judgment record.
 
 Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 
-[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
-[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md
 [comparator]: https://verificationdesign.com/patterns/verification/comparator/
 [comparator-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/comparator.md
+[executable-analog]: https://verificationdesign.com/patterns/verification/executable-analog/
+[executable-analog-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/executable-analog.md
 [constitution]: https://verificationdesign.com/patterns/context-and-state/constitution/
 [constitution-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/constitution.md
 [guardrail-decorator]: https://verificationdesign.com/patterns/context-and-state/guardrail-decorator/

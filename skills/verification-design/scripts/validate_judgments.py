@@ -23,6 +23,48 @@ def decision(use, exclude):
     return "undecided"
 
 
+def validate_plan(record, fail):
+    plan = record.get("plan")
+    if not isinstance(plan, dict):
+        fail(None, "plan", "plan must be an object")
+        return
+    if not {"design", "requirements"} <= set(plan) or set(plan) - {"design", "source", "requirements"}:
+        fail(None, "plan", "plan requires design and requirements, with only source optional")
+    if not nonempty(plan.get("design")):
+        fail(None, "plan", "plan.design must be a non-empty string")
+    if "source" in plan and not nonempty(plan["source"]):
+        fail(None, "plan", "plan.source must be a non-empty string")
+    requirements = plan.get("requirements")
+    if not isinstance(requirements, list) or not requirements:
+        fail(None, "plan", "plan.requirements must be a non-empty list")
+        return
+    cards = record.get("cards")
+    applied = {c["id"] for c in cards if isinstance(c, dict) and isinstance(c.get("id"), str)
+               and c.get("decision") == "apply"} if isinstance(cards, list) else set()
+    served = set()
+    for index, requirement in enumerate(requirements, 1):
+        if not isinstance(requirement, dict) or set(requirement) != {"id", "statement", "check", "patterns"}:
+            fail(None, "plan", "each requirement needs exactly id, statement, check and patterns")
+            continue
+        if requirement["id"] != f"V{index}":
+            fail(None, "plan", "requirement ids must be contiguous from V1 in list order")
+        for key in ("statement", "check"):
+            if not nonempty(requirement[key]):
+                fail(None, "plan", "requirement " + key + " must be a non-empty string")
+        patterns = requirement["patterns"]
+        if not isinstance(patterns, list):
+            fail(None, "plan", "requirement patterns must be a list of applied card ids")
+            continue
+        ids = [cid for cid in patterns if isinstance(cid, str)]
+        if len(ids) != len(patterns) or any(cid not in applied for cid in ids):
+            fail(None, "plan", "requirement patterns must name only applied cards")
+        if len(set(ids)) != len(ids):
+            fail(None, "plan", "requirement patterns must not contain duplicates")
+        served.update(ids)
+    for cid in sorted(applied - served):
+        fail(cid, "plan", "every applied card must serve at least one requirement")
+
+
 def validate(record, catalog=None, meta=None):
     if catalog is None or meta is None:
         loaded_catalog, loaded_meta = load_catalog()
@@ -34,6 +76,7 @@ def validate(record, catalog=None, meta=None):
         fail(None, "structure", "record must be an object")
         return errors
     validate_common(record, fail, meta, design=True)
+    validate_plan(record, fail)
     for key in ("corpus_revision", "artifact", "scope"):
         if not nonempty(record.get(key)):
             fail(None, "structure", key + " must be a non-empty string")

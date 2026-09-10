@@ -1,8 +1,8 @@
 # Verification skills
 
 Two self-contained Agent Skills apply the Verification Design methodology to an
-operator's artifact. `verification-design` builds a verification plan from recorded
-catalog applicability judgments. `verification-audit` checks an existing artifact
+operator's artifact. `verification-design` writes a design and numbered verification requirements with
+checks, justified by recorded catalog applicability judgments. `verification-audit` checks an existing artifact
 against nine principles and reports evidence, defects and uncertainty, with catalog
 routing and no fix proposals. Scripts validate and render records so their shape is
 consistent across hosts. They do not decide whether a judgment is true.

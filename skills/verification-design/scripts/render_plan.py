@@ -10,8 +10,22 @@ from render_fields import header, unavailable, Sources
 def render(record, catalog, meta):
     sources = Sources()
     lines = header("Verification plan", record, catalog, meta)
+    plan = record["plan"]
+    catalog_by_id = {c["id"]: c for c in catalog["cards"]}
+    plan_lines = ["## Design", "", plan["design"], ""]
+    if "source" in plan:
+        plan_lines += ["Source: " + plan["source"], ""]
+    plan_lines += ["## Verification requirements", ""]
+    for requirement in plan["requirements"]:
+        citations = [sources.card(catalog_by_id[cid]) for cid in requirement["patterns"]]
+        plan_lines += [f'### {requirement["id"]}: {requirement["statement"]}', "",
+                       requirement["check"], "", "Patterns: " + (", ".join(citations) or "none"), ""]
+    # The shared header includes assumptions and measurements; keep their formatter intact.
+    start = lines.index("## Assumptions")
+    lines[start:start] = plan_lines
     totals = counts(record)
     lines += ["## Summary", "", f'Apply: {totals["apply"]}; reject: {totals["reject"]}; undecided: {totals["undecided"]}; unknown verdicts: {totals["unknown"]}.', ""]
+    lines += [f'Requirements: {len(plan["requirements"])}', ""]
     by_id = {c["id"]: c for c in record["cards"]}
     lines += ["Operator decisions:", ""]
     undecided = [c for c in catalog["cards"] if by_id[c["id"]]["decision"] == "undecided"]
@@ -44,6 +58,8 @@ def render(record, catalog, meta):
             judgment = by_id[card["id"]]
             lines += ["### " + card["title"], "", sources.card(card), "", judgment["reason"], ""]
             if selection == "apply":
+                serves = [r["id"] for r in plan["requirements"] if card["id"] in r["patterns"]]
+                lines += ["Decision: apply", "", "Serves: " + ", ".join(serves), ""]
                 conditions = [("use_when", c) for c in judgment["use_when"] if c["verdict"] == "holds"]
             else:
                 conditions = [("do_not_use_when", c) for c in judgment["do_not_use_when"] if c["verdict"] == "holds"]

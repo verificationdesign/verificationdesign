@@ -6,8 +6,8 @@
     "catalog_sha256": "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f",
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a"
   },
-  "artifact": "skills/fixtures/design-resolved/artifact",
-  "scope": "Verify the design-resolved pure square function against its exact integer specification, preserving the spec-stage judgment beside later build evidence.",
+  "artifact": "skills/fixtures/design-sound/artifact",
+  "scope": "Verify the pure square function against its exact integer specification.",
   "models": {
     "generator": "unknown",
     "verifier": "fixture author, no model review"
@@ -15,7 +15,7 @@
   "workflow": {
     "generated": "A pure Python square function.",
     "generator": "A one-shot code-generating agent.",
-    "completion_signal": "Planned local equality assertions exit successfully.",
+    "completion_signal": "Existing local equality assertions exit successfully.",
     "self_review_points": []
   },
   "cards": [
@@ -331,8 +331,8 @@
         },
         {
           "condition": "the extractor would be more brittle than the LLM judgment it replaces",
-          "verdict": "unknown",
-          "evidence": "artifact/workflow.md:7: the extractor is unwritten, so its brittleness relative to the model judgment cannot be judged until it exists."
+          "verdict": "does-not-hold",
+          "evidence": "artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check."
         },
         {
           "condition": "the cost of writing the executable check exceeds the cost of one-off human review",
@@ -345,15 +345,9 @@
           "evidence": "artifact/workflow.md:3-16: An assertion compares the pure function result against a specified integer, repeatedly in a local regression check."
         }
       ],
-      "decision": "undecided",
-      "reason": "The extractor is unwritten at spec stage, so its brittleness relative to model judgment cannot yet be judged.",
-      "instantiation": "The fixture check emits a pass only after its asserted comparison holds.",
-      "resolution": {
-        "date": "2026-09-10",
-        "observation": "The later fixture build uses direct integer assertions and both pass with exit 0.",
-        "evidence": "artifact/check.py:1-6 records the function and assertions.",
-        "measurement": "fixture-check"
-      }
+      "decision": "apply",
+      "reason": "An assertion compares the pure function result against a specified integer, repeatedly in a local regression check.",
+      "instantiation": "The fixture check emits a pass only after its asserted comparison holds."
     },
     {
       "id": "verification/blind-oracle",
@@ -967,6 +961,7 @@
     }
   ],
   "priority": [
+    "verification/executable-analog",
     "verification/comparator"
   ],
   "unavailable_sources": [
@@ -984,11 +979,11 @@
       "exit_code": 0,
       "artifact_revision": "",
       "log": null,
-      "note": "Later fixture build ran with exit 0 and empty stdout; this does not rewrite the spec-stage verdict."
+      "note": "Reproduced during fixture update; stdout was empty."
     }
   ],
   "plan": {
-    "design": "An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion. The extractor is not yet written at design time; a later build will exercise it through the same assertions.",
+    "design": "An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion.",
     "source": "artifact/workflow.md",
     "requirements": [
       {
@@ -996,14 +991,17 @@
         "statement": "The returned integer equals the expected integer on every regression run.",
         "check": "Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.",
         "patterns": [
-          "verification/comparator"
+          "verification/comparator",
+          "verification/executable-analog"
         ]
       },
       {
         "id": "V2",
-        "statement": "The extractor, once written, is exercised by the same check.",
-        "check": "Once the extractor exists, run python3 artifact/check.py and inspect its direct calls to the generated function and equality assertions. Pass when the same check exercises the returned values and both assertions hold; fail if extraction is bypassed or either comparison fails.",
-        "patterns": []
+        "statement": "The check exits non-zero on any mismatch and the run log records it.",
+        "check": "Run the assertion harness with a mismatching return and capture its exit code and failure output in the run log. Pass only when the exit code is non-zero and the log records the mismatch; a zero exit or missing failure record fails. This failure-path log check is planned, not recorded as executed.",
+        "patterns": [
+          "context-and-state/constitution"
+        ]
       }
     ]
   }

@@ -986,5 +986,26 @@
       "log": null,
       "note": "Later fixture build ran with exit 0 and empty stdout; this does not rewrite the spec-stage verdict."
     }
-  ]
+  ],
+  "plan": {
+    "design": "An agent generates a pure Python function returning the square of an integer in one step. A local assertion harness compares square(7) with 49 and square(-3) with 9 on every regression run; its exit code determines completion. The extractor is not yet written at design time; a later build will exercise it through the same assertions.",
+    "source": "artifact/workflow.md",
+    "requirements": [
+      {
+        "id": "V1",
+        "statement": "The returned integer equals the expected integer on every regression run.",
+        "check": "Run python3 artifact/check.py to compare square(7) with 49 and square(-3) with 9 by equality. Both equalities must hold to pass; any mismatch fails.",
+        "patterns": [
+          "verification/comparator",
+          "verification/executable-analog"
+        ]
+      },
+      {
+        "id": "V2",
+        "statement": "The extractor, once written, is exercised by the same check.",
+        "check": "Once the extractor exists, run python3 artifact/check.py and inspect its direct calls to the generated function and equality assertions. Pass when the same check exercises the returned values and both assertions hold; fail if extraction is bypassed or either comparison fails.",
+        "patterns": []
+      }
+    ]
+  }
 }

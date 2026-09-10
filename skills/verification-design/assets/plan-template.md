@@ -18,6 +18,20 @@ Verifier model: <model family>
 
 Artifact identity: <optional revision, count and files>
 
+## Design
+
+<plan.design prose>
+
+Source: <optional plan.source; omit this line when absent>
+
+## Verification requirements
+
+### V1: <statement>
+
+<check, its inputs, and pass and fail outcomes>
+
+Patterns: <reference-style card citations in requirement order, or none>
+
 ## Assumptions
 
 <rendered record content>
@@ -28,7 +42,11 @@ Optional; omit when absent.
 
 ## Summary
 
-<rendered record content>
+<decision and unknown counts>
+
+Requirements: <count>
+
+<operator decisions and optional recommended order>
 
 ## Workflow characterization
 
@@ -36,7 +54,7 @@ Optional; omit when absent.
 
 ## Patterns applied
 
-<rendered record content>
+<each entry includes Decision: apply followed directly by Serves: V1, V3>
 
 ## Patterns rejected
 
