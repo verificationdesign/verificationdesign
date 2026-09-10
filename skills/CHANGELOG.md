@@ -1,6 +1,6 @@
 # Changelog
 
-## skills/v1.2.0 (unreleased)
+## skills/v1.2.0 (2026-09-10)
 
 Pins unchanged `corpus/v1.0.0`. Source: the audit skill run against its own package on
 2026-09-09 (twelve defects, six reproduced by the maintainer). Two new required record
@@ -36,7 +36,10 @@ fields mean v1.1.0 records do not validate unchanged.
 - Citation checking accepts several `--root` arguments in order, uses the first file
   match, and reports the given roots and each found citation's resolving root.
 
-Compatibility line unchanged pending host reruns; the hosts named were tested on v1.1.0.
+Compatibility line adds Claude Code 2.1.267 (four invocation probes rerun on 2026-09-10).
+Blind tests of the five fixtures passed on Claude Code 2.1.267 and Codex CLI 0.153.4 against
+this release. Antigravity CLI 1.2.0 ran both skills by explicit path invocation; its
+invocation controls were not probed, so it is listed as observed, not verified.
 
 ## skills/v1.1.0 (2026-09-08)
 

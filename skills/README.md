@@ -57,20 +57,22 @@ enforces the shipped defaults; an installed copy may differ.
 
 ## Guarantee scope
 
-Observed invocation-control results recorded by the maintainer on 2026-09-08:
+Observed invocation-control results recorded by the maintainer on 2026-09-08 and 2026-09-10:
 
 | Host | Version | Scan path | Explicit-only enforced | Date |
 |---|---|---|---|---|
-| Claude Code | 2.1.263, 2.1.265 | `.claude/skills/` | yes (tests 1 to 4) | 2026-09-08 |
+| Claude Code | 2.1.263, 2.1.265, 2.1.267 | `.claude/skills/` | yes (tests 1 to 4) | 2026-09-08, 2026-09-10 |
 | Codex CLI | 0.153.4 | `.agents/skills/`, `~/.agents/skills/` | yes, both scopes | 2026-09-08 |
+| Antigravity CLI | 1.2.0 | `.gemini/skills/`, `~/.gemini/antigravity-cli/skills/` | not probed; explicit invocation by path observed | 2026-09-10 |
 | Copilot | not tested | | unsupported | |
 
 Other hosts are untested and may model-activate the skill. The probes observed hidden
 catalog entries, working explicit invocation and no implicit invocation, with an
 unflagged control activating. This table describes host invocation controls, not the
-correctness of these skills' judgments. Blind task-level tests of skills/v1.0.0
-(four fixtures, records and expected outputs withheld) passed on both tested hosts on
-2026-09-08; the maintainer judged each output against the fixture's expected file.
+correctness of these skills' judgments. Blind task-level tests (fixture artifacts only,
+records and expected outputs withheld) passed on Claude Code and Codex for v1.0.0 and
+v1.1.0 on 2026-09-08 and for v1.2.0 on 2026-09-10 (five fixtures); the maintainer
+judged each output against the fixture's required result.
 The maintainer reruns blind host tests for each release before tagging it; the
 compatibility line names only versions on which the probes were actually rerun.
 

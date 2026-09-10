@@ -2,7 +2,7 @@
 name: verification-design
 description: Design a verification plan for work being built, using the verificationdesign.com pattern catalog at a pinned revision. Needs a scope line. Do not run without an explicit request.
 license: MIT
-compatibility: Python 3.11 or later, standard library only. Explicit-only invocation verified on Claude Code 2.1.263 and 2.1.265 (.claude/skills) and Codex CLI 0.153.4 (.agents/skills, ~/.agents/skills) on 2026-09-08. Other hosts untested and may model-activate this skill.
+compatibility: Python 3.11 or later, standard library only. Explicit-only invocation verified on Claude Code 2.1.263, 2.1.265 and 2.1.267 (.claude/skills) and Codex CLI 0.153.4 (.agents/skills, ~/.agents/skills), 2026-09-08 and 2026-09-10. Other hosts untested and may model-activate this skill.
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
@@ -140,9 +140,9 @@ requests. Nothing is cached. An optional drift report never changes the loaded p
 The validators check recorded judgments, not their truth or the completeness of the
 underlying evidence. Substantive conclusions require operator review.
 
-Explicit-only activation was observed on Claude Code 2.1.263 and 2.1.265 in `.claude/skills` and
-Codex CLI 0.153.4 in `.agents/skills` and `~/.agents/skills` on 2026-09-08. Other hosts
-are untested and may model-activate this skill. SKILL.md is an ordinary readable file;
+Explicit-only activation was observed on Claude Code 2.1.263, 2.1.265 and 2.1.267 in
+`.claude/skills` and Codex CLI 0.153.4 in `.agents/skills` and `~/.agents/skills` on
+2026-09-08 and 2026-09-10. Other hosts are untested and may model-activate this skill. SKILL.md is an ordinary readable file;
 invocation controls do not prevent a model from opening it as a file.
 
 ## Closing checklist
