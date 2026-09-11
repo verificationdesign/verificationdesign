@@ -327,7 +327,6 @@ hr {
 .category { display: grid; align-content: start; }
 .category-title { font-family: var(--font-sans); font-size: 1.25rem; margin: 0 0 var(--space-1); }
 .category-blurb { color: var(--muted); margin: 0 0 var(--space-3); }
-.category-count { color: var(--muted); }
 .card-list {
   list-style: none;
   padding: 0;
@@ -569,7 +568,7 @@ hr {
   h1 { font-size: 2rem; }
   h2 { font-size: 1.4rem; }
   .category-grid { grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); }
-  .category-blurb { min-height: 3.2rem; }
+  .category-blurb { min-height: calc(2 * var(--line-base) * 1em); }
 }
 
 @media (min-width: 1024px) {

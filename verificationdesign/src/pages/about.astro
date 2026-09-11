@@ -73,6 +73,12 @@ import { REPO_URL } from '../lib/repo';
       state is not overwritten.
     </p>
 
+    <p>
+      The repository runs its verification pipeline on deploy-bound changes
+      and refuses publication on failure. A deployed site is a passing
+      artifact by construction.
+    </p>
+
     <h2>Disclaimer</h2>
     <p>
       These patterns are working design notes, not settled doctrine. They
@@ -86,19 +92,5 @@ import { REPO_URL } from '../lib/repo';
       earlier conclusions. Read the dates on each card.
     </p>
 
-    <h2>Why</h2>
-    <p>
-      This site is meant for people to learn from. It carries no author
-      name on purpose. The way I see it: I learned and had fun, so I
-      already won. If anyone else does, that's extra icing.
-    </p>
-    <p>
-      A maintainer name is not a verification method. This project should
-      be evaluated the way it says to evaluate agent work: by evidence,
-      checks, and reproducible artifacts, not by personal trust. The
-      <a href={REPO_URL}>repository</a> runs its verification pipeline on
-      deploy-bound changes and refuses publication on failure. A deployed
-      site is a passing artifact by construction.
-    </p>
   </div>
 </BaseLayout>

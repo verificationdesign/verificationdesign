@@ -30,7 +30,7 @@ const CATEGORY_INFO: Record<CategoryKey, { label: string; blurb: string }> = {
   },
   'orchestration': {
     label: 'Orchestration',
-    blurb: 'How to control bias through independence and feedback routing.',
+    blurb: 'How to control bias through independence and routing.',
   },
 };
 
@@ -38,7 +38,7 @@ const visible = (Object.keys(CATEGORY_INFO) as CategoryKey[]).filter(
   (key) => grouped[key].length > 0,
 );
 
-const { showCount = true, headingLevel = 'h2' } = Astro.props;
+const { headingLevel = 'h2' } = Astro.props;
 const Heading = headingLevel;
 ---
 
@@ -48,7 +48,6 @@ const Heading = headingLevel;
       <Heading class="category-title">{CATEGORY_INFO[key].label}</Heading>
       <p class="category-blurb">
         {CATEGORY_INFO[key].blurb}
-        {showCount && <span class="category-count"> {grouped[key].length} {grouped[key].length === 1 ? 'pattern' : 'patterns'}.</span>}
       </p>
       <ul class="card-list">
         {grouped[key].map((card) => (

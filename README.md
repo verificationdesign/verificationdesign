@@ -24,10 +24,6 @@ The thesis here is that "looks good" is not verification, so this project does n
 - [`scripts/verify.py`](scripts/verify.py) checks link liveness, citation and reference balance, provenance of every dated update, and that the synthesis holding area is append-only.
 - CI runs all of the above and refuses to deploy the site on any failure. A deployed site is a passing site by construction.
 
-## No author brand
-
-The site carries no author name on purpose. This material is meant to be learned from, not followed. Evaluate it the way it says to evaluate agent work: by the citations and the checks, not by trust in whoever wrote it.
-
 ## Running the checks
 
 ```
