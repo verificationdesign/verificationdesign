@@ -100,7 +100,7 @@ retrieval tests; run them on the maintainer's host and report the failure explic
 - `cd verificationdesign && npm run check:twins`: independently verify generated markdown twins and discovery files.
 - `cd verificationdesign && npm run verify`: build, type-check, lint cards, and run the accessibility smoke check.
 
-`scripts/scout.py` harvests arXiv via the OAI-PMH `ListRecords` interface serially with a fixed 10 second delay between requests, stops immediately on `429`, backs off on `503` and timeouts, caps raw OAI pages per category, and exits non-zero rather than writing partial scout output after a request failure. OAI-PMH windows track metadata datestamps, not original submission dates; per-entry Created, Updated, and OAI datestamp fields let triage tell new submissions, re-versions, and metadata corrections apart.
+`scripts/scout.py` harvests arXiv via the OAI-PMH `ListRecords` interface serially with a fixed 10 second delay between requests, stops immediately on `429`, backs off on `503`, timeouts and dropped connections (Retry-After honored up to 300 seconds), caps raw OAI pages per category, marks a category whose read stopped at `--max-per-category`, and exits non-zero rather than writing partial scout output after a request failure. OAI-PMH windows track metadata datestamps, not original submission dates; per-entry Created, Updated, and OAI datestamp fields let triage tell new submissions, re-versions, and metadata corrections apart.
 
 ## UX Verification Loop
 

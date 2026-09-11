@@ -28,7 +28,6 @@ import http.client
 import json
 import sys
 import time
-import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
 from collections import OrderedDict
@@ -46,6 +45,7 @@ ARXIV_NS = "{http://arxiv.org/OAI/arXiv/}"
 USER_AGENT = "ai-research-scout/2.0 (mechanical arxiv discovery)"
 MIN_DELAY_SECONDS = 10.0
 MAX_OAI_PAGES_PER_CATEGORY = 20
+MAX_RETRY_AFTER_SECONDS = 300.0
 
 
 class HTTPStatusError(Exception):
@@ -161,18 +161,22 @@ def parse_date(value: str | None) -> dt.date | None:
 
 
 def retry_after_seconds(headers: Any) -> float | None:
+    """Seconds to wait per a Retry-After header, capped; None when absent or unparseable."""
     value = headers.get("Retry-After") if headers else None
     if not value:
         return None
+    seconds: float | None = None
     try:
-        return max(float(value), 0.0)
-    except ValueError:
-        parsed = email.utils.parsedate_to_datetime(value)
-        if parsed is None:
+        seconds = float(value)
+    except (TypeError, ValueError):
+        try:
+            parsed = email.utils.parsedate_to_datetime(value)
+        except (TypeError, ValueError):
             return None
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=dt.timezone.utc)
-        return max((parsed - dt.datetime.now(dt.timezone.utc)).total_seconds(), 0.0)
+        seconds = (parsed - dt.datetime.now(dt.timezone.utc)).total_seconds()
+    return min(max(seconds, 0.0), MAX_RETRY_AFTER_SECONDS)
 
 
 def retry_delay(attempt: int, retry_sleep: float) -> float:
@@ -194,11 +198,13 @@ def oai_get(client: OAIClient, params: dict[str, str], retries: int, retry_sleep
             print(f"  ! HTTP {exc.status}; backing off for {delay:.0f}s before retry", file=sys.stderr)
             time.sleep(delay)
             attempt += 1
-        except (TimeoutError, urllib.error.URLError) as exc:
+        except (OSError, http.client.HTTPException) as exc:
+            # TimeoutError, ConnectionResetError and RemoteDisconnected all land here;
+            # the client has already closed the connection, so the retry reconnects.
             if attempt >= retries:
                 raise
             delay = retry_delay(attempt, retry_sleep)
-            print(f"  ! request timed out ({exc}); backing off for {delay:.0f}s before retry", file=sys.stderr)
+            print(f"  ! request failed ({exc!r}); backing off for {delay:.0f}s before retry", file=sys.stderr)
             time.sleep(delay)
             attempt += 1
     root = ET.fromstring(payload)
@@ -284,7 +290,8 @@ def harvest_category(
     retry_sleep: float,
     anchors: list[str],
     topic_phrases: list[str],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], bool]:
+    """Return matched records and whether --max-per-category stopped the read early."""
     params: dict[str, str] = {
         "verb": "ListRecords",
         "set": category_to_set(category),
@@ -322,7 +329,8 @@ def harvest_category(
             if len(output) >= max_results:
                 break
         if len(output) >= max_results:
-            break
+            print(f"  ! {category}: stopped at --max-per-category {max_results}; later matches in the window were not read", file=sys.stderr)
+            return output, True
         token_element = list_records.find(f"{OAI_NS}resumptionToken")
         if token_element is None or not (token_element.text or "").strip():
             break
@@ -330,7 +338,7 @@ def harvest_category(
             "verb": "ListRecords",
             "resumptionToken": token_element.text.strip(),
         }
-    return output
+    return output, False
 
 
 def load_ledger(path: Path | None) -> set[str]:
@@ -395,6 +403,8 @@ def render_markdown(
     selected_groups: list[str],
     anchors: list[str],
     expand_on: OrderedDict[str, dict[str, Any]],
+    capped_categories: set[str] | None = None,
+    max_per_category: int | None = None,
 ) -> str:
     new_id_set = set(new_ids)
     active_expand_on = [
@@ -444,7 +454,10 @@ def render_markdown(
     lines.append("## Category Results")
     for category, records in per_category.items():
         lines.append("")
-        lines.append(f"### Category: `{category}` (set `{category_to_set(category)}`)")
+        heading = f"### Category: `{category}` (set `{category_to_set(category)}`)"
+        if capped_categories and category in capped_categories:
+            heading += f" (capped at --max-per-category {max_per_category}; later matches in the window were not read)"
+        lines.append(heading)
         fresh = [record for record in records if record["id"] in new_id_set]
         if not fresh:
             lines.append("- (no new results)")
@@ -512,13 +525,14 @@ def main() -> int:
 
     seen_before = load_ledger(args.ledger)
     per_category: OrderedDict[str, list[dict[str, Any]]] = OrderedDict()
+    capped_categories: set[str] = set()
     deduped: OrderedDict[str, dict[str, Any]] = OrderedDict()
     client = OAIClient(delay_seconds=MIN_DELAY_SECONDS, timeout=args.timeout)
 
     try:
         for category in selected_categories:
             print(f"harvesting {category} ...", file=sys.stderr)
-            records = harvest_category(
+            records, capped = harvest_category(
                 client,
                 category,
                 start_date,
@@ -530,6 +544,8 @@ def main() -> int:
                 selected_phrases,
             )
             per_category[category] = records
+            if capped:
+                capped_categories.add(category)
             for record in records:
                 arxiv_id = record["id"]
                 if arxiv_id in deduped:
@@ -567,6 +583,8 @@ def main() -> int:
         selected_groups,
         anchors,
         expand_on,
+        capped_categories,
+        args.max_per_category,
     )
 
     outfile = args.outfile or args.outdir / f"scout-{end_date.isoformat()}.md"
