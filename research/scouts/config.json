@@ -214,5 +214,19 @@
       "out-of-scope",
       "scope violation"
     ]
-  }
+  },
+  "principles": {
+    "principle-1": "External Signals Over Self-Review",
+    "principle-2": "Independence Between Generation and Verification",
+    "principle-3": "Step-Level Checkpoints",
+    "principle-4": "Adversarial Framing",
+    "principle-5": "Explicit Criteria",
+    "principle-6": "Executable Verification Is King",
+    "principle-7": "Cross-Family Beats Self-Verification",
+    "principle-8": "Simulate Debate",
+    "principle-9": "Isolate Verification from Ambient State"
+  },
+  "canonical_docs": [
+    "verification_design.md"
+  ]
 }

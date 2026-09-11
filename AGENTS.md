@@ -46,7 +46,6 @@ Claude Code is the architect: plan, design, review, sign off, and direct the Cod
 - `scripts/verify.py`: mechanical checks (see Verification discipline).
 - `scripts/scout.py`: mechanical arXiv discovery; retrieval only, no research judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
-- `scripts/rank_triage.py`: anchor-calibrated triage ranking; requires human-tagged anchors (anchors are maintained locally, not tracked).
 
 ## Document conventions
 

@@ -1,8 +1,11 @@
 # Triage Ranking: Design Note
 
 Date: 2026-06-05
-Status: draft, pre-implementation
-Scope: Pass 2 calibration on top of existing Pass 1 triage notes. Defines the contract for `scripts/rank_triage.py` and the anchor fixture it reads. Does not authorize any automated promotion to `research/reviewed/` or any edits to `verification_design.md`.
+Status: prototype, not in use; script and anchor fixture moved to local/prototypes/ on 2026-09-11
+
+2026-09-11: Known prototype contract departures: unclassified results are ranked as -1; invalid comparison values only produce warnings; candidate failures return None.
+
+Scope: Pass 2 calibration on top of existing Pass 1 triage notes. Defines the contract for the unversioned ranking prototype in `local/prototypes/` and the anchor fixture it reads. Does not authorize any automated promotion to `research/reviewed/` or any edits to `verification_design.md`.
 
 ## Why this layer exists
 

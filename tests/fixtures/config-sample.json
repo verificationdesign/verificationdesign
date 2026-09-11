@@ -1,0 +1,8 @@
+{
+  "categories": {"q-bio.PE": "populations and evolution", "physics.ao-ph": "ocean physics"},
+  "keyword_groups": {"reef_health": ["coral bleaching", "reef recovery"], "migration": ["ocean migration"]},
+  "anchor_phrases": ["coral", "plankton"],
+  "expand_on": {"reef_temperature": {"note": "notes/reef-temperature.md", "phrases": ["thermal stress"]}},
+  "principles": {"reef-2": "Seasonal sampling", "reef-1": "Habitat coverage"},
+  "canonical_docs": ["marine-notes.md"]
+}

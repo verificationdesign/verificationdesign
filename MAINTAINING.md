@@ -23,7 +23,6 @@ The runbook for this repository: document index, research workflow, site workflo
 - `scripts/verify.py`: local mechanical verifier.
 - `scripts/scout.py`: arXiv discovery script; retrieval only, no judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
-- `scripts/rank_triage.py`: anchor-calibrated triage ranking; requires human-tagged anchors.
 
 ## Research Workflow
 
@@ -93,7 +92,6 @@ retrieval tests; run them on the maintainer's host and report the failure explic
 - `python3 scripts/scout.py --dry-run`: print planned arXiv OAI-PMH requests.
 - `python3 scripts/scout.py --start-date 2026-05-30 --end-date 2026-06-02`: run an exact arXiv scout window.
 - `python3 scripts/digest_triage.py --input research/triage/example.md --outfile research/triage/digests/example-digest.md`: compact a triage note into a reading queue.
-- `python3 scripts/rank_triage.py --anchors research/triage/anchors.md --validate-anchors`: validate ranking anchors.
 - `python3 ai-design-patterns/scripts/lint_patterns.py`: lint migrated AI design pattern cards.
 - `cd verificationdesign && npm run dev`: run the website locally.
 - `cd verificationdesign && npm run build:twins`: generate markdown twins and agent discovery files after an Astro build.

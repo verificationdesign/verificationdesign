@@ -6,7 +6,6 @@ ai-design-patterns/reference/*.pdf
 
 local/
 
-
 .idea/
 
 .skills/
@@ -14,13 +13,6 @@ local/
 ai-design-patterns/evidence/
 
 research/scouts/scout-*.md
-
-research/triage/anchors.md
-
-research/triage/digests/wip.md
-
-scripts/triage_scout.py
-
 
 .beads/
 
