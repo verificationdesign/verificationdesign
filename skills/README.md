@@ -63,7 +63,7 @@ Observed invocation-control results recorded by the maintainer on 2026-09-08 and
 |---|---|---|---|---|
 | Claude Code | 2.1.263, 2.1.265, 2.1.267 | `.claude/skills/` | yes (tests 1 to 4) | 2026-09-08, 2026-09-10 |
 | Codex CLI | 0.153.4 | `.agents/skills/`, `~/.agents/skills/` | yes, both scopes | 2026-09-08 |
-| Antigravity CLI | 1.2.0 | `.gemini/skills/`, `~/.gemini/antigravity-cli/skills/` | not probed; explicit invocation by path observed | 2026-09-10 |
+| Antigravity CLI | 1.2.0 | `.agents/skills/` (ran from it) | not supported: the host strips the front matter, passes no skill directory, and omits a project-installed skill from its skills list, so the model searched the home folder to find the package; works when the prompt names the skill directory | 2026-09-10 |
 | Copilot | not tested | | unsupported | |
 
 Other hosts are untested and may model-activate the skill. The probes observed hidden
