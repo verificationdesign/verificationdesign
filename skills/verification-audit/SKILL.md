@@ -133,7 +133,7 @@ and paste the JSON into the record's `unavailable_sources` list. The renderer pl
 
 ## Output
 
-Use [output-format.md](references/output-format.md) and [the template](assets/findings-template.md). Every script supports `--help`; stdout is JSON, including a `text` envelope for
+Use [output-format.md](references/output-format.md) and [the template](assets/findings-template.md). Every command-line script supports `--help`; stdout is JSON, including a `text` envelope for
 source text or markdown when `--output -` is used. `--output FILE` writes the document
 and prints a JSON destination receipt. Exit codes: 0 ok, 2 usage, 3 validation failed,
 4 unavailable, 5 internal. Scripts refuse, with exit 2 and no write, an output path

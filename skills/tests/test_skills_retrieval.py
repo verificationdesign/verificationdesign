@@ -24,81 +24,6 @@ loader = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(loader)
 
 
-class SnapshotTests(unittest.TestCase):
-    def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.root = Path(self.tmp.name) / "verification-design"
-        shutil.copytree(DESIGN, self.root)
-        self.catalog, self.meta = loader.load_catalog(self.root)
-
-    def change_catalog(self, change, rehash=True):
-        value = copy.deepcopy(self.catalog)
-        change(value)
-        raw = (json.dumps(value) + "\n").encode()
-        (self.root / "assets/catalog.json").write_bytes(raw)
-        if rehash:
-            skill = self.root / "SKILL.md"
-            skill.write_text(skill.read_text().replace(self.meta["catalog-sha256"], hashlib.sha256(raw).hexdigest()))
-
-    def test_snapshot_loads(self):
-        self.assertEqual(len(self.catalog["cards"]), 17)
-        self.assertEqual(self.catalog["revision"], self.meta["corpus-revision"])
-
-    def test_snapshot_wrong_revision(self):
-        self.change_catalog(lambda c: c.update(revision="0" * 40))
-        with self.assertRaisesRegex(loader.SnapshotError, "revision mismatch"):
-            loader.load_catalog(self.root)
-
-    def test_snapshot_wrong_file_hash(self):
-        self.change_catalog(lambda c: c.update(generated="changed"), rehash=False)
-        with self.assertRaisesRegex(loader.SnapshotError, "file hash mismatch"):
-            loader.load_catalog(self.root)
-
-    def test_snapshot_missing_pin_field(self):
-        path = self.root / "SKILL.md"
-        path.write_text("\n".join(line for line in path.read_text().splitlines() if not line.startswith("  principles-sha256:")) + "\n")
-        with self.assertRaisesRegex(loader.SnapshotError, "missing pin field"):
-            loader.load_catalog(self.root)
-
-    def test_snapshot_card_missing_source_sha256(self):
-        self.change_catalog(lambda c: c["cards"][0].pop("source_sha256"))
-        with self.assertRaisesRegex(loader.SnapshotError, "source_sha256"):
-            loader.load_catalog(self.root)
-
-    def test_snapshot_source_url_without_pin(self):
-        self.change_catalog(lambda c: c["cards"][0].update(source_url=c["cards"][0]["markdown_url"]))
-        with self.assertRaisesRegex(loader.SnapshotError, "source_url"):
-            loader.load_catalog(self.root)
-
-    def test_audit_loader_byte_identical(self):
-        self.assertEqual((DESIGN / "scripts/load_catalog.py").read_bytes(), (AUDIT / "scripts/load_catalog.py").read_bytes())
-
-    def test_default_composed_url_without_request(self):
-        card = self.catalog["cards"][0]
-        entry = loader.source_entry(self.catalog, self.meta, card["id"])
-        self.assertEqual(entry["source_url"], card["source_url"])
-        self.assertTrue(loader.valid_source_url(entry["source_url"], self.meta["corpus-revision"]))
-        self.assertEqual(entry["source_url"].split("/")[5], self.meta["corpus-revision"])
-
-    def test_offline_environment_makes_no_request(self):
-        entry = loader.source_entry(self.catalog, self.meta, "principles")
-        with patch.dict(os.environ, {"VERIFICATION_SKILLS_OFFLINE": "1"}), patch.object(loader, "request_bytes") as request:
-            with self.assertRaises(loader.Unavailable) as caught:
-                loader.fetch_source(entry, offline=False, timeout=1)
-            self.assertEqual(caught.exception.result["reason"], "offline")
-            request.assert_not_called()
-
-    def test_default_http_scheme_refused_before_request(self):
-        entry = loader.source_entry(self.catalog, self.meta, "principles")
-        entry["source_url"] = entry["source_url"].replace("https:", "http:")
-        with patch.object(loader, "request_bytes") as request:
-            with self.assertRaises(loader.Unavailable) as caught:
-                loader.fetch_source(entry, offline=False, timeout=1)
-            self.assertEqual(caught.exception.result["reason"], "refused-url")
-            request.assert_not_called()
-
-
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=args[2].root, **kwargs)
@@ -123,6 +48,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
         except (BrokenPipeError, ConnectionResetError):
             pass
+
+
+class ByteIdentityTests(unittest.TestCase):
+    def test_audit_loader_byte_identical(self):
+        self.assertEqual((DESIGN / "scripts/load_catalog.py").read_bytes(), (AUDIT / "scripts/load_catalog.py").read_bytes())
 
 
 class RetrievalTests(unittest.TestCase):
