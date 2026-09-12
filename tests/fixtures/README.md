@@ -58,3 +58,14 @@ The expected dry-run lines in `test_scout.py` were captured from the old command
 with the real config and fixed start/end `2026-09-08` before removal. The matching
 table in `test_matching.py` was written before `matching.py`; its supported
 simple plural suffixes are `s` and `es`.
+
+## Digest port fixture, 2026-09-12
+
+`digest-golden.md` was generated with the legacy digest script at revision
+`f2c6d00`, before its removal, using `/Users/home/.local/bin/python3.13`.
+Arguments: `--input tests/fixtures/triage-sample.md --outfile
+tests/fixtures/digest-golden.md --decision all --source-label fixture`.
+The output contains all three fixture candidates. The permanent test compares
+new command output bytes to this captured output, without regenerating it.
+The synthetic marine profile also supplies ordered digest heuristics; tests
+reverse overlapping entries to check first-match precedence.

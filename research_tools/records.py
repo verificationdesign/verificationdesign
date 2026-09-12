@@ -132,6 +132,30 @@ class TriageCandidate(_Syntax):
     def decision(self) -> str:
         return next(s.decision for s in self.sections if s.decision is not None)
 
+    def section_body(self, name: str) -> str:
+        return next((s.body.strip() for s in reversed(self.sections)
+                     if s.heading.strip() == "### " + name), "")
+
+    @property
+    def abstract(self) -> str:
+        return self.section_body("Abstract Paraphrase")
+
+    @property
+    def why(self) -> str:
+        return self.section_body("Why It Might Matter")
+
+    @property
+    def key_findings(self) -> str:
+        return self.section_body("Key Findings")
+
+    @property
+    def human_checks(self) -> str:
+        return self.section_body("Needs Human Review")
+
+    @property
+    def credibility_flags(self) -> str:
+        return self.section_body("Credibility Flags")
+
     def render(self) -> str:
         return super().render() + "".join(s.render() for s in self.sections)
 

@@ -228,5 +228,148 @@
   },
   "canonical_docs": [
     "verification_design.md"
-  ]
+  ],
+  "digest_heuristics": {
+    "evidence_types": [
+      {
+        "label": "benchmark or eval",
+        "terms": [
+          "benchmark",
+          "bench",
+          "dataset",
+          "evaluation"
+        ]
+      },
+      {
+        "label": "theory or formal method",
+        "terms": [
+          "theorem",
+          "formal verification",
+          "bound",
+          "theoretical"
+        ]
+      },
+      {
+        "label": "system or method",
+        "terms": [
+          "framework",
+          "pipeline",
+          "library",
+          "system",
+          "tool"
+        ]
+      },
+      {
+        "label": "empirical study",
+        "terms": [
+          "experiment",
+          "empirical",
+          "study"
+        ]
+      }
+    ],
+    "evidence_fallback": "unclear from abstract",
+    "read_priority": [
+      [
+        "llm-as-a-judge",
+        "llm judge",
+        "judge",
+        "rubric",
+        "process reward",
+        "verifiable reward",
+        "verification feedback",
+        "formal verification",
+        "prompt-injection",
+        "prompt injection",
+        "tool calls",
+        "agent trajectory",
+        "benchmark",
+        "audit"
+      ],
+      [
+        "sycophancy",
+        "preference optimization",
+        "reward bias",
+        "deception",
+        "guardrail",
+        "privacy",
+        "reasoning shortcut",
+        "out-of-distribution",
+        "long-horizon"
+      ]
+    ],
+    "read_priority_fallback": 3,
+    "topic_clusters": [
+      {
+        "label": "judge reliability",
+        "terms": [
+          "llm-as-a-judge",
+          "llm judge",
+          "judge",
+          "rubric",
+          "item response"
+        ]
+      },
+      {
+        "label": "verifiable rewards",
+        "terms": [
+          "verifiable reward",
+          "rlvr",
+          "verification feedback",
+          "process reward"
+        ]
+      },
+      {
+        "label": "formal or symbolic verification",
+        "terms": [
+          "formal verification",
+          "neuro-symbolic",
+          "theorem"
+        ]
+      },
+      {
+        "label": "tool and prompt isolation",
+        "terms": [
+          "prompt-injection",
+          "prompt injection",
+          "tool calls",
+          "untrusted prompt"
+        ]
+      },
+      {
+        "label": "reward and preference failures",
+        "terms": [
+          "sycophancy",
+          "preference optimization",
+          "reward bias",
+          "outcome optimization"
+        ]
+      },
+      {
+        "label": "benchmark design",
+        "terms": [
+          "benchmark",
+          "bench",
+          "dataset"
+        ]
+      },
+      {
+        "label": "agent evaluation",
+        "terms": [
+          "agent",
+          "long-horizon",
+          "multi-agent"
+        ]
+      }
+    ],
+    "topic_fallback": "adjacent or unclear",
+    "doc_impact": {
+      "challenges": "may challenge or sharpen an existing principle",
+      "narrows": "may narrow an existing claim",
+      "extends": "may add adjacent technique or scope",
+      "operational technique": "may add a reusable process or harness",
+      "ignore": "probably no canonical-doc impact"
+    },
+    "doc_impact_fallback": "unclear impact"
+  }
 }

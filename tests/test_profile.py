@@ -72,3 +72,34 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(profile.keyword_groups, {})
             self.assertEqual(profile.anchor_phrases, [])
             self.assertEqual(profile.expand_on, {})
+            self.assertIsNone(profile.digest_heuristics)
+
+    def test_digest_validation(self):
+        base = json.loads(SAMPLE.read_text())
+        cases = [(None, "must be an object"), ([], "must be an object"),
+                 ({}, "must be an object")]
+        def changed(key, value):
+            return dict(base["digest_heuristics"], **{key: value})
+        for key in ("evidence_types", "topic_clusters"):
+            for value in ("bad", ["bad"], [{"label": "x"}],
+                          [{"label": 3, "terms": []}],
+                          [{"label": "x", "terms": "bad"}],
+                          [{"label": "x", "terms": [3]}],
+                          [{"label": "x", "terms": [], "extra": 1}]):
+                cases.append((changed(key, value), key))
+        for key in ("evidence_fallback", "topic_fallback", "doc_impact_fallback"):
+            cases.append((changed(key, 1), key))
+        for value in ("bad", [], [[]], [[], [], []], [[], "bad"], [[1], []]):
+            cases.append((changed("read_priority", value), "read_priority"))
+        for value in (True, 0, -1, "3", 3.5):
+            cases.append((changed("read_priority_fallback", value), "positive integer"))
+        for value in ([], {"label": 3}):
+            cases.append((changed("doc_impact", value), "doc_impact"))
+        cases.append((dict(base["digest_heuristics"], extra=1), "must be an object"))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "config.json"
+            for value, error in cases:
+                with self.subTest(value=value, error=error):
+                    path.write_text(json.dumps(dict(base, digest_heuristics=value)))
+                    with self.assertRaisesRegex(ValueError, error):
+                        load_profile(path)

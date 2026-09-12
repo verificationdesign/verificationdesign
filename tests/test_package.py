@@ -40,6 +40,9 @@ class PackageTests(unittest.TestCase):
                 if directory == "research_tools" and path.name != "records.py":
                     labels = ("## Candidate:", "Initial label:", "Decision:", "Abstract excerpt",
                               "Matched keywords", "Review Queue", "Deduped Candidates")
+                    if path.name == "digest.py":
+                        labels += ("Abstract Paraphrase", "Why It Might Matter", "Key Findings",
+                                   "Needs Human Review", "Credibility Flags")
                     if path.name == "scout.py":
                         tree.body = [node for node in tree.body if not (
                             isinstance(node, ast.FunctionDef)

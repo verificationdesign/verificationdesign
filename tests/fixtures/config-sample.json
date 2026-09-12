@@ -1,8 +1,79 @@
 {
-  "categories": {"q-bio.PE": "populations and evolution", "physics.ao-ph": "ocean physics"},
-  "keyword_groups": {"reef_health": ["coral bleaching", "reef recovery"], "migration": ["ocean migration"]},
-  "anchor_phrases": ["coral", "plankton"],
-  "expand_on": {"reef_temperature": {"note": "notes/reef-temperature.md", "phrases": ["thermal stress"]}},
-  "principles": {"reef-2": "Seasonal sampling", "reef-1": "Habitat coverage"},
-  "canonical_docs": ["marine-notes.md"]
+  "categories": {
+    "q-bio.PE": "populations and evolution",
+    "physics.ao-ph": "ocean physics"
+  },
+  "keyword_groups": {
+    "reef_health": [
+      "coral bleaching",
+      "reef recovery"
+    ],
+    "migration": [
+      "ocean migration"
+    ]
+  },
+  "anchor_phrases": [
+    "coral",
+    "plankton"
+  ],
+  "expand_on": {
+    "reef_temperature": {
+      "note": "notes/reef-temperature.md",
+      "phrases": [
+        "thermal stress"
+      ]
+    }
+  },
+  "principles": {
+    "reef-2": "Seasonal sampling",
+    "reef-1": "Habitat coverage"
+  },
+  "canonical_docs": [
+    "marine-notes.md"
+  ],
+  "digest_heuristics": {
+    "evidence_types": [
+      {
+        "label": "reef survey",
+        "terms": [
+          "coral"
+        ]
+      },
+      {
+        "label": "marine census",
+        "terms": [
+          "plankton"
+        ]
+      }
+    ],
+    "evidence_fallback": "unknown marine evidence",
+    "read_priority": [
+      [
+        "coral"
+      ],
+      [
+        "plankton"
+      ]
+    ],
+    "read_priority_fallback": 3,
+    "topic_clusters": [
+      {
+        "label": "reef health",
+        "terms": [
+          "coral"
+        ]
+      },
+      {
+        "label": "ocean ecology",
+        "terms": [
+          "plankton"
+        ]
+      }
+    ],
+    "topic_fallback": "other habitat",
+    "doc_impact": {
+      "extends": "may add habitat coverage"
+    },
+    "doc_impact_fallback": "unknown habitat impact"
+  }
 }

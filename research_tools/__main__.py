@@ -2,7 +2,7 @@
 
 import argparse
 
-from research_tools import scout, verify
+from research_tools import digest, scout, verify
 
 
 def main(argv=None):
@@ -10,6 +10,7 @@ def main(argv=None):
     subcommands = parser.add_subparsers(dest="command")
     verify.register(subcommands)
     scout.register(subcommands)
+    digest.register(subcommands)
     args = parser.parse_args(argv)
     if args.command is None:
         parser.print_help()

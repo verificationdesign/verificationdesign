@@ -9,7 +9,7 @@ Scope: Pass 2 calibration on top of existing Pass 1 triage notes. Defines the co
 
 ## Why this layer exists
 
-Pass 1 (scout plus triage) produces per-candidate judgment with a `Decision:` value and an `Initial label:`. The current digest (`scripts/digest_triage.py`) then applies keyword-based read-priority scoring. That scoring does not discriminate, as the 2026-06-05 digest review observed: all 12 candidates landed at priority 1.
+Pass 1 (scout plus triage) produces per-candidate judgment with a `Decision:` value and an `Initial label:`. The current digest (`research_tools/digest.py`) then applies keyword-based read-priority scoring. That scoring does not discriminate, as the 2026-06-05 digest review observed: all 12 candidates landed at priority 1.
 
 Pass 2 replaces keyword priority with anchor-calibrated comparative ranking. Each candidate is compared to a small set of human-tagged anchors. The output is a bucket (a reading priority), not an evidence grade. Buckets are aggregated across multiple shuffled runs; runs that mis-order the anchors are dropped.
 
