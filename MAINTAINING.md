@@ -20,9 +20,9 @@ The runbook for this repository: document index, research workflow, site workflo
 - `research/scouts/`: arXiv scout query config; raw scout outputs stay local and untracked.
 - `research/triage/`: first-pass candidate summaries and relevance judgments.
 - `research/link-confirmations.txt`: manual confirmations for valid links that block automated checks.
-- `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools verify` is the local mechanical verifier.
-- `research_tools/scout.py`: arXiv discovery script; retrieval only, no judgment.
-- `research_tools/digest.py`: compact reading digest from triage notes.
+- `research_tools/`: the tested, stdlib-only package behind the research pipeline; run as `python3 -m research_tools <verify|scout|digest>`. `verify` runs mechanical checks. `scout` performs arXiv OAI-PMH discovery, retrieval only. `digest` produces a compact reading digest from triage notes.
+- `research/scouts/config.json`: the project profile for all topic-specific data: arXiv categories, keyword groups, anchor phrases, expand-on seeds, principle titles, canonical doc paths, and digest heuristics. The package code carries no topic text.
+- `tests/`: unittest suite with captured fixtures; run with `make test`, also run by `make verify-local` and CI.
 
 ## Research Workflow
 
@@ -37,6 +37,20 @@ The runbook for this repository: document index, research workflow, site workflo
 If a publisher blocks automated link checks but the link is manually confirmed valid, record it in `research/link-confirmations.txt`.
 
 For `ai-design-patterns/`, run the local pattern linter when editing cards. It is expected to fail on cards that have not yet been migrated to the current schema.
+
+## Research tools package
+
+The stdlib-only package requires Python 3.11 or later. Its commands are:
+
+- `python3 -m research_tools verify`: mechanical checks; `--skip-links` omits network checks, `--include-scout-links` includes scout artifacts, and `--base-ref` selects the append-only comparison base.
+- `python3 -m research_tools scout`: arXiv OAI-PMH retrieval; `--dry-run` prints requests, `--days` or `--start-date` / `--end-date` sets the window, and `--categories` / `--groups` selects profile keys. `--max-per-category` caps matched records, `--outdir` / `--outfile` selects output, and `--ledger` enables optional ID deduplication.
+- `python3 -m research_tools digest`: reading digest from triage notes; `--input` accepts one or more notes, `--outfile` selects output, `--decision` filters candidates, `--max-items` limits the queue, and `--source-label` names the inputs.
+
+`research/scouts/config.json` is the shared project profile. Add a topic term to the appropriate `keyword_groups`, `anchor_phrases`, or `expand_on` entry in config; no code edit is needed. Verify and digest accept `--profile`; scout accepts `--config`.
+
+`make test` runs the unittest suite; `make verify-local` and CI also run it. Fixtures are captured artifacts with provenance recorded in `tests/fixtures/README.md`; synthetic envelopes are labeled.
+
+`local/prototypes/` holds the unversioned rank and triage-scout prototypes.
 
 ## Website Workflow
 

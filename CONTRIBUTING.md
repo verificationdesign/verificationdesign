@@ -46,7 +46,8 @@ That covers:
 1. `python3 ai-design-patterns/scripts/lint_patterns.py`: card schema, banned words, citation presence.
 2. `python3 ai-design-patterns/scripts/run_card_code.py`: executes every card's Pattern block.
 3. `python3 -m research_tools verify`: link liveness, citation and reference balance, append-only discipline, provenance.
-4. `cd verificationdesign && npm run verify`: site build, type check, card lint, accessibility smoke check.
+4. `make test`: runs the offline research tools unittest suite.
+5. `cd verificationdesign && npm run verify`: site build, type check, card lint, accessibility smoke check.
 
 A green run is necessary, not sufficient: whether a claim is correctly characterized is a human call, and substantive changes will be reviewed slowly.
 

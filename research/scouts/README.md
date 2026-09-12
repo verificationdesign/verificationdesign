@@ -2,6 +2,8 @@
 
 Scout files are mechanical discovery artifacts. They are generated from explicit arXiv categories, keyword groups, and date windows; they are not evidence reviews and contain no model judgment.
 
+`config.json` is the project profile shared by verify, scout, and digest. Its top-level keys are `anchor_phrases`, `expand_on`, `categories`, `keyword_groups`, `principles`, `canonical_docs`, and `digest_heuristics`.
+
 Use `python3 -m research_tools scout` to generate a scout file, then decide which candidates deserve reviewed source notes under `research/reviewed/`.
 
 ## Review Labels

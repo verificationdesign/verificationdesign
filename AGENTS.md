@@ -43,10 +43,9 @@ Claude Code is the architect: plan, design, review, sign off, and direct the Cod
 - `research/scouts/`: scout configuration; raw scout outputs stay local and untracked (sources that matter are promoted through triage and review).
 - `research/triage/`: first-pass judgment notes for scout candidates before full source review.
 - `research/link-confirmations.txt`: dated manual confirmations for valid scholarly links that block automated checks.
-- `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools <command>`.
-- `tests/`: fixture-driven tests for the research tools package.
-- `research_tools/scout.py`: mechanical arXiv discovery; retrieval only, no research judgment.
-- `research_tools/digest.py`: compact reading digest from triage notes.
+- `research_tools/`: the tested, stdlib-only package behind the research pipeline; run as `python3 -m research_tools <verify|scout|digest>`. `verify` runs mechanical checks. `scout` performs arXiv OAI-PMH discovery, retrieval only. `digest` produces a compact reading digest from triage notes.
+- `research/scouts/config.json`: the project profile for all topic-specific data: arXiv categories, keyword groups, anchor phrases, expand-on seeds, principle titles, canonical doc paths, and digest heuristics. The package code carries no topic text.
+- `tests/`: unittest suite with captured fixtures; run with `make test`, also run by `make verify-local` and CI.
 
 ## Document conventions
 
@@ -106,6 +105,7 @@ Derived from `verification_design.md`; this repo follows its own principles.
   4. **Format / anchor lint**: markdown lints clean; internal `#anchors` resolve; numbering contiguous.
   5. **Provenance**: each update note names its source.
 - CI gates deploy on the hermetic subset: `python3 -m research_tools verify --skip-links`, the pattern and card-code linters, and the site build/check/lint/a11y steps. Full `python3 -m research_tools verify`, including link liveness, must pass locally before any push because CI runner IPs are blocked by publishers/arXiv and cannot run link liveness reliably.
+- Package tests are part of the hermetic gate. A change to `research_tools/` is not done until `make test` passes on Python 3.11 and 3.13, and a behavior change carries a test.
 - **Substance is not mechanically verifiable.** Whether a finding is *correctly characterized* is a judgment call. Do **not** self-review it. Flag substantive claims for human or cross-family-model review, assemble the diff, and stop; do not auto-approve or auto-merge.
 - **Grade strictly.** Print observed values for *all* checks, not only failures. Treat a zero-failure report with suspicion. Never explain away or reinterpret a failure to make it pass.
 
