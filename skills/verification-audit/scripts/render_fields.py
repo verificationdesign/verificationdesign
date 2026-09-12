@@ -34,7 +34,7 @@ def header(title, record, catalog, meta):
 
 
 def unavailable(record):
-    lines = []
+    lines = ["### Unavailable sources", ""] if record.get("unavailable_sources") else []
     for x in record.get("unavailable_sources", []):
         lines += ["```json", json.dumps(x, indent=2, ensure_ascii=False), "```", ""]
     return lines

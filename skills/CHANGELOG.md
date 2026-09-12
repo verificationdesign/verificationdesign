@@ -1,5 +1,36 @@
 # Changelog
 
+## skills/v1.4.0 (2026-09-12)
+
+Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-12 Claude Code observation batch,
+recorded in the maintainer's local skill-runs summary. Record fields are unchanged,
+but v1.3.0 records do not validate unchanged: updating `skill.version` to 1.4.0 is
+the only change needed.
+
+- Offline fetch exit 4 writes only the unavailable JSON object to stdout, with no
+  reason line on stderr.
+- Unavailable-source JSON renders under `### Unavailable sources`.
+- Citation checking permits omitted roots when there are no file citations and
+  returns usage exit 2 when file citations need a root.
+- The audit reference states the `failure_note` rule once, and the procedure names
+  the requirement for unmapped defects.
+- The absence rule distinguishes document omissions from values only a run can show;
+  `artifact-stage` records the reading applied.
+- The `principle-mapping` assumption explains generator and verifier roles for
+  artifacts that are verifiers or have no model.
+- Model provenance distinguishes `unknown` from `none` and uses lower-case family
+  names with optional slash-separated model names; fields remain free strings.
+- Measurements may group same-kind commands by purpose with a command count in
+  `note`. Artifact-free records omit identity and measurements and state that basis.
+- The audit closing checklist permits absent `related_cards` when no card applies;
+  an unmapped defect with a failure note is complete.
+- Every cited line range carries its path; bare comma-separated ranges are prose.
+- Citation examples use directory roots and name the offline fetch command that
+  emits unavailable-source objects.
+- Artifact-free design evidence quotes the author's design and declares that
+  condition in `design-source`; card intent governs condition judgments.
+- Output references name the renderer's Unavailable sources heading.
+
 ## skills/v1.3.0 (2026-09-12)
 
 Pins unchanged `corpus/v1.0.0`. Source: seven observation runs on 2026-09-12 (six audits

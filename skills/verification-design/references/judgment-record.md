@@ -26,7 +26,8 @@ and undecided cards cannot appear in this list. Example requirement:
 Each catalog card appears exactly once by `id`. Its `use_when` and `do_not_use_when`
 lists copy every condition verbatim in catalog order, in objects with `condition`,
 `verdict` (`holds`, `does-not-hold`, `unknown`) and string `evidence`.
-Non-unknown verdicts require non-empty evidence. Every card has a non-empty `reason`.
+Judge each condition against the card's intent; when the literal wording would decide
+differently, say so in the evidence. Non-unknown verdicts require non-empty evidence. Every card has a non-empty `reason`.
 For `unknown`, evidence is the reason the condition could not be judged. When no source
 bears on it, write `No source in the evidence set addresses this condition.` Do not cite
 an unrelated passage; a citation on an unknown verdict must bear on the condition.
@@ -71,27 +72,33 @@ the plan. Resolution never changes verdicts, decisions or the decision rule.
   document always states which question set produced its verdicts.
 - `models` (required, rule `models`): object with non-empty strings `generator` and
   `verifier`, the model families involved (Principle 7). `verifier` is the model family
-  producing this record. `generator` is the family that produced, or will produce, the
-  artifact. Write `unknown` when a family is not recorded anywhere; never leave it blank.
+  producing this record. `generator` is the family that produced the artifact: `unknown`
+  when not recorded anywhere, `none` when no model produced it (human-written code or a
+  deterministic job). Both fields use a lower-case family name, such as
+  `anthropic-claude`, `openai-gpt` or `google-gemini`, with an optional model after a
+  slash, for example `anthropic-claude/opus-5`. Values remain free strings; never leave them blank.
 - `assumptions` (required, rule `assumptions`): list of objects with non-empty string
   `topic` and `statement`. Topics are free text. Named topics: `verification-path`
   identifies which path judgments cover when multiple verification paths exist;
   `artifact-stage` identifies spec, prototype or running; `scope-expansion` quotes
   the operator's original words when scope is restated or expanded; `measurement-basis`
-  distinguishes what the agent ran from what it only read.
+  distinguishes what the agent ran from what it only read; `principle-mapping` states
+  how generator and verifier roles map onto an artifact that is itself a verifier or
+  has no model in it.
 - `measurements` (optional, rule `measurements`): list of objects with unique non-empty
   string `id`, non-empty string `command`, `kind` (`inspection` when the command only
   read the artifact or its metadata, `execution` when it ran the artifact), string-to-string
   object `env` (may be empty), integer `exit_code` (not boolean), string `artifact_revision`
   (may be empty), `log` (string path or null), and string `note` (may be empty). Cite
   measurements by id. An inspection shows what the artifact contains; only an execution
-  shows what it does.
+  shows what it does. Use one entry per command, or per group of same-kind commands
+  with one purpose; a grouped entry states in `note` how many commands it covers.
 - `artifact_identity` (optional, rule `artifact-identity`): object with `revision`
   (string or null) and `files`, a list of objects with string `path` and `sha256`. The renderer reports the revision, file count and list.
 - `unavailable_sources` (optional, rule `unavailable-sources`): list of the exact
   fetch exit-4 objects: `{"unavailable": true, "source_url": "...", "reason": "offline"}`.
   Paste JSON here before validating, never into rendered output. The renderer places
-  fenced JSON in the uncertainty section. Optional fields may be absent.
+  fenced JSON under `### Unavailable sources`. Optional fields may be absent.
 
 Defects are judged against the nine principles, not the artifact's own requirements.
 The absence of a record a principle asks for is a defect when the artifact provides no
@@ -114,11 +121,13 @@ It copies fields and judges nothing. Every script that takes `--output FILE` cre
 the file's directory when it does not exist yet. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
-Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
+Run `check_citations.py record.json [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). When the record has a plan, it also checks
+`path:N-M` (paths must contain a dot or slash). Every cited line range carries its path;
+a bare range after a comma is prose and is not checked. When the record has a plan, it also checks
 that every requirement id mentioned in those strings (`V2`, `V3`) exists in
-`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. Several roots may be given; the first
+`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. A root is required whenever the record cites files.
+Several roots may be given; the first
 file match wins, so order them deliberately. Absolute paths are used as given. Each
 citation is counted once as found, missing or out-of-bounds.
 The JSON reports counts (found, missing, out-of-bounds, requirements, unknown-requirement),

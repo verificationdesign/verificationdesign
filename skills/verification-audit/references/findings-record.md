@@ -11,7 +11,7 @@ low on a defect and null on every other status:
 
 - `sound`: checked behavior with evidence; severity null.
 - `defect`: in-scope artifact evidence, failure equal to a mapped failure or `unmapped`,
-  severity high, medium or low. Unmapped requires non-empty `failure_note`.
+  severity high, medium or low.
 - `not-applicable`: the question cannot apply to this artifact and scope, for example
   no model review or no second reviewer exists. Evidence is the reason. Severity null,
   no failure and no routing.
@@ -27,17 +27,18 @@ low on a defect and null on every other status:
 For `insufficient-evidence`, explain why judgment is unavailable, write `No source in the evidence set addresses this condition.` when none does, and cite only text bearing on the condition.
 
 Additional in-scope defects use `free: true`, principle 1 to 9 and an original question.
-Free entries never substitute for checklist questions. Non-defects may use null failure
-and empty failure_note; not-applicable and out-of-scope require these absent or empty
-and cannot carry cards or routed fields. No fix proposals anywhere.
+Free entries never substitute for checklist questions. Non-defects may use null failure;
+not-applicable and out-of-scope require failure absent or empty and cannot carry cards
+or routed fields. No fix proposals anywhere.
 
 The no-fix rule is enforced by the procedure and the operator's read, not by scripts.
 A mechanical scan for fix language was considered too weak to justify a false sense
 of enforcement. A fix proposal in a rendered document is a procedure failure, not
 a validator gap.
 
-`failure_note` is an optional string on mapped defects, rendered whenever non-empty.
-Use it to say several defects share one cause. The six mapped failures are routing aids,
+`failure_note` is a string required and non-empty on an unmapped defect (why no mapped
+failure applies, or the shared cause), optional on a mapped defect, and empty otherwise.
+It renders whenever non-empty. The six mapped failures are routing aids,
 not an exhaustive taxonomy; they describe agent behaviors, so a structural defect (a
 missing criteria version, a mutable dependency reference) is often `unmapped`, and that
 is the correct answer, not a gap to force. The router computes `cards` and `routed` only
@@ -65,27 +66,33 @@ An emitted scaffold fails `status`, `evidence` and `models`, never passing as a 
   document always states which question set produced its verdicts.
 - `models` (required, rule `models`): object with non-empty strings `generator` and
   `verifier`, the model families involved (Principle 7). `verifier` is the model family
-  producing this record. `generator` is the family that produced, or will produce, the
-  artifact. Write `unknown` when a family is not recorded anywhere; never leave it blank.
+  producing this record. `generator` is the family that produced the artifact: `unknown`
+  when not recorded anywhere, `none` when no model produced it (human-written code or a
+  deterministic job). Both fields use a lower-case family name, such as
+  `anthropic-claude`, `openai-gpt` or `google-gemini`, with an optional model after a
+  slash, for example `anthropic-claude/opus-5`. Values remain free strings; never leave them blank.
 - `assumptions` (required, rule `assumptions`): list of objects with non-empty string
   `topic` and `statement`. Topics are free text. Named topics: `verification-path`
   identifies which path judgments cover when multiple verification paths exist;
   `artifact-stage` identifies spec, prototype or running; `scope-expansion` quotes
   the operator's original words when scope is restated or expanded; `measurement-basis`
-  distinguishes what the agent ran from what it only read.
+  distinguishes what the agent ran from what it only read; `principle-mapping` states
+  how generator and verifier roles map onto an artifact that is itself a verifier or
+  has no model in it.
 - `measurements` (optional, rule `measurements`): list of objects with unique non-empty
   string `id`, non-empty string `command`, `kind` (`inspection` when the command only
   read the artifact or its metadata, `execution` when it ran the artifact), string-to-string
   object `env` (may be empty), integer `exit_code` (not boolean), string `artifact_revision`
   (may be empty), `log` (string path or null), and string `note` (may be empty). Cite
   measurements by id. An inspection shows what the artifact contains; only an execution
-  shows what it does.
+  shows what it does. Use one entry per command, or per group of same-kind commands
+  with one purpose; a grouped entry states in `note` how many commands it covers.
 - `artifact_identity` (optional, rule `artifact-identity`): object with `revision`
   (string or null) and `files`, a list of objects with string `path` and `sha256`. The renderer reports the revision, file count and list.
 - `unavailable_sources` (optional, rule `unavailable-sources`): list of the exact
   fetch exit-4 objects: `{"unavailable": true, "source_url": "...", "reason": "offline"}`.
   Paste JSON here before validating, never into rendered output. The renderer places
-  fenced JSON in the uncertainty section. Optional fields may be absent.
+  fenced JSON under `### Unavailable sources`. Optional fields may be absent.
 
 Defects are judged against the nine principles, not the artifact's own requirements.
 The absence of a record a principle asks for is a defect when the artifact provides no
@@ -93,6 +100,9 @@ way to produce that record. When the record would come from a stage that is not 
 evidence set (a test run, a CI report, a deployment), the status is
 `insufficient-evidence`, naming the receipt that would settle it; the `artifact-stage`
 assumption states which stage was examined so a reader can tell the two apart.
+For a document artifact, "no way to produce it" means the document does not state it;
+values only a run could show are `insufficient-evidence`. The `artifact-stage`
+assumption states which reading was applied.
 Severity carries how much a defect matters here. Applying a design card is a separate
 applicability judgment.
 
@@ -108,11 +118,13 @@ It copies fields and judges nothing. Every script that takes `--output FILE` cre
 the file's directory when it does not exist yet. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
-Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
+Run `check_citations.py record.json [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). When the record has a plan, it also checks
+`path:N-M` (paths must contain a dot or slash). Every cited line range carries its path;
+a bare range after a comma is prose and is not checked. When the record has a plan, it also checks
 that every requirement id mentioned in those strings (`V2`, `V3`) exists in
-`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. Several roots may be given; the first
+`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. A root is required whenever the record cites files.
+Several roots may be given; the first
 file match wins, so order them deliberately. Absolute paths are used as given. Each
 citation is counted once as found, missing or out-of-bounds.
 The JSON reports counts (found, missing, out-of-bounds, requirements, unknown-requirement),

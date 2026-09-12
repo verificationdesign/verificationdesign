@@ -67,6 +67,7 @@ class RenderFieldsTests(ScriptCase):
         rows = [dict(unavailable=True, source_url="https://example.invalid/one", reason="offline"),
                 dict(unavailable=True, source_url="https://example.invalid/two", reason="unavailable")]
         self.assertEqual(self.fields.unavailable({"unavailable_sources": rows}),
+                         ["### Unavailable sources", ""] +
                          [line for row in rows for line in ("```json", json.dumps(row, indent=2, ensure_ascii=False), "```", "")])
         self.assertEqual(self.fields.unavailable({}), [])
         self.assertEqual(self.fields.unavailable({"unavailable_sources": []}), [])
@@ -113,6 +114,10 @@ class RenderFieldsTests(ScriptCase):
                     self.assertEqual("Artifact identity:" in text, present)
                     self.assertEqual("## Measurements" in text, present)
                     self.assertEqual('"unavailable": true' in text, present)
+                    self.assertEqual("### Unavailable sources" in text, present)
+                    if present:
+                        self.assertLess(text.index("### Unavailable sources"), text.index('"unavailable": true'))
+                        self.assertLess(text.index('"unavailable": true'), text.index("## Sources"))
                     if present:
                         self.assertLess(text.index("Artifact identity:"), text.index("## Assumptions"))
                         self.assertLess(text.index("## Assumptions"), text.index("## Measurements"))

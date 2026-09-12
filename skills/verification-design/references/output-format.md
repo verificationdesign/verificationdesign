@@ -40,7 +40,7 @@ Reason labels apply to not-checked, not-applicable, insufficient-evidence, out-o
 and unknown verdicts. Do not double a final full stop. Assumptions are bullets as
 `topic: statement`; each measurement bullet begins with its id and includes every field
 except the command, which follows the bullet in a fenced `text` block.
-Unavailable-source objects render as fenced JSON inside the uncertainty section.
+Unavailable-source objects render as fenced JSON under `### Unavailable sources`.
 
 Use reference-style card citations `[Title][slug] ([pinned source][slug-src])`.
 Checklist Principles citations become `[Principles][pN]` without changing the record.

@@ -8,7 +8,7 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-design 1.3.0
+Skill: verification-design 1.4.0
 
 Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`
 
@@ -257,6 +257,8 @@ Resolution (2026-09-10): The later fixture build uses direct integer assertions 
 Determinism move: Executable Analog constrains `self_review_bias` (the same agent that produced the artifact no longer judges whether it satisfies the check) and `judge_subjectivity` (the verdict comes from a deterministic equality on extracted values, not from a model's interpretation of rendered output). By forcing extract-then-compare instead of interpret-and-decide, the system loses the freedom to rationalize a coincidental pass.
 
 Instantiation: The fixture check emits a pass only after its asserted comparison holds.
+
+### Unavailable sources
 
 ```json
 {

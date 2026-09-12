@@ -74,6 +74,17 @@ class ParserTests(unittest.TestCase):
 
 
 class LoaderTests(ScriptCase):
+    def test_offline_fetch_stdout_only(self):
+        for kind in ("audit", "design"):
+            with self.subTest(kind=kind):
+                result = self.run_script(kind, "load_catalog.py", "fetch", "principles", "--offline")
+                self.assertEqual(result.returncode, 4, result.stdout + result.stderr)
+                catalog, meta = module("load_catalog", kind).load_catalog()
+                self.assertEqual(json.loads(result.stdout), {
+                    "unavailable": True, "source_url": catalog["principles"]["source_url"],
+                    "reason": "offline"})
+                self.assertEqual(result.stderr, "")
+
     def test_lc_1_python_guard(self):
         from unittest.mock import patch
         import io
@@ -268,7 +279,7 @@ class LoaderTests(ScriptCase):
         result = subprocess.run([sys.executable, str(target / "scripts/load_catalog.py"), "--drift"], capture_output=True, text=True)
         self.assertEqual(result.returncode, 4)
         self.assertEqual(json.loads(result.stdout), {"unavailable": True, "source_url": loader.LIVE_URL, "reason": "invalid-snapshot"})
-        self.assertEqual(result.stderr, "invalid-snapshot\n")
+        self.assertEqual(result.stderr, "")
 
     def test_lc_27_mode_combinations(self):
         for args in ((), ("fetch",), ("--check", "--drift"), ("--check", "fetch", "principles"),
@@ -353,7 +364,7 @@ class LoaderTests(ScriptCase):
         import subprocess
         cases = (("UsageError('bad usage')", 2, [{"card": None, "rule": "usage", "message": "bad usage"}], "bad usage\n"),
                  ("SnapshotError('bad record')", 3, [{"card": None, "rule": "structure", "message": "bad record"}], "bad record\n"),
-                 ("Unavailable('source', 'offline')", 4, {"unavailable": True, "source_url": "source", "reason": "offline"}, "offline\n"),
+                 ("Unavailable('source', 'offline')", 4, {"unavailable": True, "source_url": "source", "reason": "offline"}, ""),
                  ("RuntimeError('unexpected')", 5, {"error": "internal", "message": "unexpected"}, "internal: unexpected\n"))
         for expression, code, expected, stderr in cases:
             program = ("import sys\nsys.dont_write_bytecode = True\nsys.path.insert(0, " + repr(str(AUDIT / "scripts")) + ")\n"

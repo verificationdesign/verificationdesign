@@ -60,6 +60,25 @@ class CitationTests(ScriptCase):
             result = self.call("audit", "check_citations.py", {"evidence": evidence}, "--root", self.root)
             self.assertEqual(result.returncode, code, result.stdout + result.stderr)
 
+    def test_no_artifact_or_citations_needs_no_root(self):
+        for kind in ("audit", "design"):
+            with self.subTest(kind=kind):
+                result = self.call(kind, "check_citations.py", {"artifact": "none", "evidence": "No citation here."})
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual(json.loads(result.stdout), dict(
+                    counts=dict(found=0, missing=0, **{"out-of-bounds": 0, "requirements": 0,
+                        "unknown-requirement": 0}), citations=[], roots=[], resolved=[], repeated=[]))
+
+    def test_file_citation_requires_root(self):
+        for kind in ("audit", "design"):
+            for citation in ("sample.txt:1", str(self.root / "sample.txt") + ":1"):
+                with self.subTest(kind=kind, citation=citation):
+                    result = self.call(kind, "check_citations.py", {"artifact": "none", "evidence": citation})
+                    self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+                    self.assertIn("usage:", result.stderr)
+                    self.assertIn("--root is required whenever the record cites files", result.stderr)
+                    self.assertEqual(result.stdout, "")
+
     def test_cc_9_no_citations(self):
         result = self.call("audit", "check_citations.py", {"evidence": "No citation here."}, "--root", self.root)
         self.assertEqual(result.returncode, 0, result.stderr)

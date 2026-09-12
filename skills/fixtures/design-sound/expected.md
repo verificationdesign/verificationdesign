@@ -8,7 +8,7 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-design 1.3.0
+Skill: verification-design 1.4.0
 
 Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`
 
@@ -273,6 +273,8 @@ No model-produced tool arguments cross a boundary; the function is called intern
 ## Not verified
 
 None in the judgment record.
+
+### Unavailable sources
 
 ```json
 {

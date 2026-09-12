@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.3.0"
+  version: "1.4.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -30,7 +30,9 @@ The skill reads the artifact and takes no part in the host repository's workflow
 - Artifact: default is the current working tree. Override: a path or URL given as the
   invocation argument or named in the conversation. Never asked for. The artifact may
   be absent or a description only; then write the design from the scope and conversation
-  and record that in an assumption with topic `design-source`.
+  and record that in an assumption with topic `design-source`. With no artifact, every
+  evidence string quotes the design written in this record; the assumption states that
+  verdicts are conditioned on the author's own design and are not artifact evidence.
 - Scope: one line naming the part or behavior in question. Taken from the invocation
   argument text or from the conversation if the operator already said it. If neither
   supplies it, ask exactly one question and stop until answered. Never guess scope.
@@ -63,7 +65,9 @@ Run commands from this skill directory, with absolute paths for operator-visible
    check, its inputs, and what pass and fail look like. Read an existing design document
    in the artifact when available and cite it in `plan.source`; otherwise write the
    design from the scope and conversation, omit `source`, and record a `design-source`
-   assumption stating that origin.
+   assumption stating that origin. With no artifact, every evidence string quotes the
+   design written in this record; state in `design-source` that verdicts are conditioned
+   on the author's own design and are not artifact evidence.
 6. Fill the scaffold: characterize what is generated, by whom, the completion signal,
    and self-review points. Declare the `verification-path` assumption before judging.
    Preserve every catalog condition verbatim and in order. Record each verdict and
@@ -74,11 +78,13 @@ Run commands from this skill directory, with absolute paths for operator-visible
    This is a judgment step, not an executable inference from prose.
    Fill the record-level fields as well:
    - `models`: the model family producing this record as `verifier`, and the family that
-     will produce the work as `generator`, or `unknown` when it is not decided or recorded.
+     produced the artifact as `generator`, `unknown` when not recorded anywhere, or `none`
+     when no model produced it. Use the family vocabulary in the record reference.
    - `artifact_identity`: the artifact revision and a sha256 per file read, so a reader
      can tell which bytes were judged. Omit only when nothing readable was examined.
-   - `measurements`: one entry per command run against the artifact, with its exit code
-     and its `kind`: `inspection` when the command only read the artifact, `execution`
+   - `measurements`: one entry per command, or per group of same-kind commands with one
+     purpose, run against the artifact; a grouped entry states its command count in `note`.
+     Record its exit code and `kind`: `inspection` when the command only read the artifact, `execution`
      when it ran the artifact. Cite measurements by id from evidence. An execution shows
      what the artifact does; an inspection shows what it contains; neither is evidence
      that the artifact records anything.
@@ -92,12 +98,14 @@ Run commands from this skill directory, with absolute paths for operator-visible
 8. Check artifact citation existence and bounds, and requirement-id references against
    the plan. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
+   A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
-   before final validation and rendering.
+   Paste any exit-4 JSON objects from the `load_catalog.py fetch ... --offline` command
+   under Source text below into the record's `unavailable_sources` list before final
+   validation and rendering.
 
    ```bash
-   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
+   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
    ```
 
 9. Render the validated record:
@@ -166,7 +174,13 @@ invocation controls do not prevent a model from opening it as a file.
 - Plan present: design written or sourced, every applied pattern serves a requirement.
 - Snapshot check and record validator exited 0; every required condition or question covered.
 - Assumptions recorded, including verification path for design and any scope expansion.
-- `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.
+- `models` names the verifier family and, for `generator`, the family that produced the artifact,
+  `unknown` when not recorded anywhere, or `none` when no model produced it (human-written
+  code or a deterministic job). Both fields use lower-case family names such as
+  `anthropic-claude`, `openai-gpt` or `google-gemini`, optionally followed by a model
+  after a slash, for example `anthropic-claude/opus-5`.
+- `artifact_identity` and `measurements` cover what was read and run. When there is no
+  artifact, omit both and record that in a `measurement-basis` assumption.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Unknown judgments and unavailable evidence remain visible; post-plan evidence belongs in `resolution` on undecided cards.

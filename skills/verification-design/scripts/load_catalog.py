@@ -318,7 +318,6 @@ def cli_main(fn):
     except Unavailable as exc:
         # A single JSON line is convenient to paste into an uncertainty record.
         print(json.dumps(exc.result, ensure_ascii=False))
-        print(exc.result["reason"], file=sys.stderr)
         return 4
     except Exception as exc:
         print("internal: " + str(exc), file=sys.stderr)

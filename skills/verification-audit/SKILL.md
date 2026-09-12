@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.3.0"
+  version: "1.4.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -58,7 +58,8 @@ Run commands from this skill directory, with absolute paths for operator-visible
 4. Read `assets/catalog.json`, [principles-checklist.md](references/principles-checklist.md)
    and [findings-record.md](references/findings-record.md). Fill every scaffold question
    against the artifact, with evidence for sound and defect judgments and reasons for
-   the other statuses. Free defects use original questions. Record uncertainty rather
+   the other statuses. An unmapped defect needs a non-empty `failure_note`.
+   Free defects use original questions. Record uncertainty rather
    than inventing a defect; scripts do not make these judgments. A record the principle
    asks for is a defect when the artifact has no way to produce it; when it would come
    from a stage outside the evidence set (a run, a CI report), record
@@ -67,11 +68,13 @@ Run commands from this skill directory, with absolute paths for operator-visible
    Use `out-of-scope` free observations for things fresh eyes noticed that the scope excludes, never as defects.
    Fill the record-level fields as well:
    - `models`: the model family producing this record as `verifier`, and the family that
-     produced the artifact as `generator`, or `unknown` when it is not recorded anywhere.
+     produced the artifact as `generator`, `unknown` when not recorded anywhere, or `none`
+     when no model produced it. Use the family vocabulary in the record reference.
    - `artifact_identity`: the artifact revision and a sha256 per file read, so a reader
      can tell which bytes were judged. Omit only when nothing readable was examined.
-   - `measurements`: one entry per command run against the artifact, with its exit code
-     and its `kind`: `inspection` when the command only read the artifact, `execution`
+   - `measurements`: one entry per command, or per group of same-kind commands with one
+     purpose, run against the artifact; a grouped entry states its command count in `note`.
+     Record its exit code and `kind`: `inspection` when the command only read the artifact, `execution`
      when it ran the artifact. Cite measurements by id from evidence. An execution shows
      what the artifact does; an inspection shows what it contains; neither is evidence
      that the artifact records anything.
@@ -84,12 +87,14 @@ Run commands from this skill directory, with absolute paths for operator-visible
 
 6. Check artifact citation existence and bounds. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
+   A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
-   before final validation and rendering.
+   Paste any exit-4 JSON objects from the `load_catalog.py fetch ... --offline` command
+   under Source text below into the record's `unavailable_sources` list before final
+   validation and rendering.
 
    ```bash
-   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
+   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
    ```
 
 7. Route validated defects through the packaged failure map. Routing is a lookup: it
@@ -169,9 +174,16 @@ invocation controls do not prevent a model from opening it as a file.
 - Artifact and scope echoed; scope came from the operator, not a guess.
 - Snapshot check and record validator exited 0; every required condition or question covered.
 - Assumptions recorded, including verification path for design and any scope expansion.
-- `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.
+- `models` names the verifier family and, for `generator`, the family that produced the artifact,
+  `unknown` when not recorded anywhere, or `none` when no model produced it (human-written
+  code or a deterministic job). Both fields use lower-case family names such as
+  `anthropic-claude`, `openai-gpt` or `google-gemini`, optionally followed by a model
+  after a slash, for example `anthropic-claude/opus-5`.
+- `artifact_identity` and `measurements` cover what was read and run. When there is no
+  artifact, omit both and record that in a `measurement-basis` assumption.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
-- The routed record is the file cited as the record; `related_cards` names judged cards where routing offered candidates.
+- The routed record is the file cited as the record; `related_cards` names judged cards where routing offered candidates,
+  or is absent when no card applies. An unmapped defect with a `failure_note` is a complete answer.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Unknown judgments and unavailable evidence remain visible.
 - Output rendered to the requested file and substantive judgments left for operator review.
