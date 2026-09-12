@@ -56,8 +56,9 @@ those bytes through the shared scout parser and renderer.
 
 The expected dry-run lines in `test_scout.py` were captured from the old command
 with the real config and fixed start/end `2026-09-08` before removal. The matching
-table in `test_matching.py` was written before `matching.py`; its supported
-simple plural suffixes are `s` and `es`.
+table in `test_matching.py` was written before `matching.py`; its accepted
+inflection suffixes are `s`, `es`, `ed` and `ing`, widened from `s` and `es` on 2026-09-12
+after a live scout run showed `sandboxed` missing the `sandbox` keyword.
 
 ## Digest port fixture, 2026-09-12
 

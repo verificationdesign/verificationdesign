@@ -1,8 +1,8 @@
-"""Boundary contract written before implementation; accepted suffixes are s and es."""
+"""Boundary contract written before implementation; accepted suffixes are s, es, ed and ing."""
 
 import unittest
 
-from research_tools.matching import match_phrases, PLURAL_SUFFIXES
+from research_tools.matching import match_phrases, INFLECTION_SUFFIXES
 
 
 # Text, ordered phrases, exact ordered matches. Suffixes apply to the last word.
@@ -16,6 +16,10 @@ CASES = [
     ("AI agents", ["AI agent"], ["AI agent"]),
     ("AI agentic", ["AI agent"], []),
     ("toolboxes", ["toolbox"], ["toolbox"]),
+    ("sandboxed", ["sandbox"], ["sandbox"]),
+    ("sandboxing agents", ["sandbox", "AI agent"], ["sandbox"]),
+    ("sandboxedly", ["sandbox"], []),
+    ("judging", ["judge"], []),
     ("prellm llmish llmsuffix", ["llm"], []),
     ("large language modelers", ["large language model"], []),
     ("LLMs and agents", ["agent", "LLM", "llm", "Agent", "absent"], ["agent", "LLM"]),
@@ -29,8 +33,8 @@ CASES = [
 
 class MatchingTests(unittest.TestCase):
     def test_contract(self):
-        """Removing boundaries, plural alternatives or ordered dedup fails the table."""
-        self.assertEqual(PLURAL_SUFFIXES, ("s", "es"))
+        """Removing boundaries, suffix alternatives or ordered dedup fails the table."""
+        self.assertEqual(INFLECTION_SUFFIXES, ("s", "es", "ed", "ing"))
         for text, phrases, expected in CASES:
             with self.subTest(text=text, phrases=phrases):
                 self.assertEqual(match_phrases(text, phrases), expected)
