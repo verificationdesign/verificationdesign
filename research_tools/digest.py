@@ -65,9 +65,11 @@ def parse_candidates(path: Path) -> list[Candidate]:
         document = records.parse_triage(path.read_text(encoding="utf-8"))
     except records.RecordError as error:
         raise SystemExit(f"{path}: {error}") from error
+    # Records keep field values byte-exact; the digest compares and looks up
+    # semantic values, so strip them the way the verifier and old script did.
     return [Candidate(
-        title=item.title, source=item.source, label=item.initial_label,
-        decision=item.decision, abstract=one_line(item.abstract),
+        title=item.title.strip(), source=item.source.strip(), label=item.initial_label.strip(),
+        decision=item.decision.strip(), abstract=one_line(item.abstract),
         why=one_line(item.why), key_claims=bullets(item.key_findings),
         human_checks=bullets(item.human_checks),
         credibility_flags=bullets(item.credibility_flags), ordinal=index,

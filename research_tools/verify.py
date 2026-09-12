@@ -410,14 +410,14 @@ def check_append_only(root: Path, base_ref: str) -> Check:
     )
 
 
-def check_scout_config(root: Path, scout_dir: Path) -> Check:
-    config_path = scout_dir / "config.json"
+def check_scout_config(config_path: Path) -> Check:
+    """Validate the selected profile file, the same one the other checks and scout use."""
     if not config_path.exists():
-        return Check("scout config / query shape", False, "config.json missing", [str(config_path)])
+        return Check("scout config / query shape", False, "profile missing", [str(config_path)])
     try:
         raw = json.loads(config_path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        return Check("scout config / query shape", False, "config.json invalid JSON", [str(exc)])
+        return Check("scout config / query shape", False, "profile invalid JSON", [str(exc)])
 
     details: list[str] = []
     categories = raw.get("categories")
@@ -588,7 +588,9 @@ def check_principles(path: Path, profile: Profile) -> Check:
 
 
 def run(root: Path, profile: Profile, *, skip_links: bool, include_scout_links: bool,
-        base_ref: str, fetch=None) -> list[Check]:
+        base_ref: str, fetch=None, profile_path: Path | None = None) -> list[Check]:
+    if profile_path is None:
+        profile_path = root / "research/scouts/config.json"
     docs = [root / path for path in profile.canonical_docs]
     review_dir = root / "research/reviewed"
     triage_dir = root / "research/triage"
@@ -605,7 +607,7 @@ def run(root: Path, profile: Profile, *, skip_links: bool, include_scout_links: 
         check_triage_notes(root, triage_dir),
         check_append_only(root, base_ref),
         check_legacy_citations(root, base_ref),
-        check_scout_config(root, scout_dir),
+        check_scout_config(profile_path),
         check_principles(docs[0], profile),
     ]
     if not skip_links:
@@ -632,7 +634,8 @@ def register(subparsers):
 def _execute(args) -> int:
     root = Path(__file__).resolve().parents[1]
     checks = run(root, load_profile(args.profile), skip_links=args.skip_links,
-                 include_scout_links=args.include_scout_links, base_ref=args.base_ref)
+                 include_scout_links=args.include_scout_links, base_ref=args.base_ref,
+                 profile_path=args.profile)
     failed = False
     for check in checks:
         status = "PASS" if check.ok else "FAIL"

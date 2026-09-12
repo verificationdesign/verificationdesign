@@ -14,12 +14,14 @@ SAMPLE = ROOT / "tests/fixtures/config-sample.json"
 
 class ProfileTests(unittest.TestCase):
     def test_real_profile(self):
+        # Structural checks only: the live profile grows, the fixture pins exact values.
         profile = load_profile(ROOT / "research/scouts/config.json")
-        self.assertEqual(len(profile.categories), 7)
-        self.assertEqual(len(profile.keyword_groups), 13)
-        self.assertEqual(len(profile.anchor_phrases), 5)
-        self.assertEqual(len(profile.expand_on), 3)
-        self.assertEqual(list(profile.principles), [f"principle-{n}" for n in range(1, 10)])
+        self.assertTrue(profile.categories)
+        self.assertTrue(profile.keyword_groups)
+        self.assertTrue(profile.anchor_phrases)
+        self.assertTrue(all(phrases for phrases in profile.keyword_groups.values()))
+        self.assertEqual(list(profile.principles), [f"principle-{n}" for n in range(1, len(profile.principles) + 1)])
+        self.assertIsNotNone(profile.digest_heuristics)
         headings = [line.split(". ", 1)[1] for line in
                     (ROOT / "verification_design.md").read_text().splitlines()
                     if line.startswith("### ") and line[4:5].isdigit()]

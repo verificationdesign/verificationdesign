@@ -41,6 +41,23 @@ class DigestTests(unittest.TestCase):
         self.assertEqual(content, (FIXTURES / "digest-golden.md").read_bytes())
         self.assertIn(b"3 candidates shown; 3 matched filter", result.stdout)
 
+    def test_padded_metadata_is_normalized(self):
+        text = (FIXTURES / "triage-sample.md").read_text(encoding="utf-8")
+        for before, after in (("Decision: promote\n", "Decision:  promote  \n"),
+                              ("Initial label: operational technique\n", "Initial label: operational technique \n"),
+                              ("Source: https://arxiv.org/abs/2605.30244\n", "Source: https://arxiv.org/abs/2605.30244 \n")):
+            self.assertIn(before, text)
+            text = text.replace(before, after, 1)
+        tables = load_profile(ROOT / "research/scouts/config.json").digest_heuristics
+        result, content = self.command("--decision", "promote", text=text)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"Reinforcement Learning with Robust Rubric Rewards", content)
+        self.assertIn(b"- Source: https://arxiv.org/abs/2605.30244\n", content)
+        self.assertIn(b"- Suggested decision: promote\n", content)
+        self.assertIn(b"- Suggested label: operational technique\n", content)
+        self.assertIn(f"- Potential doc impact: {tables['doc_impact']['operational technique']}\n".encode(), content)
+        self.assertNotIn(tables["doc_impact_fallback"].encode(), content.split(b"## 2.")[0])
+
     def test_substitute_tables_and_order(self):
         profile = load_profile(FIXTURES / "config-sample.json")
         candidate = replace(digest.parse_candidates(FIXTURES / "triage-sample.md")[0],

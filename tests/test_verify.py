@@ -74,6 +74,24 @@ class VerifyTests(unittest.TestCase):
         self.assertEqual([c.name for c in failed], [name])
         self.assertTrue(any(detail in item for item in failed[0].details), failed[0])
 
+    def test_custom_profile_reaches_scout_config_check(self):
+        default = self.root / "research/scouts/config.json"
+        custom = self.root / "custom-profile.json"
+        raw = json.loads(default.read_text())
+        raw["keyword_groups"] = {}
+        custom.write_text(json.dumps(raw))
+        self.assertTrue(all(c.ok for c in self.run_checks()), "default profile must still pass")
+        with patch("urllib.request.urlopen", side_effect=AssertionError("live access")):
+            checks = verify.run(self.root, load_profile(custom), skip_links=True,
+                                include_scout_links=False, base_ref="HEAD", profile_path=custom)
+        failed = [c for c in checks if not c.ok]
+        self.assertEqual([c.name for c in failed], ["scout config / query shape"])
+        self.assertTrue(any("keyword_groups block missing or empty" in d for d in failed[0].details), failed[0])
+        checks = verify.run(self.root, self.profile, skip_links=True, include_scout_links=False,
+                            base_ref="HEAD", profile_path=self.root / "absent.json")
+        failed = [c for c in checks if not c.ok]
+        self.assertEqual([(c.name, c.observed) for c in failed], [("scout config / query shape", "profile missing")])
+
     def test_positive_counts(self):
         checks = self.run_checks()
         self.assertEqual(len(checks), 12)
@@ -212,3 +230,17 @@ class VerifyTests(unittest.TestCase):
         self.assertEqual(result.stderr, "")
         self.assertEqual(len(result.stdout.splitlines()), 12)
         self.assertTrue(all(line.startswith("[PASS]") for line in result.stdout.splitlines()))
+
+    def test_cli_profile_flag_is_validated(self):
+        raw = json.loads((REPO / "research/scouts/config.json").read_text())
+        raw["keyword_groups"] = {}
+        custom = self.root / "profile.json"
+        custom.write_text(json.dumps(raw))
+        result = subprocess.run([sys.executable, "-m", "research_tools", "verify", "--skip-links",
+                                 "--base-ref", "HEAD", "--profile", str(custom)],
+                                cwd=REPO, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        failed = [line for line in result.stdout.splitlines() if line.startswith("[FAIL]")]
+        self.assertEqual(len(failed), 1, result.stdout)
+        self.assertIn("scout config / query shape", failed[0])
+        self.assertIn("keyword_groups block missing or empty", result.stdout)
