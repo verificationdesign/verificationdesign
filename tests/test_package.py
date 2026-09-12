@@ -37,5 +37,10 @@ class PackageTests(unittest.TestCase):
                         imports = [node.module]
                     for name in imports:
                         self.assertIn(name.split(".")[0], allowed, (str(path), name))
-                        if directory == "research_tools" and path.name != "records.py":
-                            self.assertNotEqual(name, "re", "field extraction belongs in records.py")
+                if directory == "research_tools" and path.name != "records.py":
+                    labels = ("## Candidate:", "Initial label:", "Decision:", "Abstract excerpt",
+                              "Matched keywords", "Review Queue", "Deduped Candidates")
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                            self.assertFalse(any(label in node.value for label in labels),
+                                             (str(path), node.value))

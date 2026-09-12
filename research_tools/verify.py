@@ -15,12 +15,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
-DOCS = [ROOT / "verification_design.md"]
-REVIEW_DIR = ROOT / "research" / "reviewed"
-SCOUT_DIR = ROOT / "research" / "scouts"
-TRIAGE_DIR = ROOT / "research" / "triage"
-LINK_CONFIRMATIONS = ROOT / "research" / "link-confirmations.txt"
+from research_tools.profile import Profile, load_profile
+from research_tools import records
+
+
 DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
 UPDATE_NOTE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b.*\bupdate\b|\bupdate\b.*\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
 URL_RE = re.compile(r"https?://[^\s)<>\"]+")
@@ -65,16 +63,17 @@ def collect_links(path: Path) -> list[str]:
     return markdown_urls + bare_urls
 
 
-def url_ok(url: str) -> tuple[bool, str]:
+def url_ok(url: str, fetch=None) -> tuple[bool, str]:
+    fetch = urllib.request.urlopen if fetch is None else fetch
     request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "ai-research-verify/1.0"})
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
+        with fetch(request, timeout=15) as response:
             return 200 <= response.status < 400, f"HTTP {response.status}"
     except urllib.error.HTTPError as exc:
         if exc.code in {403, 405}:
             get_request = urllib.request.Request(url, headers={"User-Agent": "ai-research-verify/1.0"})
             try:
-                with urllib.request.urlopen(get_request, timeout=15) as response:
+                with fetch(get_request, timeout=15) as response:
                     return 200 <= response.status < 400, f"HTTP {response.status}"
             except Exception as get_exc:  # noqa: BLE001
                 return False, str(get_exc)
@@ -83,11 +82,11 @@ def url_ok(url: str) -> tuple[bool, str]:
         return False, str(exc)
 
 
-def load_link_confirmations() -> dict[str, str]:
-    if not LINK_CONFIRMATIONS.exists():
+def load_link_confirmations(link_confirmations: Path) -> dict[str, str]:
+    if not link_confirmations.exists():
         return {}
     confirmations: dict[str, str] = {}
-    for line in LINK_CONFIRMATIONS.read_text(encoding="utf-8").splitlines():
+    for line in link_confirmations.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line or line.startswith("#"):
             continue
@@ -102,15 +101,15 @@ def load_link_confirmations() -> dict[str, str]:
     return confirmations
 
 
-def check_links(paths: list[Path]) -> Check:
+def check_links(paths: list[Path], link_confirmations: Path, fetch=None) -> Check:
     urls: list[str] = []
     for path in paths:
         urls.extend(collect_links(path))
-    confirmations = load_link_confirmations()
+    confirmations = load_link_confirmations(link_confirmations)
     failures: list[str] = []
     manually_confirmed = 0
     for url in sorted(set(urls)):
-        ok, status = url_ok(url)
+        ok, status = url_ok(url, fetch)
         if not ok:
             if url in confirmations:
                 manually_confirmed += 1
@@ -202,10 +201,10 @@ def normalize_citation_label(label: str) -> str:
     return f"{normalized_prefix}:{value}"
 
 
-def reviewed_source_labels() -> tuple[set[str], set[str]]:
+def reviewed_source_labels(review_dir: Path) -> tuple[set[str], set[str]]:
     reviewed_labels: set[str] = set()
     legacy_labels: set[str] = set()
-    notes = sorted(path for path in REVIEW_DIR.glob("*.md") if path.name != "TEMPLATE.md")
+    notes = sorted(path for path in review_dir.glob("*.md") if path.name != "TEMPLATE.md")
     for note in notes:
         text = note.read_text(encoding="utf-8")
         for source in re.findall(r"^Source:\s+(.+)$", text, flags=re.MULTILINE):
@@ -221,9 +220,9 @@ def reviewed_source_labels() -> tuple[set[str], set[str]]:
     return reviewed_labels, legacy_labels
 
 
-def check_citation_review_provenance(path: Path) -> Check:
+def check_citation_review_provenance(path: Path, review_dir: Path) -> Check:
     canonical = canonical_citation_labels(path)
-    reviewed, legacy = reviewed_source_labels()
+    reviewed, legacy = reviewed_source_labels(review_dir)
     covered = reviewed | legacy
     missing = sorted(canonical - covered, key=str.lower)
     return Check(
@@ -282,7 +281,7 @@ def check_numbering_and_anchors(path: Path) -> Check:
     )
 
 
-def check_update_provenance(path: Path) -> Check:
+def check_update_provenance(path: Path, root: Path) -> Check:
     text = path.read_text(encoding="utf-8")
     lines = text.splitlines()
     update_blocks: list[tuple[int, str]] = []
@@ -303,13 +302,13 @@ def check_update_provenance(path: Path) -> Check:
     return Check(
         "provenance",
         not failures,
-        f"{path.relative_to(ROOT)}: {len(update_blocks)} dated update note blocks inspected; {len(failures)} failures",
+        f"{path.relative_to(root)}: {len(update_blocks)} dated update note blocks inspected; {len(failures)} failures",
         failures,
     )
 
 
-def check_review_notes() -> Check:
-    notes = sorted(path for path in REVIEW_DIR.glob("*.md") if path.name not in {"TEMPLATE.md", "LEGACY-CITATIONS.md"})
+def check_review_notes(root: Path, review_dir: Path) -> Check:
+    notes = sorted(path for path in review_dir.glob("*.md") if path.name not in {"TEMPLATE.md", "LEGACY-CITATIONS.md"})
     required_patterns = {
         "Reviewed": re.compile(r"^Reviewed:\s+\d{4}-\d{2}-\d{2}\s*$", re.MULTILINE),
         "Reviewer": re.compile(r"^Reviewer:\s+.+$", re.MULTILINE),
@@ -324,7 +323,7 @@ def check_review_notes() -> Check:
         text = note.read_text(encoding="utf-8")
         for name, pattern in required_patterns.items():
             if not pattern.search(text):
-                failures.append(f"{note.relative_to(ROOT)} missing or invalid {name}")
+                failures.append(f"{note.relative_to(root)} missing or invalid {name}")
     return Check(
         "review note metadata",
         not failures,
@@ -333,40 +332,33 @@ def check_review_notes() -> Check:
     )
 
 
-def check_triage_notes() -> Check:
+def check_triage_notes(root: Path, triage_dir: Path) -> Check:
     excluded = {"TEMPLATE.md", "README.md", "anchors.md", "ranking_design.md"}
-    notes = sorted(path for path in TRIAGE_DIR.glob("*.md") if path.name not in excluded)
-    note_patterns = {
-        "Date": re.compile(r"^Date:\s+\d{4}-\d{2}-\d{2}\s*$", re.MULTILINE),
-        "Source scout": re.compile(r"^Source scout:\s+.+$", re.MULTILINE),
-        "Reviewer": re.compile(r"^Reviewer:\s+.+$", re.MULTILINE),
-    }
-    block_patterns = {
-        "Source": re.compile(r"^Source:\s+.+$", re.MULTILINE),
-        "Initial label": re.compile(r"^Initial label:\s+(challenges|narrows|extends|operational technique|ignore)\s*$", re.MULTILINE),
-        "Confidence": re.compile(r"^Confidence:\s+(low|medium|high)\s*$", re.MULTILINE),
-        "Abstract Paraphrase": re.compile(r"^### Abstract Paraphrase\s*$", re.MULTILINE),
-        "Key Findings": re.compile(r"^### Key Findings\s*$", re.MULTILINE),
-        "Decision": re.compile(r"^Decision:\s+(promote|keep-in-triage|keep-in-scout|ignore)\s*$", re.MULTILINE),
-    }
+    notes = sorted(path for path in triage_dir.glob("*.md") if path.name not in excluded)
     failures: list[str] = []
     candidate_count = 0
     for note in notes:
-        text = note.read_text(encoding="utf-8")
-        for name, pattern in note_patterns.items():
-            if not pattern.search(text):
-                failures.append(f"{note.relative_to(ROOT)} missing or invalid {name}")
-        parts = re.split(r"(?m)^## Candidate:\s+", text)
-        candidates = parts[1:]
-        candidate_count += len(candidates)
-        if not candidates:
-            failures.append(f"{note.relative_to(ROOT)} has no candidate blocks")
+        try:
+            doc = records.parse_triage(note.read_text(encoding="utf-8"))
+        except records.RecordError as exc:
+            failures.append(f"{note.relative_to(root)} missing or invalid {exc}")
             continue
-        for candidate in candidates:
-            title = candidate.splitlines()[0].strip() if candidate.splitlines() else "(untitled)"
-            for name, pattern in block_patterns.items():
-                if not pattern.search(candidate):
-                    failures.append(f"{note.relative_to(ROOT)} candidate {title!r} missing or invalid {name}")
+        candidate_count += len(doc.candidates)
+        for name, value in (("Source scout", doc.header.source_scout), ("Reviewer", doc.header.reviewer)):
+            if not value or not value.strip():
+                failures.append(f"{note.relative_to(root)} missing or invalid {name}")
+        for candidate in doc.candidates:
+            fields = {
+                "Source": bool(candidate.source.strip()),
+                "Initial label": candidate.initial_label.strip() in {"challenges", "narrows", "extends", "operational technique", "ignore"},
+                "Confidence": candidate.confidence.strip() in {"low", "medium", "high"},
+                "Abstract Paraphrase": any(s.heading.strip() == "### Abstract Paraphrase" for s in candidate.sections),
+                "Key Findings": any(s.heading.strip() == "### Key Findings" for s in candidate.sections),
+                "Decision": candidate.decision.strip() in {"promote", "keep-in-triage", "keep-in-scout", "ignore"},
+            }
+            for name, valid in fields.items():
+                if not valid:
+                    failures.append(f"{note.relative_to(root)} candidate {candidate.title!r} missing or invalid {name}")
     return Check(
         "triage note metadata",
         not failures,
@@ -375,11 +367,11 @@ def check_triage_notes() -> Check:
     )
 
 
-def check_append_only(base_ref: str) -> Check:
+def check_append_only(root: Path, base_ref: str) -> Check:
     try:
         diff = subprocess.run(
             ["git", "diff", base_ref, "--", "research/synthesis.md"],
-            cwd=ROOT,
+            cwd=root,
             check=False,
             text=True,
             stdout=subprocess.PIPE,
@@ -417,8 +409,8 @@ def check_append_only(base_ref: str) -> Check:
     )
 
 
-def check_scout_config() -> Check:
-    config_path = SCOUT_DIR / "config.json"
+def check_scout_config(root: Path, scout_dir: Path) -> Check:
+    config_path = scout_dir / "config.json"
     if not config_path.exists():
         return Check("scout config / query shape", False, "config.json missing", [str(config_path)])
     try:
@@ -499,8 +491,8 @@ def check_scout_config() -> Check:
     if isinstance(categories, dict) and isinstance(groups, dict):
         try:
             result = subprocess.run(
-                ["python3", str(ROOT / "scripts" / "scout.py"), "--dry-run"],
-                cwd=ROOT,
+                [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "scout.py"), "--config", str(config_path), "--dry-run"],
+                cwd=root,
                 check=False,
                 text=True,
                 stdout=subprocess.PIPE,
@@ -534,8 +526,8 @@ def check_scout_config() -> Check:
             if "from=" not in url or "until=" not in url:
                 details.append(f"dry-run request for {tag} missing from/until parameters")
         sleep_result = subprocess.run(
-            ["python3", str(ROOT / "scripts" / "scout.py"), "--dry-run", "--sleep", "10"],
-            cwd=ROOT,
+            [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "scout.py"), "--config", str(config_path), "--dry-run", "--sleep", "10"],
+            cwd=root,
             check=False,
             text=True,
             stdout=subprocess.PIPE,
@@ -552,9 +544,9 @@ def check_scout_config() -> Check:
     )
 
 
-def check_legacy_citations(base_ref: str) -> Check:
+def check_legacy_citations(root: Path, base_ref: str) -> Check:
     legacy_path = "research/reviewed/LEGACY-CITATIONS.md"
-    legacy_file = ROOT / legacy_path
+    legacy_file = root / legacy_path
     if not legacy_file.exists():
         return Check("legacy citation bridge", False, "legacy bridge missing", [legacy_path])
     text = legacy_file.read_text(encoding="utf-8")
@@ -569,7 +561,7 @@ def check_legacy_citations(base_ref: str) -> Check:
     try:
         diff = subprocess.run(
             ["git", "diff", base_ref, "--", legacy_path],
-            cwd=ROOT,
+            cwd=root,
             check=False,
             text=True,
             stdout=subprocess.PIPE,
@@ -596,33 +588,65 @@ def check_legacy_citations(base_ref: str) -> Check:
     )
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser()
+def check_principles(path: Path, profile: Profile) -> Check:
+    titles = re.findall(r"^### \d+\. (.+)$", path.read_text(encoding="utf-8"), re.MULTILINE)
+    expected = list(profile.principles.values())
+    failures = []
+    if len(titles) != len(expected):
+        failures.append(f"principle count observed {len(titles)}, expected {len(expected)}")
+    for index, (title, wanted) in enumerate(zip(titles, expected), 1):
+        if title != wanted:
+            failures.append(f"principle {index} title observed {title!r}, expected {wanted!r}")
+    return Check("principles match canonical doc", not failures,
+                 f"{len(expected)} profile principles; {len(titles)} canonical headings; {len(failures)} failures", failures)
+
+
+def run(root: Path, profile: Profile, *, skip_links: bool, include_scout_links: bool,
+        base_ref: str, fetch=None) -> list[Check]:
+    docs = [root / path for path in profile.canonical_docs]
+    review_dir = root / "research/reviewed"
+    triage_dir = root / "research/triage"
+    scout_dir = root / "research/scouts"
+    paths = docs + [root / "README.md", root / "AGENTS.md"]
+    checks = [
+        check_citations(docs[0]),
+        check_source_label_parser(),
+        check_citation_review_provenance(docs[0], review_dir),
+        check_numbering_and_anchors(docs[0]),
+        check_update_provenance(docs[0], root),
+        check_update_provenance(root / "research/synthesis.md", root),
+        check_review_notes(root, review_dir),
+        check_triage_notes(root, triage_dir),
+        check_append_only(root, base_ref),
+        check_legacy_citations(root, base_ref),
+        check_scout_config(root, scout_dir),
+        check_principles(docs[0], profile),
+    ]
+    if not skip_links:
+        link_paths = paths + [root / "research/synthesis.md"] + sorted(review_dir.glob("*.md")) + sorted(triage_dir.rglob("*.md"))
+        if include_scout_links:
+            link_paths += sorted(scout_dir.glob("*.md"))
+        checks.insert(0, check_links(link_paths, root / "research/link-confirmations.txt", fetch))
+    return checks
+
+
+def _arguments(parser):
+    root = Path(__file__).resolve().parents[1]
     parser.add_argument("--skip-links", action="store_true", help="skip network link liveness checks")
     parser.add_argument("--include-scout-links", action="store_true", help="include research/scouts/*.md in link checks")
     parser.add_argument("--base-ref", default=os.environ.get("VERIFY_BASE_REF", "HEAD"), help="git base ref for append-only diff (default: HEAD or VERIFY_BASE_REF)")
-    args = parser.parse_args()
+    parser.add_argument("--profile", type=Path, default=root / "research/scouts/config.json")
+    parser.set_defaults(run=_execute)
 
-    paths = DOCS + [ROOT / "README.md", ROOT / "AGENTS.md"]
-    checks = [
-        check_citations(DOCS[0]),
-        check_source_label_parser(),
-        check_citation_review_provenance(DOCS[0]),
-        check_numbering_and_anchors(DOCS[0]),
-        check_update_provenance(DOCS[0]),
-        check_update_provenance(ROOT / "research/synthesis.md"),
-        check_review_notes(),
-        check_triage_notes(),
-        check_append_only(args.base_ref),
-        check_legacy_citations(args.base_ref),
-        check_scout_config(),
-    ]
-    if not args.skip_links:
-        link_paths = paths + [ROOT / "research/synthesis.md"] + sorted(REVIEW_DIR.glob("*.md")) + sorted(TRIAGE_DIR.rglob("*.md"))
-        if args.include_scout_links:
-            link_paths += sorted(SCOUT_DIR.glob("*.md"))
-        checks.insert(0, check_links(link_paths))
 
+def register(subparsers):
+    _arguments(subparsers.add_parser("verify", help=__doc__))
+
+
+def _execute(args) -> int:
+    root = Path(__file__).resolve().parents[1]
+    checks = run(root, load_profile(args.profile), skip_links=args.skip_links,
+                 include_scout_links=args.include_scout_links, base_ref=args.base_ref)
     failed = False
     for check in checks:
         status = "PASS" if check.ok else "FAIL"
@@ -631,6 +655,12 @@ def main() -> int:
             print(f"  - {detail}")
         failed = failed or not check.ok
     return 1 if failed else 0
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser()
+    _arguments(parser)
+    return _execute(parser.parse_args(argv))
 
 
 if __name__ == "__main__":

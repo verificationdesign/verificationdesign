@@ -3,7 +3,7 @@
 
 Loads `constitution.json` (editorial standards as data) and runs each rule
 against the cards under `./cards/`. Prints observed values for every check,
-not only failures, matching the repo's `scripts/verify.py` discipline.
+not only failures, matching the repo's `python3 -m research_tools verify` discipline.
 Exits non-zero on any failure.
 
 The constitution is data; this script is the verifier. See `cards/constitution.md`

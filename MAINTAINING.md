@@ -20,7 +20,7 @@ The runbook for this repository: document index, research workflow, site workflo
 - `research/scouts/`: arXiv scout query config; raw scout outputs stay local and untracked.
 - `research/triage/`: first-pass candidate summaries and relevance judgments.
 - `research/link-confirmations.txt`: manual confirmations for valid links that block automated checks.
-- `scripts/verify.py`: local mechanical verifier.
+- `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools verify` is the local mechanical verifier.
 - `scripts/scout.py`: arXiv discovery script; retrieval only, no judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
 
@@ -31,7 +31,7 @@ The runbook for this repository: document index, research workflow, site workflo
 3. Review a new source in `research/reviewed/` before updating the canonical doc.
 4. File new evidence under a claim in `research/synthesis.md`; fold into `verification_design.md` only under the fold-in bar.
 5. Keep inline citations and the References table balanced.
-6. Run `python3 scripts/verify.py`. A source update is not done after a `--skip-links` run; full verification includes link liveness.
+6. Run `python3 -m research_tools verify`. A source update is not done after a `--skip-links` run; full verification includes link liveness.
 7. Treat substantive characterization as a human review item, not a mechanically verified fact.
 
 If a publisher blocks automated link checks but the link is manually confirmed valid, record it in `research/link-confirmations.txt`.
@@ -87,8 +87,8 @@ retrieval tests; run them on the maintainer's host and report the failure explic
 - `make check`: run full repo verification and full website verification.
 - `make verify-local`: run repo mechanical checks without network link liveness.
 - `make site`: run the website build, Astro check, card lint, and accessibility smoke check.
-- `python3 scripts/verify.py`: run local mechanical checks.
-- `python3 scripts/verify.py --include-scout-links`: also check links in scout artifacts.
+- `python3 -m research_tools verify`: run local mechanical checks.
+- `python3 -m research_tools verify --include-scout-links`: also check links in scout artifacts.
 - `python3 scripts/scout.py --dry-run`: print planned arXiv OAI-PMH requests.
 - `python3 scripts/scout.py --start-date 2026-05-30 --end-date 2026-06-02`: run an exact arXiv scout window.
 - `python3 scripts/digest_triage.py --input research/triage/example.md --outfile research/triage/digests/example-digest.md`: compact a triage note into a reading queue.

@@ -40,7 +40,7 @@ jobs:
       # CI runs the hermetic subset only. Link liveness is enforced locally
       # before push because cloud runner IPs are blocked by publishers/arXiv.
       - name: Repo verifier (hermetic; link liveness gated locally pre-push)
-        run: python3 scripts/verify.py --skip-links
+        run: python3 -m research_tools verify --skip-links
 
       - name: Research tools tests (hermetic)
         run: python3 -m unittest discover -s tests -t .

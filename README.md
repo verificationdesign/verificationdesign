@@ -21,7 +21,7 @@ The thesis here is that "looks good" is not verification, so this project does n
 - [`ai-design-patterns/constitution.json`](ai-design-patterns/constitution.json) defines the editorial rules: required card sections, a closed vocabulary for determinism claims, and a banned-words list for vague language.
 - [`ai-design-patterns/scripts/lint_patterns.py`](ai-design-patterns/scripts/lint_patterns.py) fails any card that breaks those rules.
 - [`ai-design-patterns/scripts/run_card_code.py`](ai-design-patterns/scripts/run_card_code.py) executes every card's Pattern code block under a bare Python 3.13 and fails unless a load-bearing assertion actually runs.
-- [`scripts/verify.py`](scripts/verify.py) checks link liveness, citation and reference balance, provenance of every dated update, and that the synthesis holding area is append-only.
+- [`research_tools/verify.py`](research_tools/verify.py), run as `python3 -m research_tools verify`, checks link liveness, citation and reference balance, provenance of every dated update, and that the synthesis holding area is append-only.
 - CI runs all of the above and refuses to deploy the site on any failure. A deployed site is a passing site by construction.
 
 ## Running the checks

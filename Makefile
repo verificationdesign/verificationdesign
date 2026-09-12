@@ -23,11 +23,11 @@ help:
 check: site verify
 
 verify: test
-	python3 scripts/verify.py
+	python3 -m research_tools verify
 	python3 scripts/check_skills.py --links
 
 verify-local: test
-	python3 scripts/verify.py --skip-links
+	python3 -m research_tools verify --skip-links
 	python3 scripts/check_skills.py
 
 test:

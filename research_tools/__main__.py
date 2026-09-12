@@ -2,11 +2,13 @@
 
 import argparse
 
+from research_tools import verify
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     subcommands = parser.add_subparsers(dest="command")
-    # Stage modules will register their argument parsers here.
+    verify.register(subcommands)
     args = parser.parse_args(argv)
     if args.command is None:
         parser.print_help()

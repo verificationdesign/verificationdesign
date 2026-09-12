@@ -224,7 +224,8 @@ def reference_check(report, enabled):
 
 
 def link_checks(report, files, catalog, meta):
-    verifier = import_file("skills_repo_verifier", ROOT / "scripts/verify.py")
+    sys.path.insert(0, str(ROOT))
+    from research_tools import verify as verifier
     urls = set()
     for path in files:
         for url in re.findall(r'https?://[^\s<>"`]+', path.read_text(encoding="utf-8")):

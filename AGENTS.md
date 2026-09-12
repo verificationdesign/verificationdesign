@@ -43,7 +43,8 @@ Claude Code is the architect: plan, design, review, sign off, and direct the Cod
 - `research/scouts/`: scout configuration; raw scout outputs stay local and untracked (sources that matter are promoted through triage and review).
 - `research/triage/`: first-pass judgment notes for scout candidates before full source review.
 - `research/link-confirmations.txt`: dated manual confirmations for valid scholarly links that block automated checks.
-- `scripts/verify.py`: mechanical checks (see Verification discipline).
+- `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools <command>`.
+- `tests/`: fixture-driven tests for the research tools package.
 - `scripts/scout.py`: mechanical arXiv discovery; retrieval only, no research judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
 
@@ -66,7 +67,7 @@ Claude Code is the architect: plan, design, review, sign off, and direct the Cod
 - Migrated cards should include `Determinism Move` and `Observable Signal` sections.
 - Empirical claims still need evidence. Speculative pattern language should be presented as design judgment, not research fact.
 - Run `python3 ai-design-patterns/scripts/lint_patterns.py` when editing pattern cards. It is expected to fail on cards that have not yet been migrated to the new schema; do not treat those failures as blocking unrelated work.
-- The pattern linter is intentionally separate from `scripts/verify.py` until all cards are migrated.
+- The pattern linter is intentionally separate from `python3 -m research_tools verify` until all cards are migrated.
 
 ## Website discipline
 
@@ -98,13 +99,13 @@ For design-driven UX work, treat the design input as the acceptance contract. St
 Derived from `verification_design.md`; this repo follows its own principles.
 
 - **External signals over self-review.** Verify mechanically. Never approve an update because it "looks good"; reading-and-opining is the LLM-as-judge anti-pattern this doc warns against.
-- Before any update is considered done, run `scripts/verify.py` and pass **all** of:
+- Before any update is considered done, run `python3 -m research_tools verify` and pass **all** of:
   1. **Link liveness**: every canonical/reviewed URL or arXiv ID resolves (HTTP 200), or has a dated manual confirmation for publisher blocking.
   2. **Citation ⇄ reference balance**: every inline citation has a References row and vice versa; zero orphans in either direction.
   3. **Append-not-overwrite** on `research/synthesis.md`: `git diff` shows claim records only added, never deleted; a `Status:` line may change. `verification_design.md` prose is curated and mutable; substantive changes are protected by review, not by this gate. Use `--base-ref` or `VERIFY_BASE_REF` for multi-commit review.
   4. **Format / anchor lint**: markdown lints clean; internal `#anchors` resolve; numbering contiguous.
   5. **Provenance**: each update note names its source.
-- CI gates deploy on the hermetic subset: `scripts/verify.py --skip-links`, the pattern and card-code linters, and the site build/check/lint/a11y steps. Full `scripts/verify.py`, including link liveness, must pass locally before any push because CI runner IPs are blocked by publishers/arXiv and cannot run link liveness reliably.
+- CI gates deploy on the hermetic subset: `python3 -m research_tools verify --skip-links`, the pattern and card-code linters, and the site build/check/lint/a11y steps. Full `python3 -m research_tools verify`, including link liveness, must pass locally before any push because CI runner IPs are blocked by publishers/arXiv and cannot run link liveness reliably.
 - **Substance is not mechanically verifiable.** Whether a finding is *correctly characterized* is a judgment call. Do **not** self-review it. Flag substantive claims for human or cross-family-model review, assemble the diff, and stop; do not auto-approve or auto-merge.
 - **Grade strictly.** Print observed values for *all* checks, not only failures. Treat a zero-failure report with suspicion. Never explain away or reinterpret a failure to make it pass.
 
@@ -152,8 +153,8 @@ This is a local notes repo, not a security harness. Keep verification a lightwei
 
 ## Commands
 
-- Verify: `python3 scripts/verify.py`
-- Verify including scout artifact links: `python3 scripts/verify.py --include-scout-links`
+- Verify: `python3 -m research_tools verify`
+- Verify including scout artifact links: `python3 -m research_tools verify --include-scout-links`
 - Scout: `python3 scripts/scout.py --dry-run`
 - Scout exact window: `python3 scripts/scout.py --start-date 2026-05-30 --end-date 2026-06-02`
 - Pattern lint: `python3 ai-design-patterns/scripts/lint_patterns.py`
