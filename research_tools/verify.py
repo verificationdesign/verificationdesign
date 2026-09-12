@@ -21,7 +21,13 @@ from research_tools import records, scout
 
 
 DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
-UPDATE_NOTE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b.*\bupdate\b|\bupdate\b.*\b20\d{2}-\d{2}-\d{2}\b", re.IGNORECASE)
+# A dated update note (date and the word update on one line) or an undated one
+# (a line that opens with an "Update:" marker, after any blockquote or bullet).
+UPDATE_NOTE_RE = re.compile(
+    r"\b20\d{2}-\d{2}-\d{2}\b.*\bupdate\b|\bupdate\b.*\b20\d{2}-\d{2}-\d{2}\b"
+    r"|^\s*(?:>\s*)*(?:[-*]\s+)?\**update\**\s*:",
+    re.IGNORECASE,
+)
 URL_RE = re.compile(r"https?://[^\s)<>\"]+")
 LINK_RE = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 CITATION_LABEL_RE = re.compile(
@@ -299,11 +305,11 @@ def check_update_provenance(path: Path, root: Path) -> Check:
     for idx, block in update_blocks:
         lowered = block.lower()
         if "source" not in lowered and "arxiv" not in lowered and "doi" not in lowered:
-            failures.append(f"{path.name}:{idx}: dated update note does not name a source")
+            failures.append(f"{path.name}:{idx}: update note does not name a source")
     return Check(
         "provenance",
         not failures,
-        f"{path.relative_to(root)}: {len(update_blocks)} dated update note blocks inspected; {len(failures)} failures",
+        f"{path.relative_to(root)}: {len(update_blocks)} update note blocks inspected; {len(failures)} failures",
         failures,
     )
 

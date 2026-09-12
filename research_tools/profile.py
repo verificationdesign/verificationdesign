@@ -17,7 +17,13 @@ class Profile:
 
 
 def load_profile(path: Path) -> Profile:
-    """Preserve JSON insertion order; reject unknown keys and invalid shapes."""
+    """Preserve JSON insertion order; reject unknown keys and invalid shapes.
+
+    Shape rules: every keyword group and expand_on entry lists at least one phrase,
+    and every phrase is a non-blank string. Whole blocks may be absent or empty so
+    digest-only profiles load; scout readiness (non-empty categories and
+    keyword_groups) is verify's check_scout_config, not the loader.
+    """
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError("profile must be an object")
@@ -29,7 +35,10 @@ def load_profile(path: Path) -> Profile:
             raise ValueError(f"missing profile key: {key}")
 
     def strings(value):
-        return isinstance(value, list) and all(isinstance(x, str) for x in value)
+        return isinstance(value, list) and all(isinstance(x, str) and x.strip() for x in value)
+
+    def phrases(value):
+        return strings(value) and bool(value)
 
     for key in ("categories", "keyword_groups", "expand_on", "principles"):
         value = data.get(key, {})
@@ -38,18 +47,18 @@ def load_profile(path: Path) -> Profile:
         for name, item in value.items():
             valid = isinstance(name, str)
             if key == "keyword_groups":
-                valid = valid and strings(item)
+                valid = valid and phrases(item)
             elif key == "expand_on":
                 valid = (valid and isinstance(item, dict)
                          and set(item) == {"note", "phrases"}
-                         and isinstance(item["note"], str) and strings(item["phrases"]))
+                         and isinstance(item["note"], str) and phrases(item["phrases"]))
             else:
                 valid = valid and isinstance(item, str)
             if not valid:
                 raise ValueError(f"invalid {key} entry: {name}")
     for key in ("anchor_phrases", "canonical_docs"):
         if not strings(data.get(key, [])):
-            raise ValueError(f"{key} must be a list of strings")
+            raise ValueError(f"{key} must be a list of non-blank strings")
     for slug in data.get("expand_on", {}):
         if slug in data.get("keyword_groups", {}):
             raise ValueError(f"expand_on slug collides with keyword group: {slug}")

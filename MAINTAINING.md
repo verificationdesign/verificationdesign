@@ -46,7 +46,7 @@ The stdlib-only package requires Python 3.11 or later. Its commands are:
 - `python3 -m research_tools scout`: arXiv OAI-PMH retrieval; `--dry-run` prints requests, `--days` or `--start-date` / `--end-date` sets the window, and `--categories` / `--groups` selects profile keys. `--max-per-category` caps matched records, `--outdir` / `--outfile` selects output, and `--ledger` enables optional ID deduplication.
 - `python3 -m research_tools digest`: reading digest from triage notes; `--input` accepts one or more notes, `--outfile` selects output, `--decision` filters candidates, `--max-items` limits the queue, and `--source-label` names the inputs.
 
-`research/scouts/config.json` is the shared project profile. Add a topic term to the appropriate `keyword_groups`, `anchor_phrases`, or `expand_on` entry in config; no code edit is needed. Verify and digest accept `--profile`; scout accepts `--config`.
+`research/scouts/config.json` is the shared project profile. Add a topic term to the appropriate `keyword_groups`, `anchor_phrases`, or `expand_on` entry in config; no code edit is needed. Verify, scout and digest all accept `--profile`; scout also accepts `--config` as an alias.
 
 `make test` runs the unittest suite; `make verify-local` and CI also run it. Fixtures are captured artifacts with provenance recorded in `tests/fixtures/README.md`; synthetic envelopes are labeled.
 

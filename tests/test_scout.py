@@ -83,12 +83,24 @@ class ScoutTests(unittest.TestCase):
     def test_substitute_topic(self):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
-            self.assertEqual(main(["scout", "--config", str(FIXTURES / "config-sample.json"),
+            self.assertEqual(main(["scout", "--profile", str(FIXTURES / "config-sample.json"),
                                    "--dry-run", "--start-date", "2026-09-08", "--end-date", "2026-09-08"]), 0)
         self.assertEqual(output.getvalue().splitlines(), [
             "q-bio.PE: https://oaipmh.arxiv.org/oai?verb=ListRecords&set=q-bio%3Aq-bio%3APE&from=2026-09-08&until=2026-09-08&metadataPrefix=arXiv",
             "physics.ao-ph: https://oaipmh.arxiv.org/oai?verb=ListRecords&set=physics%3Aphysics%3Aao-ph&from=2026-09-08&until=2026-09-08&metadataPrefix=arXiv",
         ])
+
+    def test_config_flag_is_alias_for_profile(self):
+        expected = io.StringIO()
+        with contextlib.redirect_stdout(expected):
+            main(["scout", "--profile", str(FIXTURES / "config-sample.json"), "--dry-run",
+                  "--start-date", "2026-09-08", "--end-date", "2026-09-08"])
+        alias = io.StringIO()
+        with contextlib.redirect_stdout(alias):
+            self.assertEqual(main(["scout", "--config", str(FIXTURES / "config-sample.json"), "--dry-run",
+                                   "--start-date", "2026-09-08", "--end-date", "2026-09-08"]), 0)
+        self.assertEqual(alias.getvalue(), expected.getvalue())
+        self.assertIn("q-bio.PE:", alias.getvalue())
 
     def test_expand_on_merge_and_collision(self):
         profile = load_profile(FIXTURES / "config-sample.json")

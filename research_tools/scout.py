@@ -204,7 +204,8 @@ def render_markdown(
 
 def register(subparsers):
     parser = subparsers.add_parser("scout", description="Mechanical arXiv scout via OAI-PMH. No judgment inside.")
-    parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument("--profile", "--config", dest="profile", type=Path, default=DEFAULT_CONFIG,
+                        help="topic profile JSON (--config is accepted as an alias)")
     parser.add_argument("--days", type=int, default=90, help="lookback window when --start-date is not set")
     parser.add_argument("--start-date", default=None, help="YYYY-MM-DD; overrides --days; OAI-PMH from")
     parser.add_argument("--end-date", default=None, help="YYYY-MM-DD; OAI-PMH until; defaults to today")
@@ -222,7 +223,7 @@ def register(subparsers):
 
 
 def main(args) -> int:
-    profile = load_profile(args.config)
+    profile = load_profile(args.profile)
     return run(args, profile)
 
 

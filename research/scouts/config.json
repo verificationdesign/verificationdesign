@@ -4,7 +4,10 @@
     "large language model",
     "language model",
     "AI agent",
-    "LLM agent"
+    "LLM agent",
+    "MLLM",
+    "SpeechLLM",
+    "LLMOps"
   ],
   "expand_on": {
     "inference_determinism": {

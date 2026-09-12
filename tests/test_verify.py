@@ -101,8 +101,8 @@ class VerifyTests(unittest.TestCase):
             "9 parser cases checked; 0 failures",
             "2 canonical citation labels; 2 reviewed-note labels; 0 legacy labels; 0 missing reviewed notes",
             "3 numbered principles; 5 anchors; 0 failures",
-            "marine-notes.md: 0 dated update note blocks inspected; 0 failures",
-            "research/synthesis.md: 1 dated update note blocks inspected; 0 failures",
+            "marine-notes.md: 0 update note blocks inspected; 0 failures",
+            "research/synthesis.md: 1 update note blocks inspected; 0 failures",
             "2 reviewed source notes inspected; 0 failures",
             "1 triage notes inspected; 3 candidates inspected; 0 failures",
             "research/synthesis.md: 0 deleted non-blank lines without an allowed replacement in git diff against HEAD",
@@ -135,16 +135,29 @@ class VerifyTests(unittest.TestCase):
         # Append so this isolates provenance without violating append-only policy.
         with (self.root / "research/synthesis.md").open("a") as file:
             file.write("\n2026-09-11 update: Unattributed observation.\n")
-        self.assert_failure("provenance", "dated update note does not name a source")
+        self.assert_failure("provenance", "update note does not name a source")
 
-    def test_undated_update_retains_legacy_blind_spot(self):
-        # Legacy UPDATE_NOTE_RE selects dated updates only. Do not silently broaden policy.
+    def test_undated_update_without_source(self):
+        # An "Update:" marker without a date is still an update note and needs a source.
         with (self.root / "research/synthesis.md").open("a") as file:
             file.write("\nUpdate: Unattributed observation.\n")
+        self.assert_failure("provenance", "update note does not name a source")
+
+    def test_undated_update_with_source_passes(self):
+        with (self.root / "research/synthesis.md").open("a") as file:
+            file.write("\n> **Update**: Attributed observation. Source: [arXiv:2601.00001](https://arxiv.org/abs/2601.00001)\n")
         checks = self.run_checks()
         self.assertTrue(all(c.ok for c in checks), checks)
         self.assertEqual(checks[5].observed,
-                         "research/synthesis.md: 1 dated update note blocks inspected; 0 failures")
+                         "research/synthesis.md: 2 update note blocks inspected; 0 failures")
+
+    def test_prose_mentioning_update_is_not_a_note(self):
+        with (self.root / "research/synthesis.md").open("a") as file:
+            file.write("\nThe model update cadence is unrelated to provenance.\n")
+        checks = self.run_checks()
+        self.assertTrue(all(c.ok for c in checks), checks)
+        self.assertEqual(checks[5].observed,
+                         "research/synthesis.md: 1 update note blocks inspected; 0 failures")
 
     def test_review_missing_field(self):
         self.edit("research/reviewed/source-0.md", "Reviewer: Fixture\n", "")

@@ -13,6 +13,8 @@ COUNTS = {
     "2026-08-15-scout-allocation.md": 45,
 }
 EXCLUDED = {"TEMPLATE.md", "README.md", "anchors.md", "ranking_design.md"}
+# Hand-built supplements share the scout- prefix but not the mechanical format.
+HAND_BUILT_PREFIX = "scout-supplement-"
 
 
 class CorpusTests(unittest.TestCase):
@@ -30,7 +32,8 @@ class CorpusTests(unittest.TestCase):
                 self.assertEqual(render_triage(doc).encode(), raw)
 
     def test_local_scouts(self):
-        paths = sorted((ROOT / "research/scouts").glob("scout-*.md"))
+        paths = sorted(p for p in (ROOT / "research/scouts").glob("scout-*.md")
+                       if not p.name.startswith(HAND_BUILT_PREFIX))
         if not paths:
             self.skipTest("local scout artifacts are untracked and absent")
         for path in paths:
@@ -39,5 +42,5 @@ class CorpusTests(unittest.TestCase):
                 try:
                     doc = parse_scout(raw.decode())
                 except RecordError as error:
-                    self.skipTest(f"{path.name}: {error}")
+                    self.fail(f"{path.name} does not parse as a mechanical scout artifact: {error}")
                 self.assertEqual(render_scout(doc).encode(), raw)
