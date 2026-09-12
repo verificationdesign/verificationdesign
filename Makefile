@@ -24,17 +24,17 @@ check: site verify
 
 verify: test
 	python3 -m research_tools verify
-	python3 scripts/check_skills.py --links
+	python3 skills/check_skills.py --links
 
 verify-local: test
 	python3 -m research_tools verify --skip-links
-	python3 scripts/check_skills.py
+	python3 skills/check_skills.py
 
 test:
 	python3 -m unittest discover -s tests -t .
 
 skills:
-	python3 scripts/check_skills.py
+	python3 skills/check_skills.py
 
 patterns:
 	python3 ai-design-patterns/scripts/lint_patterns.py

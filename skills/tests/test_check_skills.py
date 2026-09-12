@@ -10,7 +10,7 @@ import tempfile
 import unittest
 sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("check_skills", ROOT / "scripts/check_skills.py")
+spec = importlib.util.spec_from_file_location("check_skills", ROOT / "skills/check_skills.py")
 checker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(checker)
 DESIGN = ROOT / "skills/verification-design"

@@ -251,7 +251,7 @@ def link_checks(report, files, catalog, meta):
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__, epilog="Exit codes: 0 ok; 2 usage; 3 validation failed; 4 unavailable (source helpers); 5 internal. Example: python3 scripts/check_skills.py")
+    p = argparse.ArgumentParser(description=__doc__, epilog="Exit codes: 0 ok; 2 usage; 3 validation failed; 4 unavailable (source helpers); 5 internal. Example: python3 skills/check_skills.py")
     p.add_argument("--links", action="store_true", help="also check live URLs and source hashes (not for CI)")
     p.add_argument("--skills-ref", action="store_true", help="run the optional pinned skills-ref validator via uvx")
     args = p.parse_args()
@@ -303,7 +303,11 @@ def main():
             except (ValueError, UnicodeError) as exc:
                 errors.append(str(exc))
         report.check(label, ok, expected, errors)
-    files = sorted(path for path in SKILLS.rglob("*") if path.is_file())
+    # Package content only: the checker and its tests live here too but are not
+    # shipped skill files, and their fixture URLs are not meant to be fetched.
+    tooling = (Path(__file__).resolve(), SKILLS / "tests")
+    files = sorted(path for path in SKILLS.rglob("*") if path.is_file()
+                   and path != tooling[0] and tooling[1] not in path.parents)
     report.check("no symlinks", sum(not p.is_symlink() for p in SKILLS.rglob("*")), len(list(SKILLS.rglob("*"))))
     ids, found, errors = {c["id"] for c in catalog["cards"]}, set(), []
     categories = "|".join(sorted({c["category"] for c in catalog["cards"]}))
@@ -336,8 +340,8 @@ def main():
     report.check("checklist pinned anchors", good, 18)
     fixture_checks(report)
     helper_checks(report)
-    expected_tests = unittest.defaultTestLoader.discover(str(ROOT / "scripts/tests")).countTestCases()
-    result = run([sys.executable, "-m", "unittest", "discover", "-s", "scripts/tests"])
+    expected_tests = unittest.defaultTestLoader.discover(str(ROOT / "skills/tests")).countTestCases()
+    result = run([sys.executable, "-m", "unittest", "discover", "-s", "skills/tests"])
     match = re.search(r"Ran (\d+) tests?", result.stderr)
     count = int(match[1]) if match else 0
     report.check("unit tests", count, expected_tests if expected_tests else 1, [] if result.returncode == 0 and count else [result.stderr + result.stdout])

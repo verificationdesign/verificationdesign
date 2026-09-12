@@ -105,7 +105,7 @@ stdout reports the destination. Output files are written only at the requested p
 and a path that resolves to the script's input record or to a file inside the skill
 directory is refused with exit 2 before anything is written.
 
-From this repository, run `python3 scripts/check_skills.py`. The checker verifies
+From this repository, run `python3 skills/check_skills.py`. The checker verifies
 pins against git, fixtures and loopback retrieval tests. `--links` adds live checks;
 `--skills-ref` adds the external spec reference validator. Neither is used in CI.
 
