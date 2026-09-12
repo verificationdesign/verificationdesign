@@ -2,7 +2,7 @@
 
 Scout files are mechanical discovery artifacts. They are generated from explicit arXiv categories, keyword groups, and date windows; they are not evidence reviews and contain no model judgment.
 
-Use `scripts/scout.py` to generate a scout file, then decide which candidates deserve reviewed source notes under `research/reviewed/`.
+Use `python3 -m research_tools scout` to generate a scout file, then decide which candidates deserve reviewed source notes under `research/reviewed/`.
 
 ## Review Labels
 

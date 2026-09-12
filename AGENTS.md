@@ -45,7 +45,7 @@ Claude Code is the architect: plan, design, review, sign off, and direct the Cod
 - `research/link-confirmations.txt`: dated manual confirmations for valid scholarly links that block automated checks.
 - `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools <command>`.
 - `tests/`: fixture-driven tests for the research tools package.
-- `scripts/scout.py`: mechanical arXiv discovery; retrieval only, no research judgment.
+- `research_tools/scout.py`: mechanical arXiv discovery; retrieval only, no research judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
 
 ## Document conventions
@@ -122,7 +122,7 @@ Also record grade confidence (`low`, `medium`, `high`), limitations, and claims 
 
 Do not mirror full papers or publisher PDFs in this repo unless their license clearly permits redistribution. If a valid scholarly link blocks automated checks, add a dated manual confirmation to `research/link-confirmations.txt` instead.
 
-Scout outputs in `research/scouts/` are discovery artifacts, not reviewed evidence. `scripts/scout.py --ledger` is allowed as optional arXiv-ID deduplication for retrieval runs; it is not a provenance ledger for canonical prose.
+Scout outputs in `research/scouts/` are discovery artifacts, not reviewed evidence. `python3 -m research_tools scout --ledger` is allowed as optional arXiv-ID deduplication for retrieval runs; it is not a provenance ledger for canonical prose.
 
 Triage notes in `research/triage/` are the judgment layer between scouts and reviewed notes. They may paraphrase abstracts and list possible key findings, but they are not source reviews and should not be cited from the canonical doc.
 
@@ -155,8 +155,8 @@ This is a local notes repo, not a security harness. Keep verification a lightwei
 
 - Verify: `python3 -m research_tools verify`
 - Verify including scout artifact links: `python3 -m research_tools verify --include-scout-links`
-- Scout: `python3 scripts/scout.py --dry-run`
-- Scout exact window: `python3 scripts/scout.py --start-date 2026-05-30 --end-date 2026-06-02`
+- Scout: `python3 -m research_tools scout --dry-run`
+- Scout exact window: `python3 -m research_tools scout --start-date 2026-05-30 --end-date 2026-06-02`
 - Pattern lint: `python3 ai-design-patterns/scripts/lint_patterns.py`
 - Card-code runner: `python3 ai-design-patterns/scripts/run_card_code.py` (executes each card's Pattern block under python3.13; fails if it does not run or no assertion executes; pass a card name to scope)
 - Triage digest: `python3 scripts/digest_triage.py --input research/triage/example.md --outfile research/triage/digests/example-digest.md`
@@ -167,4 +167,4 @@ This is a local notes repo, not a security harness. Keep verification a lightwei
 - Top-level check: `make check`
 - Local no-network check: `make verify-local`
 
-The scout must stay polite to arXiv: harvest via OAI-PMH serially with a fixed 10 second delay, cap raw OAI pages per category, stop immediately on rate limits, honor retry backoff for server errors and timeouts, and treat request failures as a failed run rather than a "no candidates" result. OAI-PMH windows track metadata datestamps, not original submission dates; a record can appear because it was newly submitted, re-versioned, or had its metadata corrected. Triage uses the per-entry Created, Updated, and OAI datestamp fields to tell those cases apart.
+The package scout (`python3 -m research_tools scout`) must stay polite to arXiv: harvest via OAI-PMH serially with a fixed 10 second delay, cap raw OAI pages per category, stop immediately on rate limits, honor retry backoff for server errors and timeouts, and treat request failures as a failed run rather than a "no candidates" result. OAI-PMH windows track metadata datestamps, not original submission dates; a record can appear because it was newly submitted, re-versioned, or had its metadata corrected. Triage uses the per-entry Created, Updated, and OAI datestamp fields to tell those cases apart.

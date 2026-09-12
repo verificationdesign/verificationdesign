@@ -21,7 +21,7 @@ The runbook for this repository: document index, research workflow, site workflo
 - `research/triage/`: first-pass candidate summaries and relevance judgments.
 - `research/link-confirmations.txt`: manual confirmations for valid links that block automated checks.
 - `research_tools/`: tested package behind the research pipeline; `python3 -m research_tools verify` is the local mechanical verifier.
-- `scripts/scout.py`: arXiv discovery script; retrieval only, no judgment.
+- `research_tools/scout.py`: arXiv discovery script; retrieval only, no judgment.
 - `scripts/digest_triage.py`: compact reading digest from triage notes.
 
 ## Research Workflow
@@ -89,8 +89,8 @@ retrieval tests; run them on the maintainer's host and report the failure explic
 - `make site`: run the website build, Astro check, card lint, and accessibility smoke check.
 - `python3 -m research_tools verify`: run local mechanical checks.
 - `python3 -m research_tools verify --include-scout-links`: also check links in scout artifacts.
-- `python3 scripts/scout.py --dry-run`: print planned arXiv OAI-PMH requests.
-- `python3 scripts/scout.py --start-date 2026-05-30 --end-date 2026-06-02`: run an exact arXiv scout window.
+- `python3 -m research_tools scout --dry-run`: print planned arXiv OAI-PMH requests.
+- `python3 -m research_tools scout --start-date 2026-05-30 --end-date 2026-06-02`: run an exact arXiv scout window.
 - `python3 scripts/digest_triage.py --input research/triage/example.md --outfile research/triage/digests/example-digest.md`: compact a triage note into a reading queue.
 - `python3 ai-design-patterns/scripts/lint_patterns.py`: lint migrated AI design pattern cards.
 - `cd verificationdesign && npm run dev`: run the website locally.
@@ -98,7 +98,7 @@ retrieval tests; run them on the maintainer's host and report the failure explic
 - `cd verificationdesign && npm run check:twins`: independently verify generated markdown twins and discovery files.
 - `cd verificationdesign && npm run verify`: build, type-check, lint cards, and run the accessibility smoke check.
 
-`scripts/scout.py` harvests arXiv via the OAI-PMH `ListRecords` interface serially with a fixed 10 second delay between requests, stops immediately on `429`, backs off on `503`, timeouts and dropped connections (Retry-After honored up to 300 seconds), caps raw OAI pages per category, marks a category whose read stopped at `--max-per-category`, and exits non-zero rather than writing partial scout output after a request failure. OAI-PMH windows track metadata datestamps, not original submission dates; per-entry Created, Updated, and OAI datestamp fields let triage tell new submissions, re-versions, and metadata corrections apart.
+`python3 -m research_tools scout` harvests arXiv via the OAI-PMH `ListRecords` interface serially with a fixed 10 second delay between requests, stops immediately on `429`, backs off on `503`, timeouts and dropped connections (Retry-After honored up to 300 seconds), caps raw OAI pages per category, marks a category whose read stopped at `--max-per-category`, and exits non-zero rather than writing partial scout output after a request failure. OAI-PMH windows track metadata datestamps, not original submission dates; per-entry Created, Updated, and OAI datestamp fields let triage tell new submissions, re-versions, and metadata corrections apart.
 
 ## UX Verification Loop
 

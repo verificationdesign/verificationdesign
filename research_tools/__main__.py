@@ -2,13 +2,14 @@
 
 import argparse
 
-from research_tools import verify
+from research_tools import scout, verify
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     subcommands = parser.add_subparsers(dest="command")
     verify.register(subcommands)
+    scout.register(subcommands)
     args = parser.parse_args(argv)
     if args.command is None:
         parser.print_help()

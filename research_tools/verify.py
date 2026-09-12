@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
 import re
@@ -16,7 +17,7 @@ from pathlib import Path
 
 
 from research_tools.profile import Profile, load_profile
-from research_tools import records
+from research_tools import records, scout
 
 
 DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
@@ -490,25 +491,14 @@ def check_scout_config(root: Path, scout_dir: Path) -> Check:
     dry_run_lines: list[tuple[str, str]] = []
     if isinstance(categories, dict) and isinstance(groups, dict):
         try:
-            result = subprocess.run(
-                [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "scout.py"), "--config", str(config_path), "--dry-run"],
-                cwd=root,
-                check=False,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-        except OSError as exc:
-            details.append(f"could not run scout.py --dry-run: {exc}")
-        else:
-            if result.returncode != 0:
-                details.append(f"scout.py --dry-run failed: {result.stderr.strip() or result.stdout.strip()}")
-            else:
-                for line in result.stdout.splitlines():
-                    if not line.strip():
-                        continue
-                    tag, _, url = line.partition(": ")
-                    dry_run_lines.append((tag, url))
+            profile = load_profile(config_path)
+            # Query shape is independent of today's date; keep this check deterministic.
+            lines = scout.plan_requests(profile, dt.date(2000, 1, 1), dt.date(2000, 3, 31))
+            for line in lines:
+                tag, _, url = line.partition(": ")
+                dry_run_lines.append((tag, url))
+        except (OSError, ValueError, SystemExit) as exc:
+            details.append(f"scout --dry-run failed: {exc}")
 
         if len(dry_run_lines) != n_cats:
             details.append(
@@ -525,16 +515,12 @@ def check_scout_config(root: Path, scout_dir: Path) -> Check:
                 details.append(f"dry-run request for {tag} missing set parameter")
             if "from=" not in url or "until=" not in url:
                 details.append(f"dry-run request for {tag} missing from/until parameters")
-        sleep_result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve().parents[1] / "scripts" / "scout.py"), "--config", str(config_path), "--dry-run", "--sleep", "10"],
-            cwd=root,
-            check=False,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if sleep_result.returncode == 0:
-            details.append("scout.py unexpectedly accepts --sleep; delay must stay fixed in code")
+        parser = argparse.ArgumentParser()
+        commands = parser.add_subparsers()
+        scout.register(commands)
+        if any("--sleep" in action.option_strings
+               for action in commands.choices["scout"]._actions):
+            details.append("scout unexpectedly accepts --sleep; delay must stay fixed in code")
 
     return Check(
         "scout config / query shape",

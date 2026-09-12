@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+    <responseDate>2026-09-12T00:11:20Z</responseDate>
+                <request verb="ListRecords" metadataPrefix="arXiv" from="2026-09-08" until="2026-09-08" set="cs:cs:AI">http://oaipmh.arxiv.org/oai</request>
+
+
+    <ListRecords>
+                    <record>
+                <header>
+        <identifier>oai:arXiv.org:2609.01788</identifier>
+        <datestamp>2026-09-08</datestamp>
+            <setSpec>cs:cs:CL</setSpec>
+            <setSpec>cs:cs:AI</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>2609.01788</id>
+        <created>2026-09-01</created>
+            <updated>2026-09-08</updated>
+        <authors>
+                <author>
+                    <keyname>Singh</keyname>
+                        <forenames>Usneek</forenames>
+                </author>
+                <author>
+                    <keyname>Kumar</keyname>
+                        <forenames>Poorvaja Veera Balaji</forenames>
+                </author>
+                <author>
+                    <keyname>Nanda</keyname>
+                        <forenames>Parth</forenames>
+                </author>
+                <author>
+                    <keyname>Madhusoodanan</keyname>
+                        <forenames>Anand</forenames>
+                </author>
+                <author>
+                    <keyname>Guo</keyname>
+                        <forenames>Geyang</forenames>
+                </author>
+                <author>
+                    <keyname>Xu</keyname>
+                        <forenames>Wei</forenames>
+                </author>
+                <author>
+                    <keyname>Li</keyname>
+                        <forenames>Junyi Jessy</forenames>
+                </author>
+        </authors>
+        <title>VakyArth: Evaluating Pragmatic Competence in LLMs across Indic Languages</title>
+            <categories>cs.CL cs.AI</categories>
+            <comments>Findings of EMNLP 2026</comments>
+            <license>http://creativecommons.org/licenses/by/4.0/</license>
+            <abstract>Real-world communication often requires pragmatic reasoning: interpreting meanings implied through context and cultural convention rather than stated literally. Existing pragmatic evaluation remains largely limited to English and high-resource languages, leaving Indic languages unexplored despite their linguistic and cultural diversity. We introduce VakyArth, the first pragmatic benchmark for Indic languages, designed as a diagnostic evaluation covering Hindi, Punjabi, Tamil, and Malayalam. VakyArth evaluates models across five phenomena: deixis, speech acts, implicature, social pragmatics, and coherence; through multiple-choice questions, natural language inference, and translation, with all items authored by native speakers. Across multilingual large language models (LLMs) of varying families and sizes, we find consistent failures on pragmatic meanings rooted in Indic linguistic and cultural conventions. Our analysis shows systematic differences across languages and tasks: MCQ accuracy exceeds NLI accuracy in all model-language combinations, translation performance does not reliably track pragmatic understanding, and Indo-Aryan languages show a translation advantage over Dravidian languages. We further show that automatic translation metrics can miss fluent but pragmatically unfaithful outputs, especially for implicature and deixis.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+
+                    <record>
+                <header>
+        <identifier>oai:arXiv.org:2609.02746</identifier>
+        <datestamp>2026-09-08</datestamp>
+            <setSpec>physics:physics:chem-ph</setSpec>
+            <setSpec>physics:cond-mat:mtrl-sci</setSpec>
+            <setSpec>cs:cs:AI</setSpec>
+            <setSpec>cs:cs:LG</setSpec>
+            <setSpec>physics:physics:comp-ph</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>2609.02746</id>
+        <created>2026-09-02</created>
+            <updated>2026-09-08</updated>
+        <authors>
+                <author>
+                    <keyname>Sun</keyname>
+                        <forenames>Ge</forenames>
+                </author>
+                <author>
+                    <keyname>Zaldivar</keyname>
+                        <forenames>Gervasio</forenames>
+                </author>
+                <author>
+                    <keyname>Tian</keyname>
+                        <forenames>Yuan</forenames>
+                </author>
+                <author>
+                    <keyname>Lemus</keyname>
+                        <forenames>Gustavo Perez</forenames>
+                </author>
+                <author>
+                    <keyname>Park</keyname>
+                        <forenames>Juhae</forenames>
+                </author>
+                <author>
+                    <keyname>Safarian</keyname>
+                        <forenames>Daryna</forenames>
+                </author>
+                <author>
+                    <keyname>Han</keyname>
+                        <forenames>Ming</forenames>
+                </author>
+                <author>
+                    <keyname>de Pablo</keyname>
+                        <forenames>Juan J.</forenames>
+                </author>
+        </authors>
+        <title>HiPoly: a hierarchical polymer-native AI framework for property prediction and generative design</title>
+            <categories>physics.chem-ph cond-mat.mtrl-sci cs.AI cs.LG physics.comp-ph</categories>
+            <license>http://creativecommons.org/licenses/by-nc-nd/4.0/</license>
+            <abstract>Polymeric materials are central to modern technologies, with applications ranging from energy to health and transportation. Although AI has made significant advances in materials discovery, the hierarchical structure of polymers across multiple length scales makes them inherently difficult to represent in a unified and physically meaningful way. Here we introduce HiPoly, a polymer-native AI framework that processes complete polymer descriptions through a three-level hierarchical graph architecture built on the G2RINS representation. HiPoly encodes stochastic inter-monomer connectivity, composition, and molecular weight directly within its architecture, using physically motivated design principles that mirror the multi-scale nature of polymeric systems. The framework establishes an end-to-end AI-driven workflow from experimental formulation data to property prediction, generative molecular design, and physics-based validation through molecular simulations, all unified by a single polymer representation. We demonstrate state-of-the-art prediction accuracy for thermophysical properties of multi-component polymer systems, with ablation studies confirming that each hierarchical design choice contributes independently to model performance. As an example, the generative design pathway is applied here to the discovery of sustainable alternatives to persistent fluorinated polymers, where it is possible to identify and independently validate PFAS-free candidates with target surface-energy properties. This work demonstrates how polymer-native AI can accelerate discovery by linking representation, prediction, and design across complex polymer chemistries.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+
+    </ListRecords>
+</OAI-PMH>
