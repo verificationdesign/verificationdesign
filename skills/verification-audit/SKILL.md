@@ -6,12 +6,12 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.2.0"
+  version: "1.3.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
   principles-sha256: "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a"
-  checklist-sha256: "d70cef384ee8b9be4c979c8ffc18cfd29965955be4d9d4a754af81fb3f0e480b"
+  checklist-sha256: "a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80"
 ---
 
 # Verification audit
@@ -38,7 +38,7 @@ The skill reads the artifact and takes no part in the host repository's workflow
 
 ## Procedure
 
-Run commands from this skill directory, with absolute paths for operator-visible records and outputs outside it. Python 3.11 or later is required. No command prompts interactively. Records and outputs go in a dated directory the operator can see, beside the artifact or where the operator says, never in system temp storage and never inside the skill directory.
+Run commands from this skill directory, with absolute paths for operator-visible records and outputs outside it. Python 3.11 or later is required. No command prompts interactively. Records and outputs go in a dated directory the operator can see, beside the artifact or where the operator says, never in system temp storage and never inside the skill directory. Scripts create that directory when it does not exist.
 
 1. Resolve artifact and scope by the rules above. No script runs until scope is resolved.
 2. Verify the packaged dependency and show the interpreter version from `--check`:
@@ -59,7 +59,10 @@ Run commands from this skill directory, with absolute paths for operator-visible
    and [findings-record.md](references/findings-record.md). Fill every scaffold question
    against the artifact, with evidence for sound and defect judgments and reasons for
    the other statuses. Free defects use original questions. Record uncertainty rather
-   than inventing a defect; scripts do not make these judgments.
+   than inventing a defect; scripts do not make these judgments. A record the principle
+   asks for is a defect when the artifact has no way to produce it; when it would come
+   from a stage outside the evidence set (a run, a CI report), record
+   `insufficient-evidence` and name the receipt that would settle it.
    Use `not-applicable` with a reason when a question cannot apply to the artifact and scope.
    Use `out-of-scope` free observations for things fresh eyes noticed that the scope excludes, never as defects.
    Fill the record-level fields as well:
@@ -67,9 +70,11 @@ Run commands from this skill directory, with absolute paths for operator-visible
      produced the artifact as `generator`, or `unknown` when it is not recorded anywhere.
    - `artifact_identity`: the artifact revision and a sha256 per file read, so a reader
      can tell which bytes were judged. Omit only when nothing readable was examined.
-   - `measurements`: one entry per command run against the artifact, with its exit code,
-     cited by id from evidence. A measurement shows what the artifact does; it is not
-     evidence that the artifact records anything.
+   - `measurements`: one entry per command run against the artifact, with its exit code
+     and its `kind`: `inspection` when the command only read the artifact, `execution`
+     when it ran the artifact. Cite measurements by id from evidence. An execution shows
+     what the artifact does; an inspection shows what it contains; neither is evidence
+     that the artifact records anything.
 5. Validate; correct record errors and rerun until exit 0. If the packaged dependency
    fails, stop and report it without changing the pin.
 
@@ -87,16 +92,20 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
    ```
 
-7. Route validated defects through the packaged failure map:
+7. Route validated defects through the packaged failure map. Routing is a lookup: it
+   attaches every card the map lists for the failure string as a candidate and makes no
+   applicability judgment. Before routing, name in `related_cards` the candidates you
+   judge applicable, or any card for an unmapped defect. The routed file is the finished
+   record from here on; cite it, not the draft.
 
    ```bash
-   python3 scripts/route_failures.py /absolute/path/record.json --output /absolute/path/routed.json
+   python3 scripts/route_failures.py /absolute/path/record.json --output /absolute/path/record.routed.json
    ```
 
-8. Render the findings:
+8. Render the findings from the routed record (an unrouted record is routed on the way):
 
    ```bash
-   python3 scripts/render_findings.py /absolute/path/routed.json --output /absolute/path/findings.md
+   python3 scripts/render_findings.py /absolute/path/record.routed.json --output /absolute/path/findings.md
    ```
 
 9. Complete the closing checklist. No fix proposals anywhere in the output.
@@ -119,7 +128,7 @@ and paste the JSON into the record's `unavailable_sources` list. The renderer pl
 - `scripts/check_citations.py`: check artifact citation existence and line bounds only.
 - `scripts/load_catalog.py`: verify the packaged snapshot, fetch pinned source text, or report drift without switching catalogs.
 - `scripts/validate_findings.py`: check checklist coverage, evidence and defect fields.
-- `scripts/route_failures.py`: attach pinned card citations to recorded defects.
+- `scripts/route_failures.py`: attach the failure map's candidate cards to recorded defects; a lookup, not a judgment.
 - `scripts/render_findings.py`: validate routing and render six findings sections.
 
 ## Output
@@ -162,6 +171,7 @@ invocation controls do not prevent a model from opening it as a file.
 - Assumptions recorded, including verification path for design and any scope expansion.
 - `models` names the verifier family and the generator family or `unknown`; `artifact_identity` and `measurements` cover what was read and run.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
+- The routed record is the file cited as the record; `related_cards` names judged cards where routing offered candidates.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Unknown judgments and unavailable evidence remain visible.
 - Output rendered to the requested file and substantive judgments left for operator review.

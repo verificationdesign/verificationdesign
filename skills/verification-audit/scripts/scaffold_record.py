@@ -2,7 +2,7 @@
 """Scaffold an unfilled record from packaged fields without making judgments."""
 import sys
 sys.dont_write_bytecode = True
-from load_catalog import cli_main, emit, load_catalog, parser, resolve_output, skill_pins
+from load_catalog import cli_main, emit, load_catalog, parser, resolve_output, skill_pins, write_file
 import json
 from pathlib import Path
 from validate_findings import checklist
@@ -29,7 +29,7 @@ def main():
     if args.output == "-":
         emit(dict(record=record, counts=counts))
     else:
-        Path(args.output).write_text(json.dumps(record, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        write_file(args.output, json.dumps(record, indent=2, ensure_ascii=False) + "\n")
         emit(dict(output=args.output, counts=counts))
     return 0
 

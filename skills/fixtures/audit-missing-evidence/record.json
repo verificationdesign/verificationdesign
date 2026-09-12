@@ -2,10 +2,10 @@
   "corpus_revision": "e632a86b2ca8fbb7f83b3130ba083784c7817667",
   "skill": {
     "name": "verification-audit",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "catalog_sha256": "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f",
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a",
-    "checklist_sha256": "d70cef384ee8b9be4c979c8ffc18cfd29965955be4d9d4a754af81fb3f0e480b"
+    "checklist_sha256": "a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80"
   },
   "artifact": "skills/fixtures/audit-missing-evidence/artifact",
   "scope": "Audit the deployed nightly inventory summarizer and its verification behavior.",
@@ -133,7 +133,7 @@
     },
     {
       "principle": 7,
-      "question": "What evidence supports the selected verifier for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
+      "question": "When model review is used, what evidence supports the selected verifier model family for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
       "status": "insufficient-evidence",
       "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,

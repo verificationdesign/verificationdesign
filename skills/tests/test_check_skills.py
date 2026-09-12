@@ -269,6 +269,73 @@ class OutputBoundaryTests(unittest.TestCase):
         headings = [line for line in text.splitlines() if line.startswith("## ")]
         self.assertEqual(headings, ["## Assumptions", "## Summary", "## Defects", "## Checked and sound", "## Not applicable", "## Not checked", "## Insufficient evidence", "## Observed outside scope", "## Sources"])
 
+    def test_related_cards_rendered_as_judged_and_candidates(self):
+        record = json.loads((ROOT / "skills/fixtures/audit-known-defect/record.json").read_text())
+        defect = next(c for c in record["checks"] if c["status"] == "defect")
+        self.assertEqual(defect["related_cards"], ["verification/blind-oracle"])
+        rendered = self.call("verification-audit", "render_findings.py", record, output=True)
+        self.assertEqual(rendered.returncode, 0, rendered.stdout + rendered.stderr)
+        text = self.output.read_text()
+        self.assertIn("Candidate cards from the failure map (a lookup, not an applicability judgment):", text)
+        self.assertIn("- judged applicable: [Blind Oracle]", text)
+        self.assertIn("- candidate: [Cross-Family]", text)
+        self.assertIn("Principles: [verificationdesign.com][principles] ([pinned source][principles-src]).", text)
+        defect["related_cards"] = ["verification/comparator"]
+        result = self.call("verification-audit", "validate_findings.py", record)
+        self.assertEqual(result.returncode, 3)
+        self.assertEqual({e["rule"] for e in json.loads(result.stdout)}, {"routing"})
+        non_defect = next(c for c in record["checks"] if c["status"] == "not-checked")
+        defect["related_cards"] = ["verification/blind-oracle"]
+        non_defect["related_cards"] = ["verification/blind-oracle"]
+        result = self.call("verification-audit", "validate_findings.py", record)
+        self.assertEqual({e["rule"] for e in json.loads(result.stdout)}, {"routing"})
+
+    def test_non_string_failure_with_related_cards_reports_failure(self):
+        record = json.loads((ROOT / "skills/fixtures/audit-known-defect/record.json").read_text())
+        defect = next(c for c in record["checks"] if c["status"] == "defect")
+        defect["failure"] = []
+        defect["related_cards"] = ["verification/blind-oracle"]
+        result = self.call("verification-audit", "validate_findings.py", record)
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        self.assertIn("failure", {e["rule"] for e in json.loads(result.stdout)})
+
+    def test_unmapped_defect_with_related_cards_names_them(self):
+        record = json.loads((ROOT / "skills/fixtures/audit-missing-evidence/record.json").read_text())
+        record["checks"].append({"free": True, "principle": 5, "question": "Does the report preserve the criterion identifier?", "status": "defect", "evidence": "Illustrative report row omits its criterion identifier.", "failure": "unmapped", "failure_note": "Missing criterion identifier in the emitted row.", "severity": "low", "related_cards": ["context-and-state/constitution"]})
+        rendered = self.call("verification-audit", "render_findings.py", record, output=True)
+        self.assertEqual(rendered.returncode, 0, rendered.stdout + rendered.stderr)
+        text = self.output.read_text()
+        self.assertIn("Cards named by judgment (the failure map has no entry for this defect):", text)
+        self.assertIn("- judged applicable: [Constitution]", text)
+
+    def test_requirement_references_checked_against_plan(self):
+        record = json.loads((ROOT / "skills/fixtures/design-sound/record.json").read_text())
+        card = next(c for c in record["cards"] if c["decision"] == "apply")
+        card["use_when"][0]["evidence"] += " Serves V1 and V9."
+        self.record.write_text(json.dumps(record))
+        result = subprocess.run([sys.executable, str(ROOT / "skills/verification-design/scripts/check_citations.py"), str(self.record), "--root", str(ROOT / "skills/fixtures/design-sound")], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["counts"]["unknown-requirement"], 1)
+        self.assertGreaterEqual(data["counts"]["requirements"], 1)
+        self.assertIn({"citation": "V9", "entry": "$.cards[%d].use_when[0].evidence" % record["cards"].index(card), "status": "unknown-requirement"}, data["citations"])
+
+    def test_requirement_statement_references_checked_against_plan(self):
+        record = json.loads((ROOT / "skills/fixtures/design-sound/record.json").read_text())
+        record["plan"]["requirements"][0]["statement"] += " Depends on V9."
+        self.record.write_text(json.dumps(record))
+        result = subprocess.run([sys.executable, str(ROOT / "skills/verification-design/scripts/check_citations.py"), str(self.record), "--root", str(ROOT / "skills/fixtures/design-sound")], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+        data = json.loads(result.stdout)
+        self.assertEqual(data["counts"]["unknown-requirement"], 1)
+        self.assertIn({"citation": "V9", "entry": "$.plan.requirements[0].statement", "status": "unknown-requirement"}, data["citations"])
+
+    def test_scripts_create_output_directory(self):
+        target = Path(self.tmp.name) / "dated" / "run" / "record.json"
+        result = subprocess.run([sys.executable, str(ROOT / "skills/verification-audit/scripts/scaffold_record.py"), "--artifact", "a", "--scope", "s", "--output", str(target)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertTrue(target.exists())
+
     def test_tampered_routing_cannot_write_findings(self):
         record = json.loads((ROOT / "skills/fixtures/audit-known-defect/record.json").read_text())
         routed = self.call("verification-audit", "route_failures.py", record)
@@ -345,13 +412,13 @@ class ReleaseTests(unittest.TestCase):
                 result = self.run_script(kind, "check_citations.py", path, "--root", root)
                 self.assertEqual(result.returncode, 3, result.stderr)
                 report = json.loads(result.stdout)
-                self.assertEqual(report["counts"], {"found": 3, "missing": 2, "out-of-bounds": 3})
+                self.assertEqual(report["counts"], {"found": 3, "missing": 2, "out-of-bounds": 3, "requirements": 0, "unknown-requirement": 0})
                 self.assertEqual(len(report["citations"]), 5)
                 self.assertTrue(all(x["entry"].startswith("$.") for x in report["citations"]))
                 path.write_text(json.dumps({"evidence": "sample.txt:1-3"}))
                 good = self.run_script(kind, "check_citations.py", path, "--root", root)
                 self.assertEqual(good.returncode, 0)
-                self.assertEqual(json.loads(good.stdout)["counts"], {"found": 1, "missing": 0, "out-of-bounds": 0})
+                self.assertEqual(json.loads(good.stdout)["counts"], {"found": 1, "missing": 0, "out-of-bounds": 0, "requirements": 0, "unknown-requirement": 0})
                 path.write_text(json.dumps(record))
 
     def test_resolution_positive_and_four_negative_fixtures(self):
@@ -430,13 +497,13 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 3, result.stderr)
                 data = json.loads(result.stdout)
                 self.assertEqual(data["roots"], [str(first), str(second)])
-                self.assertEqual(data["counts"], {"found": 3, "missing": 1, "out-of-bounds": 1})
+                self.assertEqual(data["counts"], {"found": 3, "missing": 1, "out-of-bounds": 1, "requirements": 0, "unknown-requirement": 0})
                 self.assertEqual(data["resolved"], [{"citation": "later.txt:1", "root": str(second)},
                                                     {"citation": "both.txt:1", "root": str(first)},
                                                     {"citation": absolute, "root": None}])
                 self.assertEqual([c["status"] for c in data["citations"]], ["out-of-bounds", "missing"])
                 reversed_result = self.run_script(kind, "check_citations.py", path, "--root", second, "--root", first)
-                self.assertEqual(json.loads(reversed_result.stdout)["counts"], {"found": 4, "missing": 1, "out-of-bounds": 0})
+                self.assertEqual(json.loads(reversed_result.stdout)["counts"], {"found": 4, "missing": 1, "out-of-bounds": 0, "requirements": 0, "unknown-requirement": 0})
 
     def test_repeated_citations_threshold_distinct_entries_and_exit_code(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -457,7 +524,7 @@ class ReleaseTests(unittest.TestCase):
                         {"citation": "a.txt:1", "entries": 3}, {"citation": "c.txt:1", "entries": 3}] if count == 4 else
                         [{"citation": c + ".txt:1", "entries": 3} for c in ("a", "b", "c")])
                     self.assertEqual(data["repeated"], expected)
-                    self.assertEqual(data["counts"], {"found": 3, "missing": 0, "out-of-bounds": 0})
+                    self.assertEqual(data["counts"], {"found": 3, "missing": 0, "out-of-bounds": 0, "requirements": 0, "unknown-requirement": 0})
 
     def test_positive_summaries_sources_and_repeatability(self):
         import re
@@ -489,9 +556,9 @@ class ReleaseTests(unittest.TestCase):
                         self.assertIn(f'- {key}: {count}\n', summary)
                     for key, count in counts["severity"].items():
                         self.assertIn(f'{key}: {count}', summary)
-                body, sources = text.split("## Sources\n", 1)
+                _, sources = text.split("## Sources\n", 1)
                 definitions = re.findall(r"^\[([^]]+)\]:", sources, re.M)
-                used = re.findall(r"\[[^]\n]+\]\[([^]\n]+)\]", body)
+                used = re.findall(r"\[[^]\n]+\]\[([^]\n]+)\]", text)
                 self.assertTrue(definitions)
                 self.assertEqual(len(definitions), len(set(definitions)))
                 self.assertEqual(set(definitions), set(used))
@@ -530,7 +597,7 @@ class ReleaseTests(unittest.TestCase):
             ("audit", "audit-known-defect", "validate_findings.py", "render_findings.py")):
             record = json.loads((ROOT / "skills/fixtures" / folder / "record.json").read_text())
             record["artifact_identity"] = {"revision": "fixture-revision", "files": [{"path": "check.py", "sha256": "a" * 64}]}
-            record["measurements"] = [{"id": "probe", "command": "python3 check.py", "env": {"MODE": "test"}, "exit_code": 0, "artifact_revision": "fixture-revision", "log": "probe.log", "note": "Observed only."}]
+            record["measurements"] = [{"id": "probe", "kind": "execution", "command": "python3 check.py", "env": {"MODE": "test"}, "exit_code": 0, "artifact_revision": "fixture-revision", "log": "probe.log", "note": "Observed only."}]
             record["unavailable_sources"] = [{"unavailable": True, "source_url": "https://example.invalid/source", "reason": "offline"}]
             with tempfile.TemporaryDirectory() as tmp:
                 path, output = Path(tmp) / "record.json", Path(tmp) / "output.md"

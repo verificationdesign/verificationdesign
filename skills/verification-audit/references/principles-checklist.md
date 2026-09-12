@@ -38,7 +38,7 @@ Use artifact evidence and catalog structured fields; if source prose is needed b
 ## Principle 7
 
 - When model review is used, what generator and verifier model families are recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)
-- What evidence supports the selected verifier for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)
+- When model review is used, what evidence supports the selected verifier model family for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)
 
 ## Principle 8
 

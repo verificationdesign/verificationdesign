@@ -279,12 +279,19 @@ def read_record(path):
         raise SnapshotError("cannot read record: " + str(exc)) from exc
 
 
+def write_file(output, text):
+    """Create the operator's output directory if needed; resolve_output has already vetted the path."""
+    target = Path(output)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(text, encoding="utf-8", newline="\n")
+
+
 def emit(value, output="-"):
     text = json.dumps(value, ensure_ascii=False, indent=2) + "\n"
     if output == "-":
         sys.stdout.write(text)
     else:
-        Path(output).write_text(text, encoding="utf-8", newline="\n")
+        write_file(output, text)
         emit({"output": str(output)})
 
 
@@ -293,7 +300,7 @@ def write_text(text, output="-"):
     if output == "-":
         emit({"text": text})
     else:
-        Path(output).write_text(text, encoding="utf-8", newline="\n")
+        write_file(output, text)
         emit({"output": str(output)})
 
 

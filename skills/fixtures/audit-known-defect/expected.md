@@ -8,9 +8,9 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-audit 1.2.0
+Skill: verification-audit 1.3.0
 
-Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`; checklist `d70cef384ee8b9be4c979c8ffc18cfd29965955be4d9d4a754af81fb3f0e480b`
+Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`; checklist `a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80`
 
 Generator model: unknown
 
@@ -49,10 +49,12 @@ Failure: The agent reviews itself and misses obvious problems.
 
 Failure note: The same self-review cause can affect multiple findings; this fixture records one defect.
 
-- [Blind Oracle][blind-oracle] ([pinned source][blind-oracle-src])
-- [Cross-Family][cross-family] ([pinned source][cross-family-src])
-- [Adversary][adversary] ([pinned source][adversary-src])
-- [Admissibility Gate][admissibility-gate] ([pinned source][admissibility-gate-src])
+Candidate cards from the failure map (a lookup, not an applicability judgment):
+
+- judged applicable: [Blind Oracle][blind-oracle] ([pinned source][blind-oracle-src])
+- candidate: [Cross-Family][cross-family] ([pinned source][cross-family-src])
+- candidate: [Adversary][adversary] ([pinned source][adversary-src])
+- candidate: [Admissibility Gate][admissibility-gate] ([pinned source][admissibility-gate-src])
 
 ## Checked and sound
 
@@ -142,7 +144,7 @@ Reason: Not checked: this fixture isolates generator/verifier independence; no o
 
 ### Principle 7
 
-What evidence supports the selected verifier for this artifact and scope? [Principles][p7]
+When model review is used, what evidence supports the selected verifier model family for this artifact and scope? [Principles][p7]
 
 Reason: Not checked: this fixture isolates generator/verifier independence; no other check was performed.
 
@@ -180,6 +182,10 @@ Reason: artifact/workflow.md:1-4 describes review ownership but no retention per
 
 Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`.
 
+Principles: [verificationdesign.com][principles] ([pinned source][principles-src]).
+
+[principles]: https://verificationdesign.com/principles/
+[principles-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md
 [p2]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#2-independence-between-generation-and-verification
 [blind-oracle]: https://verificationdesign.com/patterns/verification/blind-oracle/
 [blind-oracle-src]: https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/ai-design-patterns/cards/blind-oracle.md

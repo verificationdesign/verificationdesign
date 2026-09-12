@@ -84,7 +84,7 @@ temporary copy with exactly that one top-level line removed and verifies the dif
 
 ## Corpus and offline behavior
 
-Release `skills/v1.2.0` pins `corpus/v1.0.0`, revision
+Release `skills/v1.3.0` pins `corpus/v1.0.0`, revision
 `e632a86b2ca8fbb7f83b3130ba083784c7817667`. The packaged catalog is the only catalog
 used for decisions. A live drift report never replaces it. See [CHANGELOG.md](CHANGELOG.md).
 

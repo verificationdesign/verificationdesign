@@ -2,7 +2,7 @@
   "corpus_revision": "e632a86b2ca8fbb7f83b3130ba083784c7817667",
   "skill": {
     "name": "verification-design",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "catalog_sha256": "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f",
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a"
   },
@@ -979,7 +979,8 @@
       "exit_code": 0,
       "artifact_revision": "",
       "log": null,
-      "note": "Reproduced during fixture update; stdout was empty."
+      "note": "Reproduced during fixture update; stdout was empty.",
+      "kind": "execution"
     }
   ]
 }

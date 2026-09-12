@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Attach catalog cards to validated defects through the pinned failure map."""
+"""Attach the pinned failure map's candidate cards to validated defects. A lookup, not an applicability judgment."""
 import copy
 import sys
 sys.dont_write_bytecode = True

@@ -55,6 +55,8 @@ def validate(record, catalog=None, questions=None, meta=None):
         fail(None, "structure", "checks must be a list")
         return errors
     failures = {f["failure"] for f in catalog["failures"]}
+    mapped = {f["failure"]: set(f["cards"]) for f in catalog["failures"]}
+    card_ids = {c["id"] for c in catalog["cards"]}
     known = dict((q, p) for p, q in questions)
     seen = []
     for i, check in enumerate(checks):
@@ -101,6 +103,16 @@ def validate(record, catalog=None, questions=None, meta=None):
                     fail(i, "routing", "this status has no routing")
         if "failure_note" in check and not isinstance(check["failure_note"], str):
             fail(i, "failure", "failure_note must be a string")
+        if "related_cards" in check:
+            related = check["related_cards"]
+            if status != "defect":
+                fail(i, "routing", "related_cards is allowed only on defects")
+            elif (not isinstance(related, list) or not all(isinstance(x, str) for x in related)
+                  or len(set(related)) != len(related) or not set(related) <= card_ids):
+                fail(i, "routing", "related_cards must list unique catalog card ids")
+            elif (isinstance(check.get("failure"), str) and check["failure"] in mapped
+                  and not set(related) <= mapped[check["failure"]]):
+                fail(i, "routing", "related_cards on a mapped defect must be drawn from that failure's candidate cards")
     for _, question in questions:
         if seen.count(question) != 1:
             fail(None, "coverage", "checklist question must appear exactly once: " + question)

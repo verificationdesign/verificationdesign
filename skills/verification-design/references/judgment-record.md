@@ -80,9 +80,12 @@ the plan. Resolution never changes verdicts, decisions or the decision rule.
   the operator's original words when scope is restated or expanded; `measurement-basis`
   distinguishes what the agent ran from what it only read.
 - `measurements` (optional, rule `measurements`): list of objects with unique non-empty
-  string `id`, non-empty string `command`, string-to-string object `env` (may be empty),
-  integer `exit_code` (not boolean), string `artifact_revision` (may be empty),
-  `log` (string path or null), and string `note` (may be empty). Cite measurements by id.
+  string `id`, non-empty string `command`, `kind` (`inspection` when the command only
+  read the artifact or its metadata, `execution` when it ran the artifact), string-to-string
+  object `env` (may be empty), integer `exit_code` (not boolean), string `artifact_revision`
+  (may be empty), `log` (string path or null), and string `note` (may be empty). Cite
+  measurements by id. An inspection shows what the artifact contains; only an execution
+  shows what it does.
 - `artifact_identity` (optional, rule `artifact-identity`): object with `revision`
   (string or null) and `files`, a list of objects with string `path` and `sha256`. The renderer reports the revision, file count and list.
 - `unavailable_sources` (optional, rule `unavailable-sources`): list of the exact
@@ -91,25 +94,35 @@ the plan. Resolution never changes verdicts, decisions or the decision rule.
   fenced JSON in the uncertainty section. Optional fields may be absent.
 
 Defects are judged against the nine principles, not the artifact's own requirements.
-The absence of a record a principle asks for is a defect; severity carries how much
-it matters here. Applying a design card is a separate applicability judgment.
+The absence of a record a principle asks for is a defect when the artifact provides no
+way to produce that record. When the record would come from a stage that is not in the
+evidence set (a test run, a CI report, a deployment), the status is
+`insufficient-evidence`, naming the receipt that would settle it; the `artifact-stage`
+assumption states which stage was examined so a reader can tell the two apart.
+Severity carries how much a defect matters here. Applying a design card is a separate
+applicability judgment.
 
-A measurement the agent ran is evidence of what the artifact does. It is not evidence
-that the artifact records anything. Cite measurements by id and distinguish measured
-behavior from records that the artifact itself preserves.
+An execution measurement is evidence of what the artifact does; an inspection
+measurement is evidence of what the artifact contains. Neither is evidence that the
+artifact records anything. Cite measurements by id and distinguish measurements from
+records that the artifact itself preserves.
 
 ## Mechanical helpers
 
 Run `scaffold_record.py --artifact TEXT --scope TEXT --output FILE|-` before judging.
-It copies fields and judges nothing. FILE receives the record with a JSON count receipt
+It copies fields and judges nothing. Every script that takes `--output FILE` creates
+the file's directory when it does not exist yet. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
 Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). Several roots may be given; the first
+`path:N-M` (paths must contain a dot or slash). When the record has a plan, it also checks
+that every requirement id mentioned in those strings (`V2`, `V3`) exists in
+`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. Several roots may be given; the first
 file match wins, so order them deliberately. Absolute paths are used as given. Each
 citation is counted once as found, missing or out-of-bounds.
-The JSON reports counts, non-found citations with their record entry, `roots` as given,
+The JSON reports counts (found, missing, out-of-bounds, requirements, unknown-requirement),
+non-found citations with their record entry, `roots` as given,
 and `resolved` citations with their root (null for absolute paths), in first-seen order.
 `repeated` lists citations appearing in at least three distinct record entries, sorted
 by entry count descending then citation. Repeated citations are reported for the

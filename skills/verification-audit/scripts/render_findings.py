@@ -40,19 +40,26 @@ def render(record, catalog, meta):
                 lines += ["Severity: " + check["severity"], "", "Failure: " + check["failure"], ""]
                 if check.get("failure_note"):
                     lines += ["Failure note: " + check["failure_note"], ""]
-                if not check["cards"]:
-                    lines += ["No routed card: outside the six mapped failures; see the failure note above.", ""]
+                related = check.get("related_cards", [])
+                if check["cards"]:
+                    lines += ["Candidate cards from the failure map (a lookup, not an applicability judgment):", ""]
+                    lines += [("- judged applicable: " if c["id"] in related else "- candidate: ") + sources.card(c)
+                              for c in check["cards"]] + [""]
+                elif related:
+                    by_id = {c["id"]: c for c in catalog["cards"]}
+                    lines += ["Cards named by judgment (the failure map has no entry for this defect):", ""]
+                    lines += ["- judged applicable: " + sources.card(by_id[cid]) for cid in related] + [""]
                 else:
-                    lines += ["- " + sources.card(c) for c in check["cards"]] + [""]
+                    lines += ["No routed card: outside the six mapped failures; see the failure note above.", ""]
         if status == "insufficient-evidence":
             lines += unavailable(record)
-    lines += sources.render(catalog["revision"])
+    lines += sources.render(catalog["revision"], catalog["principles"])
     return "\n".join(lines)
 
 
 def main():
     p = parser(__doc__, "python3 scripts/render_findings.py routed.json --output findings.md")
-    p.add_argument("record", help="routed JSON findings record")
+    p.add_argument("record", help="JSON findings record, routed or not; an unrouted record is routed on the way")
     p.add_argument("--output", default="-", metavar="FILE|-", help="markdown file; - emits a JSON text envelope")
     args = p.parse_args()
     resolve_output(args.output, args.record)
@@ -62,10 +69,13 @@ def main():
     if errors:
         emit(errors)
         return 3
-    if route(record, catalog) != record:
-        emit([{"card": None, "rule": "routing", "message": "routed record must match the pinned failure map; run route_failures.py"}])
-        return 3
-    write_text(render(record, catalog, meta), args.output)
+    routed = route(record, catalog)
+    if any("cards" in c or "routed" in c for c in record["checks"]):
+        # A record that carries routing must carry exactly the pinned routing.
+        if routed != record:
+            emit([{"card": None, "rule": "routing", "message": "routed record must match the pinned failure map; run route_failures.py"}])
+            return 3
+    write_text(render(routed, catalog, meta), args.output)
     return 0
 
 

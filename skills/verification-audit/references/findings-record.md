@@ -6,7 +6,8 @@ A JSON object has `corpus_revision` equal to the packaged revision, `skill` and 
 Every checklist bullet appears exactly once as its whole text (including citation,
 excluding `- `) in `question`, with its integer `principle` (1 to 9).
 
-Every entry has non-empty string `evidence`, `status`, and `severity`:
+Every entry has non-empty string `evidence` and `status`; `severity` is high, medium or
+low on a defect and null on every other status:
 
 - `sound`: checked behavior with evidence; severity null.
 - `defect`: in-scope artifact evidence, failure equal to a mapped failure or `unmapped`,
@@ -37,8 +38,15 @@ a validator gap.
 
 `failure_note` is an optional string on mapped defects, rendered whenever non-empty.
 Use it to say several defects share one cause. The six mapped failures are routing aids,
-not an exhaustive taxonomy. The router computes cards and routed only for defects;
-the renderer rejects incorrect routing.
+not an exhaustive taxonomy; they describe agent behaviors, so a structural defect (a
+missing criteria version, a mutable dependency reference) is often `unmapped`, and that
+is the correct answer, not a gap to force. The router computes `cards` and `routed` only
+for defects, as a lookup of the failure map; it makes no applicability judgment, and the
+renderer labels its cards as candidates. Optional `related_cards` (rule `routing`) is a
+list of catalog card ids the auditor judges applicable to a defect: on a mapped defect it
+must be drawn from that failure's candidates and the renderer marks those as judged
+applicable; on an unmapped defect it may name any card, rendered as cards named by
+judgment. Non-defects cannot carry it. The renderer rejects incorrect routing.
 
 Rules: `structure`, `coverage` (including free out-of-scope restrictions), `status`
 (the six statuses above), `evidence`, `failure`, `severity`, `routing`, plus the shared
@@ -66,9 +74,12 @@ An emitted scaffold fails `status`, `evidence` and `models`, never passing as a 
   the operator's original words when scope is restated or expanded; `measurement-basis`
   distinguishes what the agent ran from what it only read.
 - `measurements` (optional, rule `measurements`): list of objects with unique non-empty
-  string `id`, non-empty string `command`, string-to-string object `env` (may be empty),
-  integer `exit_code` (not boolean), string `artifact_revision` (may be empty),
-  `log` (string path or null), and string `note` (may be empty). Cite measurements by id.
+  string `id`, non-empty string `command`, `kind` (`inspection` when the command only
+  read the artifact or its metadata, `execution` when it ran the artifact), string-to-string
+  object `env` (may be empty), integer `exit_code` (not boolean), string `artifact_revision`
+  (may be empty), `log` (string path or null), and string `note` (may be empty). Cite
+  measurements by id. An inspection shows what the artifact contains; only an execution
+  shows what it does.
 - `artifact_identity` (optional, rule `artifact-identity`): object with `revision`
   (string or null) and `files`, a list of objects with string `path` and `sha256`. The renderer reports the revision, file count and list.
 - `unavailable_sources` (optional, rule `unavailable-sources`): list of the exact
@@ -77,25 +88,35 @@ An emitted scaffold fails `status`, `evidence` and `models`, never passing as a 
   fenced JSON in the uncertainty section. Optional fields may be absent.
 
 Defects are judged against the nine principles, not the artifact's own requirements.
-The absence of a record a principle asks for is a defect; severity carries how much
-it matters here. Applying a design card is a separate applicability judgment.
+The absence of a record a principle asks for is a defect when the artifact provides no
+way to produce that record. When the record would come from a stage that is not in the
+evidence set (a test run, a CI report, a deployment), the status is
+`insufficient-evidence`, naming the receipt that would settle it; the `artifact-stage`
+assumption states which stage was examined so a reader can tell the two apart.
+Severity carries how much a defect matters here. Applying a design card is a separate
+applicability judgment.
 
-A measurement the agent ran is evidence of what the artifact does. It is not evidence
-that the artifact records anything. Cite measurements by id and distinguish measured
-behavior from records that the artifact itself preserves.
+An execution measurement is evidence of what the artifact does; an inspection
+measurement is evidence of what the artifact contains. Neither is evidence that the
+artifact records anything. Cite measurements by id and distinguish measurements from
+records that the artifact itself preserves.
 
 ## Mechanical helpers
 
 Run `scaffold_record.py --artifact TEXT --scope TEXT --output FILE|-` before judging.
-It copies fields and judges nothing. FILE receives the record with a JSON count receipt
+It copies fields and judges nothing. Every script that takes `--output FILE` creates
+the file's directory when it does not exist yet. FILE receives the record with a JSON count receipt
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
 Run `check_citations.py record.json --root DIR [--root DIR ...] [--output FILE|-]` after validation.
 It scans evidence, reason, statement, note and instantiation strings for `path:N` or
-`path:N-M` (paths must contain a dot or slash). Several roots may be given; the first
+`path:N-M` (paths must contain a dot or slash). When the record has a plan, it also checks
+that every requirement id mentioned in those strings (`V2`, `V3`) exists in
+`plan.requirements`; an unknown id is a failure with status `unknown-requirement`. Several roots may be given; the first
 file match wins, so order them deliberately. Absolute paths are used as given. Each
 citation is counted once as found, missing or out-of-bounds.
-The JSON reports counts, non-found citations with their record entry, `roots` as given,
+The JSON reports counts (found, missing, out-of-bounds, requirements, unknown-requirement),
+non-found citations with their record entry, `roots` as given,
 and `resolved` citations with their root (null for absolute paths), in first-seen order.
 `repeated` lists citations appearing in at least three distinct record entries, sorted
 by entry count descending then citation. Repeated citations are reported for the
@@ -136,6 +157,7 @@ scaffold unchanged.
 }
 ```
 
-The `failure` string on a defect must be one of the six strings in `catalog.failures`
+A defect may add `"related_cards": ["verification/blind-oracle"]` to name the candidate
+it judges applicable. The `failure` string on a defect must be one of the six strings in `catalog.failures`
 or `unmapped`; the `question` must be a checklist bullet verbatim, including its real
 pinned citation.

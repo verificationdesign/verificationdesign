@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.2.0"
+  version: "1.3.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -39,7 +39,7 @@ The skill reads the artifact and takes no part in the host repository's workflow
 
 ## Procedure
 
-Run commands from this skill directory, with absolute paths for operator-visible records and outputs outside it. Python 3.11 or later is required. No command prompts interactively. Records and outputs go in a dated directory the operator can see, beside the artifact or where the operator says, never in system temp storage and never inside the skill directory.
+Run commands from this skill directory, with absolute paths for operator-visible records and outputs outside it. Python 3.11 or later is required. No command prompts interactively. Records and outputs go in a dated directory the operator can see, beside the artifact or where the operator says, never in system temp storage and never inside the skill directory. Scripts create that directory when it does not exist.
 
 1. Resolve artifact and scope by the rules above. No script runs until scope is resolved.
 2. Verify the packaged dependency and show the interpreter version from `--check`:
@@ -56,14 +56,15 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/scaffold_record.py --artifact "resolved artifact" --scope "resolved scope" --output /absolute/path/record.json
    ```
 
-4. Write `plan.design` (two to eight sentences describing the components and workflow)
+4. Read `assets/catalog.json` and [judgment-record.md](references/judgment-record.md)
+   first; the plan and the judgments both draw on them.
+5. Write `plan.design` (two to eight sentences describing the components and workflow)
    and numbered `plan.requirements`, each stating what must be true and naming the
    check, its inputs, and what pass and fail look like. Read an existing design document
    in the artifact when available and cite it in `plan.source`; otherwise write the
    design from the scope and conversation, omit `source`, and record a `design-source`
    assumption stating that origin.
-5. Read `assets/catalog.json` and [judgment-record.md](references/judgment-record.md).
-   Fill the scaffold: characterize what is generated, by whom, the completion signal,
+6. Fill the scaffold: characterize what is generated, by whom, the completion signal,
    and self-review points. Declare the `verification-path` assumption before judging.
    Preserve every catalog condition verbatim and in order. Record each verdict and
    its artifact evidence. Unknown exclusions block apply; keep unknowns visible.
@@ -76,17 +77,20 @@ Run commands from this skill directory, with absolute paths for operator-visible
      will produce the work as `generator`, or `unknown` when it is not decided or recorded.
    - `artifact_identity`: the artifact revision and a sha256 per file read, so a reader
      can tell which bytes were judged. Omit only when nothing readable was examined.
-   - `measurements`: one entry per command run against the artifact, with its exit code,
-     cited by id from evidence. A measurement shows what the artifact does; it is not
-     evidence that the artifact records anything.
-6. Validate; correct record errors and rerun until exit 0. If the packaged dependency
+   - `measurements`: one entry per command run against the artifact, with its exit code
+     and its `kind`: `inspection` when the command only read the artifact, `execution`
+     when it ran the artifact. Cite measurements by id from evidence. An execution shows
+     what the artifact does; an inspection shows what it contains; neither is evidence
+     that the artifact records anything.
+7. Validate; correct record errors and rerun until exit 0. If the packaged dependency
    fails, stop and report it without changing the pin.
 
    ```bash
    python3 scripts/validate_judgments.py /absolute/path/record.json
    ```
 
-7. Check artifact citation existence and bounds. Require exit 0 or record an explanation
+8. Check artifact citation existence and bounds, and requirement-id references against
+   the plan. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    Several roots may be given; first file match wins, so order them deliberately.
    Paste any fetch exit-4 JSON objects into the record's `unavailable_sources` list
@@ -96,13 +100,13 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact --root /absolute/path/evidence
    ```
 
-8. Render the validated record:
+9. Render the validated record:
 
    ```bash
    python3 scripts/render_plan.py /absolute/path/record.json --output /absolute/path/verification-plan.md
    ```
 
-9. Complete the closing checklist. Validation does not verify substantive judgments.
+10. Complete the closing checklist. Validation does not verify substantive judgments.
 
 Source text is optional. If a question needs prose beyond the structured catalog,
 retrieve it only through this command (replace `principles` with a catalog card id
@@ -119,7 +123,7 @@ and paste the JSON into the record's `unavailable_sources` list. The renderer pl
 ## Available scripts
 
 - `scripts/scaffold_record.py`: copy catalog conditions or checklist questions into an unfilled record, with a count receipt.
-- `scripts/check_citations.py`: check artifact citation existence and line bounds only.
+- `scripts/check_citations.py`: check artifact citation existence, line bounds and requirement-id references only.
 - `scripts/load_catalog.py`: verify the packaged snapshot, fetch pinned source text, or report drift without switching catalogs.
 - `scripts/validate_judgments.py`: check coverage, evidence fields and applicability decisions.
 - `scripts/render_plan.py`: validate and render a plan in catalog reading order.
@@ -136,7 +140,7 @@ The rendered verification plan is the deliverable; the record is its evidence an
 
 ## Limitations
 
-Card evidence may cite requirement ids in prose (for example, `V3: the returned integer is compared by equality`), but `check_citations.py` checks only `path:line` citations and ignores requirement-id references.
+Card evidence may cite requirement ids in prose (for example, `V3: the returned integer is compared by equality`); `check_citations.py` checks that each cited id exists in `plan.requirements` and that `path:line` citations resolve, nothing about whether the evidence supports the judgment. A record with no artifact passes the citation check with zero citations; that is expected, not evidence.
 
 The installed package carries no tests or fixtures; those and `check_skills.py` live
 only in the publishing repository and are not portable. An installed copy can check

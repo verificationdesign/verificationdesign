@@ -97,7 +97,7 @@ def render(record, catalog, meta):
     if not uncertain:
         lines += ["None in the judgment record.", ""]
     lines += unavailable(record)
-    lines += sources.render(catalog["revision"])
+    lines += sources.render(catalog["revision"], catalog["principles"])
     return "\n".join(lines)
 
 

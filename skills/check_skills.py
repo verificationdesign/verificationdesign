@@ -105,6 +105,12 @@ def fixture_checks(report):
             validator = scripts / ("validate_judgments.py" if kind == "design" else "validate_findings.py")
             record = folder / "record.json"
             result = run([sys.executable, str(validator), str(record)])
+            if kind == "audit":
+                # Rendering straight from the unrouted record must give the same bytes as rendering the routed one.
+                direct = Path(tmp) / (name + ".direct.md")
+                unrouted = run([sys.executable, str(scripts / "render_findings.py"), str(record), "--output", str(direct)])
+                if unrouted.returncode != 0 or direct.read_bytes() != (folder / "expected.md").read_bytes():
+                    render_errors.append(name + " unrouted render mismatch: " + unrouted.stdout + unrouted.stderr)
             if result.returncode == 0:
                 positive += 1
             else:
@@ -137,7 +143,7 @@ def fixture_checks(report):
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
     report.check("fixture validators", positive, 5, errors)
     report.check("fixture renders", rendered, 5, render_errors)
-    report.check("negative fixtures", negative, 22, negative_errors)
+    report.check("negative fixtures", negative, 23, negative_errors)
 
 
 def helper_checks(report):
@@ -176,7 +182,7 @@ def helper_checks(report):
             result = run([sys.executable, str(scripts / "check_citations.py"), str(path), "--root", str(root), "--root", str(second)])
             try:
                 data = json.loads(result.stdout)
-                good = (result.returncode == 3 and data["counts"] == {"found": 2, "missing": 1, "out-of-bounds": 1}
+                good = (result.returncode == 3 and data["counts"] == {"found": 2, "missing": 1, "out-of-bounds": 1, "requirements": 0, "unknown-requirement": 0}
                         and len(data["citations"]) == 2 and data["roots"] == [str(root), str(second)]
                         and data["resolved"] == [{"citation": "example.txt:1-2", "root": str(root)}, {"citation": "later.txt:1", "root": str(second)}]
                         and data["repeated"] == [{"citation": "example.txt:1-2", "entries": 3}])

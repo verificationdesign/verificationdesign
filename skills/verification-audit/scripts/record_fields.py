@@ -38,10 +38,11 @@ def validate_common(record, fail, meta, design=False):
                              and type(row.get("exit_code")) is int
                              and isinstance(row.get("artifact_revision"), str)
                              and "log" in row and (row["log"] is None or isinstance(row["log"], str))
-                             and isinstance(row.get("note"), str))
+                             and isinstance(row.get("note"), str)
+                             and row.get("kind") in ("inspection", "execution"))
                     seen.add(row["id"])
                 if not valid:
-                    fail(None, "measurements", "measurement fields must have documented types and ids must be unique")
+                    fail(None, "measurements", "measurement fields must have documented types, kind must be inspection or execution, and ids must be unique")
     if "artifact_identity" in record:
         x = record["artifact_identity"]
         valid = (isinstance(x, dict) and "revision" in x and

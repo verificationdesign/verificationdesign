@@ -23,12 +23,13 @@ def header(title, record, catalog, meta):
     if "measurements" in record:
         lines += ["## Measurements", ""]
         for x in record["measurements"]:
-            lines += [f'- {x["id"]}: command `{x["command"]}`; env `{json.dumps(x["env"], sort_keys=True)}`; '
+            # The command goes in a fenced block so multi-line commands stay readable.
+            lines += [f'- {x["id"]}: kind {x["kind"]}; env `{json.dumps(x["env"], sort_keys=True)}`; '
                       f'exit {x["exit_code"]}; artifact revision `{x["artifact_revision"]}`; '
-                      f'log {x["log"] or "none"}; note: {x["note"]}']
+                      f'log {x["log"] or "none"}; note: {x["note"]}', "",
+                      "```text", x["command"], "```", ""]
         if not record["measurements"]:
-            lines += ["None."]
-        lines.append("")
+            lines += ["None.", ""]
     return lines
 
 
@@ -49,6 +50,10 @@ class Sources:
         self.definitions[slug + "-src"] = card["source_url"]
         return f'[{card["title"]}][{slug}] ([pinned source][{slug}-src])'
 
-    def render(self, revision):
-        return ["## Sources", "", f'Corpus revision: `{revision}`.', ""] + [
-            f'[{key}]: {url}' for key, url in self.definitions.items()] + [""]
+    def render(self, revision, principles):
+        # The human-readable Principles page is always named, even when nothing routed to a card.
+        definitions = {"principles": principles["html_url"], "principles-src": principles["source_url"]}
+        definitions.update(self.definitions)
+        return ["## Sources", "", f'Corpus revision: `{revision}`.', "",
+                "Principles: [verificationdesign.com][principles] ([pinned source][principles-src]).", ""] + [
+            f'[{key}]: {url}' for key, url in definitions.items()] + [""]

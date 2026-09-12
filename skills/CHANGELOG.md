@@ -1,5 +1,43 @@
 # Changelog
 
+## skills/v1.3.0 (2026-09-12)
+
+Pins unchanged `corpus/v1.0.0`. Source: seven observation runs on 2026-09-12 (six audits
+and designs on external and local targets plus a design run on the skills themselves),
+recorded under the maintainer's local skill-runs directory. Records carry the new
+`kind` measurement field and the re-pinned checklist, so v1.2.0 records do not validate
+unchanged.
+
+- Every script that takes `--output FILE` creates the file's directory. The scaffold no
+  longer exits 5 when the dated run directory does not exist yet.
+- Routing is documented as a lookup of the failure map, never an applicability
+  judgment; the renderer labels routed cards `candidate:`. New optional `related_cards`
+  on defects names the cards the auditor judges applicable (rule `routing`): drawn from
+  the failure's candidates on a mapped defect, any catalog card on an unmapped one,
+  rendered as `judged applicable:`. A new negative fixture rejects a related card
+  outside the map.
+- The routed file is the finished record; the procedure writes it as
+  `record.routed.json`. `render_findings.py` accepts an unrouted record and routes it on
+  the way, while a record that carries routing must still match the pinned map exactly.
+- Sources always names the human Principles page and its pinned source, so an audit with
+  nothing routed still satisfies the closing checklist.
+- The absence rule is split: a record the principle asks for is a defect when the
+  artifact has no way to produce it, and `insufficient-evidence` naming the settling
+  receipt when it would come from a stage outside the evidence set. The `artifact-stage`
+  assumption tells the two apart.
+- `measurements` entries require `kind`: `inspection` or `execution`. The renderer puts
+  each command in a fenced block under its bullet, so multi-line commands stay readable.
+- `check_citations.py` checks requirement-id references (`V2`) against
+  `plan.requirements` when the record has a plan, reporting `requirements` and
+  `unknown-requirement` counts; an unknown id fails with exit 3.
+- Principle 7's second checklist question now says `When model review is used` and
+  `verifier model family`, so it reads as the model-review question it is.
+  `checklist-sha256` re-pinned.
+- The audit record reference states severity once: high, medium or low on a defect,
+  null otherwise.
+- The design procedure reads the catalog and record reference before writing the plan.
+- Both procedures say that scripts create the output directory.
+
 ## skills/v1.2.0 (2026-09-10)
 
 Pins unchanged `corpus/v1.0.0`. Source: the audit skill run against its own package on

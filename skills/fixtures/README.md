@@ -11,7 +11,7 @@ They do not establish the truth of agent judgments or replace blind host tests.
 
 Each directory contains a small raw artifact, a filled record and expected markdown.
 Negative records have a sibling expected JSON file with `exit_code` and exact `rules`.
-The checker validates all five positive records, compares all rendered bytes and checks all twenty-two negatives.
+The checker validates all five positive records, compares all rendered bytes (routed and unrouted) and checks all twenty-three negatives.
 
 Version 1.1.0 also covers assumptions, priority, measurements, unavailable sources,
 instantiation, six audit statuses and unfilled scaffold rejection. Individual READMEs
@@ -20,5 +20,9 @@ name each new positive field and negative boundary.
 Version 1.2.0 adds post-plan resolution and a referenced measurement to the undecided
 Executable Analog in design-resolved, plus four resolution negatives
 for an applied card, invalid date, unknown measurement id and extra key.
+
+Version 1.3.0 adds `related_cards` on the audit-known-defect defect (Blind Oracle judged
+applicable among four candidates), one negative for a related card outside the failure
+map, and `kind` on every fixture measurement.
 
 Design records require a `plan` with design prose and numbered checks serving applied patterns; four design-sound negatives cover a missing plan, an unserved applied card, a cited non-applied card, and a requirement id gap.
