@@ -31,6 +31,14 @@ the only change needed.
   condition in `design-source`; card intent governs condition judgments.
 - Output references name the renderer's Unavailable sources heading.
 
+Blind tests of the five fixtures passed on Claude Code 2.1.270 and Codex CLI 0.153.4 against
+this release on 2026-09-13, with a second phase for design-resolved supplying the later
+build so the resolution requirement was exercised; the maintainer adjudicated each output
+against the fixture's required result. Invocation-control probes were not rerun on Claude
+Code 2.1.270, so the compatibility line is unchanged. v1.3.0 was tagged without a blind
+fixture rerun; the v1.4.0 blind results were run against v1.4.0 only and do not establish
+v1.3.0 behavior.
+
 ## skills/v1.3.0 (2026-09-12)
 
 Pins unchanged `corpus/v1.0.0`. Source: seven observation runs on 2026-09-12 (six audits

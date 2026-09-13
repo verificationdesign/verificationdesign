@@ -71,8 +71,9 @@ catalog entries, working explicit invocation and no implicit invocation, with an
 unflagged control activating. This table describes host invocation controls, not the
 correctness of these skills' judgments. Blind task-level tests (fixture artifacts only,
 records and expected outputs withheld) passed on Claude Code and Codex for v1.0.0 and
-v1.1.0 on 2026-09-08 and for v1.2.0 on 2026-09-10 (five fixtures); the maintainer
-judged each output against the fixture's required result.
+v1.1.0 on 2026-09-08, for v1.2.0 on 2026-09-10 and for v1.4.0 on 2026-09-13 (five
+fixtures; v1.3.0 was tagged without a rerun, see the changelog); the maintainer judged
+each output against the fixture's required result.
 The maintainer reruns blind host tests for each release before tagging it; the
 compatibility line names only versions on which the probes were actually rerun.
 
