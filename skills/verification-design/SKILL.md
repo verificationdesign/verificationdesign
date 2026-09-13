@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.4.0"
+  version: "1.5.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -60,6 +60,13 @@ Run commands from this skill directory, with absolute paths for operator-visible
 
 4. Read `assets/catalog.json` and [judgment-record.md](references/judgment-record.md)
    first; the plan and the judgments both draw on them.
+
+   Retrieve source text only through this command when prose beyond the structured catalog is needed:
+
+   ```bash
+   python3 scripts/load_catalog.py fetch principles --offline
+   ```
+
 5. Write `plan.design` (two to eight sentences describing the components and workflow)
    and numbered `plan.requirements`, each stating what must be true and naming the
    check, its inputs, and what pass and fail look like. Read an existing design document
@@ -100,9 +107,8 @@ Run commands from this skill directory, with absolute paths for operator-visible
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any exit-4 JSON objects from the `load_catalog.py fetch ... --offline` command
-   under Source text below into the record's `unavailable_sources` list before final
-   validation and rendering.
+   Paste any exit-4 JSON objects from the fetch command in step 4 into the record's
+   `unavailable_sources` list before final validation and rendering.
 
    ```bash
    python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
@@ -116,13 +122,8 @@ Run commands from this skill directory, with absolute paths for operator-visible
 
 10. Complete the closing checklist. Validation does not verify substantive judgments.
 
-Source text is optional. If a question needs prose beyond the structured catalog,
-retrieve it only through this command (replace `principles` with a catalog card id
-for card text):
-
-```bash
-python3 scripts/load_catalog.py fetch principles --offline
-```
+Source text is optional; step 4 supplies the fetch command. Replace `principles`
+with a catalog card id for card text.
 
 Omit `--offline` only when source retrieval is wanted and network is available.
 When `load_catalog.py fetch` reports unavailable, continue on the structured fields

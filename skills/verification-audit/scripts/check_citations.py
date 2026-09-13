@@ -6,8 +6,8 @@ from load_catalog import cli_main, emit, parser, read_record, resolve_output
 from pathlib import Path
 import re
 
-FIELDS = {"evidence", "reason", "statement", "note", "instantiation"}
-CITATION = re.compile(r"(?<![\w/.:~-])([\w./~@+-]+):(\d+)(?:-(\d+))?(?![\w-])")
+FIELDS = {"evidence", "reason", "statement", "note", "instantiation", "check", "self_review_points"}
+CITATION = re.compile(r"(?<![\w/.:~-])([\w./~@+()-]+):(\d+)(?:-(\d+))?(?![\w-])")
 REQUIREMENT = re.compile(r"\bV[1-9]\d*\b")
 
 
@@ -83,7 +83,7 @@ def check(record, roots):
 
 def main():
     p = parser(__doc__ + " Repeated citations are reported for the operator's eye and are not a failure, because one line can legitimately bear on several conditions.", "python3 scripts/check_citations.py record.json --root /path/to/project --root /path/to/evidence")
-    p.add_argument("record", help="JSON record; only evidence, reason, statement, note and instantiation strings are scanned, plus requirement ids such as V2 when the record has a plan")
+    p.add_argument("record", help="JSON record; only evidence, reason, statement, note, instantiation, check and self_review_points strings are scanned, plus requirement ids such as V2 when the record has a plan")
     p.add_argument("--root", action="append", default=[], help="required whenever the record cites files; roots are directories; repeat for several roots, first file match wins")
     p.add_argument("--output", default="-", metavar="FILE|-")
     args = p.parse_args()

@@ -180,3 +180,33 @@ class RenderFindingsTests(ScriptCase):
         self.assertEqual(result.returncode, 3)
         self.assert_rules(result, {"routing"})
         self.assertFalse(self.output.exists())
+
+    def test_free_observations_keep_record_order(self):
+        record = copy.deepcopy(self.good)
+        outside = copy.deepcopy(record["checks"][-1])
+        record["checks"] = list(reversed(record["checks"][:-1]))
+        for question in ("Z observation", "A observation", "M observation"):
+            extra = copy.deepcopy(outside)
+            extra.update(principle=None, question=question, evidence=question)
+            record["checks"].append(extra)
+        section = self.section(self.render(record), "Observed outside scope")
+        self.assertEqual([line for line in section.splitlines() if line.startswith("Reason: ")],
+                         ["Reason: Z observation", "Reason: A observation", "Reason: M observation"])
+
+    def test_cause_group_summary_keeps_separate_figures(self):
+        record = copy.deepcopy(self.good)
+        for index in (3, 4):
+            record["checks"][index].update(status="defect", severity="low", failure="unmapped",
+                                            failure_note="Shared missing record", evidence="Same evidence")
+        before = copy.deepcopy(record["checks"])
+        for groups, count, ungrouped in ((None, 0, 3), ([], 0, 3),
+                ([{"cause": "Shared missing record", "checks": [3, 4]}], 1, 1)):
+            if groups is not None:
+                record["cause_groups"] = groups
+            text = self.render(record)
+            self.assertIn(f"Author-assigned cause groups: {count}; ungrouped defect rows: {ungrouped}.",
+                          self.section(text, "Summary").splitlines())
+            self.assertEqual(self.section(text, "Defects").count("Severity: "), 3)
+            self.assertEqual(record["checks"], before)
+        empty = json.loads((ROOT / "skills/fixtures/audit-missing-evidence/record.json").read_text())
+        self.assertIn("Author-assigned cause groups: 0; ungrouped defect rows: 0.", self.render(empty))

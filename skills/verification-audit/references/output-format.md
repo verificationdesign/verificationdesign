@@ -19,6 +19,8 @@ Section order:
 10. Sources
 
 Summary counts defects by severity and every status, and names unmapped defects.
+It also reports author-assigned cause groups and ungrouped defect rows as two figures
+on one line.
 All six findings sections are always present; empty sections say `None.`.
 Mapped failure notes render when non-empty, including shared-cause notes.
 Mapped defects list their cards under `Candidate cards from the failure map (a lookup,

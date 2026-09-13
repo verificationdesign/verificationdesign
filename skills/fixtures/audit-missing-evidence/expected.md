@@ -8,7 +8,7 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-audit 1.4.0
+Skill: verification-audit 1.5.0
 
 Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`; checklist `a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80`
 
@@ -23,6 +23,8 @@ None.
 ## Summary
 
 Defects: 0. high: 0; medium: 0; low: 0.
+
+Author-assigned cause groups: 0; ungrouped defect rows: 0.
 
 - defect: 0
 - sound: 0

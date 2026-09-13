@@ -177,4 +177,56 @@ class ValidateFindingsTests(ScriptCase):
                 "statuses": {s: sum(c["status"] == s for c in checks) for s in
                     ("defect", "sound", "not-applicable", "not-checked", "insufficient-evidence", "out-of-scope")},
                 "severity": {s: sum(c["status"] == "defect" and c["severity"] == s for c in checks)
-                    for s in ("high", "medium", "low")}})
+                    for s in ("high", "medium", "low")}, "warnings": []})
+
+    def grouped_record(self):
+        record = copy.deepcopy(self.good)
+        for index in (3, 4):
+            record["checks"][index].update(status="defect", severity="low", failure="unmapped",
+                                            failure_note="Shared missing record", evidence="Same evidence")
+        record["cause_groups"] = [{"cause": "Shared missing record", "checks": [3, 4]}]
+        return record
+
+    def test_cause_groups_structure(self):
+        record = self.grouped_record()
+        self.rules(record, set())
+        invalid = [None, {}, "groups", [None], [{"cause": "", "checks": [3, 4]}],
+                   [{"cause": "shared"}], [{"cause": "shared", "checks": [3, 4], "extra": True}]]
+        invalid += [[{"cause": "shared", "checks": members}] for members in
+                    (None, "3,4", [], [3], [3, 3], [3, 0], [3, -1], [3, 999],
+                     [3, True], [3, "4"], [3, 4.0], [3, []])]
+        invalid += [[{"cause": "first", "checks": [2, 3]},
+                     {"cause": "second", "checks": [3, 4]}]]
+        for groups in invalid:
+            with self.subTest(groups=groups):
+                record["cause_groups"] = groups
+                self.rules(record, {"cause-groups"})
+        result = self.call("audit", "validate_findings.py", record)
+        self.assert_rules(result, {"cause-groups"})
+
+    def test_identical_evidence_warning_is_advisory(self):
+        record = self.grouped_record()
+        before = copy.deepcopy(record)
+        for grouped in (True, False):
+            if not grouped:
+                record.pop("cause_groups")
+            result = self.call("audit", "validate_findings.py", record)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["warnings"], [{"rule": "identical-defect-evidence", "checks": [3, 4],
+                "message": "Byte-identical evidence suggests a shared cause but does not establish one."}])
+            self.assertEqual(report["defects"], 3)
+        self.assertEqual(record["checks"], before["checks"])
+        record["checks"][4]["evidence"] += " "
+        self.assertEqual(self.v.warnings(record), [])
+        record["checks"][0]["evidence"] = record["checks"][3]["evidence"]
+        self.assertEqual(self.v.warnings(record), [])
+
+    def test_no_cause_groups_remains_valid(self):
+        for groups in (None, []):
+            record = copy.deepcopy(self.good)
+            if groups is not None:
+                record["cause_groups"] = groups
+            result = self.call("audit", "validate_findings.py", record)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(json.loads(result.stdout)["warnings"], [])

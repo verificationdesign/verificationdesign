@@ -8,7 +8,7 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-design 1.4.0
+Skill: verification-design 1.5.0
 
 Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`
 
@@ -52,11 +52,13 @@ python3 artifact/check.py
 
 Apply: 1; reject: 15; undecided: 1; unknown verdicts: 1.
 
+Applied cards with unknown conditions: 0.
+
 Requirements: 2
 
 Operator decisions:
 
-- Executable Analog: the extractor would be more brittle than the LLM judgment it replaces Resolution recorded 2026-09-10.
+- Executable Analog: the extractor would be more brittle than the LLM judgment it replaces. Resolution recorded 2026-09-10.
 
 Recommended order:
 

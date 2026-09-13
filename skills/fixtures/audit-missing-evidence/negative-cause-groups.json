@@ -7,19 +7,18 @@
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a",
     "checklist_sha256": "a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80"
   },
-  "artifact": "fixture",
-  "scope": "fixture checks",
+  "artifact": "skills/fixtures/audit-missing-evidence/artifact",
+  "scope": "Audit the deployed nightly inventory summarizer and its verification behavior.",
   "models": {
-    "generator": "",
-    "verifier": ""
+    "generator": "unknown",
+    "verifier": "fixture author, no model review"
   },
-  "assumptions": [],
   "checks": [
     {
       "principle": 1,
       "question": "What external observation, distinct from the generator saying done, records completion? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -27,8 +26,8 @@
     {
       "principle": 1,
       "question": "Which expected and observed values are recorded for each completion check? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -36,8 +35,8 @@
     {
       "principle": 2,
       "question": "Who evaluates the generated output, and what evidence separates that evaluator from the generator? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#2-independence-between-generation-and-verification)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -45,8 +44,8 @@
     {
       "principle": 2,
       "question": "Which generator context is withheld from the verifier, and where is that boundary recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#2-independence-between-generation-and-verification)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -54,8 +53,8 @@
     {
       "principle": 3,
       "question": "Which intermediate steps emit observable signals before the final completion decision? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#3-step-level-checkpoints)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -63,8 +62,8 @@
     {
       "principle": 3,
       "question": "Where are a failed checkpoint and the resulting stop or escalation recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#3-step-level-checkpoints)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -72,8 +71,8 @@
     {
       "principle": 4,
       "question": "Which checks search for a counterexample to completion, with the observed result recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#4-adversarial-framing)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -81,8 +80,8 @@
     {
       "principle": 4,
       "question": "What evidence, recorded in the artifact, shows that a failing artifact can be rejected by the verification procedure? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#4-adversarial-framing)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -90,8 +89,8 @@
     {
       "principle": 5,
       "question": "Where are the expected conditions and criterion identifiers specified before evaluation? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#5-explicit-criteria)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -99,8 +98,8 @@
     {
       "principle": 5,
       "question": "How does the artifact record the criteria version used for each verdict? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#5-explicit-criteria)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -108,8 +107,8 @@
     {
       "principle": 6,
       "question": "Which claims are checked by executable assertions or comparisons, and where are their results? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#6-executable-verification-is-king)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -117,8 +116,8 @@
     {
       "principle": 6,
       "question": "Which claims still depend on judgment, and what evidence bounds those claims? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#6-executable-verification-is-king)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -126,8 +125,8 @@
     {
       "principle": 7,
       "question": "When model review is used, what generator and verifier model families are recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -135,8 +134,8 @@
     {
       "principle": 7,
       "question": "When model review is used, what evidence supports the selected verifier model family for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -144,8 +143,8 @@
     {
       "principle": 8,
       "question": "When independent reviewers disagree, where are their claims and evidence recorded separately? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#8-simulate-debate)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -153,8 +152,8 @@
     {
       "principle": 8,
       "question": "What explicit rule routes unresolved disagreement or stops further review? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#8-simulate-debate)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -162,8 +161,8 @@
     {
       "principle": 9,
       "question": "What before-state or isolated baseline lets a check attribute its observation to this run? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#9-isolate-verification-from-ambient-state)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -171,11 +170,21 @@
     {
       "principle": 9,
       "question": "Where are run identifiers, state changes and observed deltas recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#9-isolate-verification-from-ambient-state)",
-      "status": "",
-      "evidence": "",
+      "status": "insufficient-evidence",
+      "evidence": "artifact/workflow.md:3-5 describes deployed behavior but supplies no run evidence. A deployed run trace, the checker implementation and its expected/observed results would settle this question.",
       "failure": null,
       "failure_note": "",
       "severity": null
+    }
+  ],
+  "assumptions": [],
+  "cause_groups": [
+    {
+      "cause": "Illustrative shared cause",
+      "checks": [
+        0,
+        1
+      ]
     }
   ]
 }

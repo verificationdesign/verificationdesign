@@ -143,7 +143,7 @@ def fixture_checks(report):
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
     report.check("fixture validators", positive, 5, errors)
     report.check("fixture renders", rendered, 5, render_errors)
-    report.check("negative fixtures", negative, 23, negative_errors)
+    report.check("negative fixtures", negative, 25, negative_errors)
 
 
 def helper_checks(report):

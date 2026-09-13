@@ -149,3 +149,26 @@ class CitationTests(ScriptCase):
                     self.assertEqual(data["counts"], {"found": 3, "missing": 0, "out-of-bounds": 0, "requirements": 0, "unknown-requirement": 0})
 
 
+
+    def test_parenthesized_directory_resolves(self):
+        folder = self.root / "(custom)"
+        folder.mkdir()
+        (folder / "file.md").write_text("one\ntwo\nthree\n")
+        for kind in ("audit", "design"):
+            result = self.call(kind, "check_citations.py", {"evidence": "`(custom)/file.md:3`"}, "--root", self.root)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["counts"]["found"], 1)
+            self.assertEqual(report["resolved"], [{"citation": "(custom)/file.md:3", "root": str(self.root)}])
+
+    def test_requirement_checks_and_workflow_points(self):
+        record = {"plan": {"requirements": [{"id": "V1", "check": "Check V1."}]},
+                  "workflow": {"self_review_points": ["Review V9."]}}
+        for kind in ("audit", "design"):
+            result = self.call(kind, "check_citations.py", record)
+            self.assertEqual(result.returncode, 3, result.stdout + result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["counts"]["requirements"], 1)
+            self.assertEqual(report["counts"]["unknown-requirement"], 1)
+            self.assertEqual(report["citations"], [{"citation": "V9", "entry": "$.workflow.self_review_points[0]",
+                                                      "status": "unknown-requirement"}])

@@ -1,5 +1,38 @@
 # Changelog
 
+## skills/v1.5.0 (2026-09-13)
+
+Pins unchanged `corpus/v1.0.0`. Source: the two 2026-09-12 v1.4.0 like-for-like
+observation batches (Codex and Claude Code) and their cross-family reviews, recorded
+in the maintainer's local skills backlog. v1.4.0 records validate after changing only
+`skill.version` to 1.5.0; cause grouping is optional and adds no required field.
+
+- Inspect accessible in-scope source before declaring evidence unavailable; every
+  insufficient-evidence entry explains what is missing and why inspected source does
+  not settle the question. Readable source does not force a verdict.
+- Five artifact examples distinguish defects from insufficient evidence about
+  records the principles ask for, without proposing fixes.
+- Both procedures place the optional source fetch command in step 4 and refer
+  back to it when recording unavailable-source JSON.
+- The audit procedure scaffolds and fills `record.draft.json`, routes it into
+  the finished `record.json`, and renders from that record.
+- Optional audit `cause_groups` objects carry a cause description and at least two
+  defect check indices. Validation checks structure and warns on byte-identical defect
+  evidence without inferring a cause. The Summary reports author-assigned groups and
+  ungrouped defect rows separately; every checklist answer retains its own judgment.
+- Citation paths accept parentheses, including `(custom)/file.md:3`.
+- Citation checking scans requirement `check` and workflow `self_review_points`
+  strings, including their requirement-id references.
+- Audit free observations retain record order within their principle; checklist
+  rows retain checklist order. Plan summaries count applied cards with unknown conditions.
+- Resolution notices follow exactly one period after the condition text.
+
+All five expected renders were regenerated. `audit-known-defect/expected.md` and
+`audit-missing-evidence/expected.md` change for the skill version and P5 summary;
+S3 preserves their existing row order. `design-sound/expected.md` and
+`design-applicability-violation/expected.md` change for the skill version and S3 summary.
+`design-resolved/expected.md` changes for the skill version, S3 summary and S4 separator.
+
 ## skills/v1.4.0 (2026-09-12)
 
 Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-12 Claude Code observation batch,

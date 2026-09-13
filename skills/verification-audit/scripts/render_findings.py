@@ -14,6 +14,9 @@ def render(record, catalog, meta):
     lines = header("Verification findings", record, catalog, meta)
     totals = counts(record)
     lines += ["## Summary", "", f'Defects: {totals["defects"]}. ' + "; ".join(f'{s}: {n}' for s, n in totals["severity"].items()) + ".", ""]
+    groups = record.get("cause_groups", [])
+    grouped = {i for group in groups for i in group["checks"]}
+    lines += [f'Author-assigned cause groups: {len(groups)}; ungrouped defect rows: {totals["defects"] - len(grouped)}.', ""]
     lines += [f'- {s}: {n}' for s, n in totals["statuses"].items()] + ["", "Unmapped defects:", ""]
     unmapped = [c for c in record["checks"] if c["status"] == "defect" and c["failure"] == "unmapped"]
     for check in unmapped:
@@ -22,7 +25,7 @@ def render(record, catalog, meta):
         lines += ["None."]
     lines.append("")
     order = {q: i for i, (_, q) in enumerate(checklist())}
-    checks = sorted(record["checks"], key=lambda c: (c["principle"] or 10, order.get(c["question"], len(order)), c["question"]))
+    checks = sorted(record["checks"], key=lambda c: (c["principle"] or 10, order.get(c["question"], len(order))))
     for heading, status in (("Defects", "defect"), ("Checked and sound", "sound"), ("Not applicable", "not-applicable"), ("Not checked", "not-checked"), ("Insufficient evidence", "insufficient-evidence"), ("Observed outside scope", "out-of-scope")):
         lines += ["## " + heading, ""]
         selected = [c for c in checks if c["status"] == status]

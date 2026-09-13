@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.4.0"
+  version: "1.5.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -47,23 +47,32 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/load_catalog.py --check
    ```
 
-3. Scaffold the record at an operator-visible path. The scaffold carries the `skill`
+3. Scaffold `record.draft.json` at an operator-visible path. The scaffold carries the `skill`
    identity (name, version and the pinned hashes) so the record states which question
    set judged it; do not edit that object.
 
    ```bash
-   python3 scripts/scaffold_record.py --artifact "resolved artifact" --scope "resolved scope" --output /absolute/path/record.json
+   python3 scripts/scaffold_record.py --artifact "resolved artifact" --scope "resolved scope" --output /absolute/path/record.draft.json
    ```
 
 4. Read `assets/catalog.json`, [principles-checklist.md](references/principles-checklist.md)
-   and [findings-record.md](references/findings-record.md). Fill every scaffold question
+   and [findings-record.md](references/findings-record.md).
+
+   Retrieve source text only through this command when prose beyond the structured catalog is needed:
+
+   ```bash
+   python3 scripts/load_catalog.py fetch principles --offline
+   ```
+
+   Fill every scaffold question in `record.draft.json`
    against the artifact, with evidence for sound and defect judgments and reasons for
    the other statuses. An unmapped defect needs a non-empty `failure_note`.
    Free defects use original questions. Record uncertainty rather
    than inventing a defect; scripts do not make these judgments. A record the principle
    asks for is a defect when the artifact has no way to produce it; when it would come
    from a stage outside the evidence set (a run, a CI report), record
-   `insufficient-evidence` and name the receipt that would settle it.
+   `insufficient-evidence` and name the evidence that would settle it, inspecting
+   accessible in-scope source before recording that status.
    Use `not-applicable` with a reason when a question cannot apply to the artifact and scope.
    Use `out-of-scope` free observations for things fresh eyes noticed that the scope excludes, never as defects.
    Fill the record-level fields as well:
@@ -82,46 +91,40 @@ Run commands from this skill directory, with absolute paths for operator-visible
    fails, stop and report it without changing the pin.
 
    ```bash
-   python3 scripts/validate_findings.py /absolute/path/record.json
+   python3 scripts/validate_findings.py /absolute/path/record.draft.json
    ```
 
 6. Check artifact citation existence and bounds. Require exit 0 or record an explanation
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any exit-4 JSON objects from the `load_catalog.py fetch ... --offline` command
-   under Source text below into the record's `unavailable_sources` list before final
-   validation and rendering.
+   Paste any exit-4 JSON objects from the fetch command in step 4 into the record's
+   `unavailable_sources` list before final validation and rendering.
 
    ```bash
-   python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
+   python3 scripts/check_citations.py /absolute/path/record.draft.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
    ```
 
 7. Route validated defects through the packaged failure map. Routing is a lookup: it
    attaches every card the map lists for the failure string as a candidate and makes no
    applicability judgment. Before routing, name in `related_cards` the candidates you
-   judge applicable, or any card for an unmapped defect. The routed file is the finished
-   record from here on; cite it, not the draft.
+   judge applicable, or any card for an unmapped defect. The routed `record.json` is the finished
+   record from here on; cite it, not `record.draft.json`.
 
    ```bash
-   python3 scripts/route_failures.py /absolute/path/record.json --output /absolute/path/record.routed.json
+   python3 scripts/route_failures.py /absolute/path/record.draft.json --output /absolute/path/record.json
    ```
 
 8. Render the findings from the routed record (an unrouted record is routed on the way):
 
    ```bash
-   python3 scripts/render_findings.py /absolute/path/record.routed.json --output /absolute/path/findings.md
+   python3 scripts/render_findings.py /absolute/path/record.json --output /absolute/path/findings.md
    ```
 
 9. Complete the closing checklist. No fix proposals anywhere in the output.
 
-Source text is optional. If a question needs prose beyond the structured catalog,
-retrieve it only through this command (replace `principles` with a catalog card id
-for card text):
-
-```bash
-python3 scripts/load_catalog.py fetch principles --offline
-```
+Source text is optional; step 4 supplies the fetch command. Replace `principles`
+with a catalog card id for card text.
 
 Omit `--offline` only when source retrieval is wanted and network is available.
 When `load_catalog.py fetch` reports unavailable, continue on the structured fields
@@ -182,9 +185,10 @@ invocation controls do not prevent a model from opening it as a file.
 - `artifact_identity` and `measurements` cover what was read and run. When there is no
   artifact, omit both and record that in a `measurement-basis` assumption.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
-- The routed record is the file cited as the record; `related_cards` names judged cards where routing offered candidates,
+- The routed `record.json` is the file cited as the record; `related_cards` names judged cards where routing offered candidates,
   or is absent when no card applies. An unmapped defect with a `failure_note` is a complete answer.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
+- Every `insufficient-evidence` entry names the missing evidence and explains why inspected sources do not settle the question.
 - Unknown judgments and unavailable evidence remain visible.
 - Output rendered to the requested file and substantive judgments left for operator review.
 - Defects, Checked and sound, Not applicable, Not checked, Insufficient evidence, and Observed outside scope sections present; no fix proposals.

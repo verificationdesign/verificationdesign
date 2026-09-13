@@ -38,7 +38,25 @@ a validator gap.
 
 `failure_note` is a string required and non-empty on an unmapped defect (why no mapped
 failure applies, or the shared cause), optional on a mapped defect, and empty otherwise.
-It renders whenever non-empty. The six mapped failures are routing aids,
+It renders whenever non-empty.
+
+Optional record-level `cause_groups` is a list of objects such as
+`{"cause": "Missing criteria provenance", "checks": [2, 5]}`. `cause` is a non-empty
+string describing the auditor's shared-cause judgment; `checks` lists at least two
+unique zero-based indices into the record's `checks` array. Every member must name an
+existing defect entry, and no entry may belong to two groups. An absent field or an
+empty list assigns no groups. Rule `cause-groups` checks this structure only, not the
+truth of the grouping. Every checklist question still appears exactly once with its
+own status, evidence and severity; never file a shared cause once and substitute a
+`failure_note` reference for another question's answer. Update indices if rows move.
+The Summary reports author-assigned cause groups and ungrouped defect rows separately;
+optional grouping cannot establish a complete count of distinct causes.
+On successful validation, `warnings` lists defect entries with byte-identical evidence
+under rule `identical-defect-evidence`, whether grouped or not. Identical evidence
+suggests one cause and does not establish it. These warnings are advisory and do not
+change the exit code.
+
+The six mapped failures are routing aids,
 not an exhaustive taxonomy; they describe agent behaviors, so a structural defect (a
 missing criteria version, a mutable dependency reference) is often `unmapped`, and that
 is the correct answer, not a gap to force. The router computes `cards` and `routed` only
@@ -50,10 +68,10 @@ applicable; on an unmapped defect it may name any card, rendered as cards named 
 judgment. Non-defects cannot carry it. The renderer rejects incorrect routing.
 
 Rules: `structure`, `coverage` (including free out-of-scope restrictions), `status`
-(the six statuses above), `evidence`, `failure`, `severity`, `routing`, plus the shared
+(the six statuses above), `evidence`, `failure`, `severity`, `routing`, `cause-groups`, plus the shared
 rules `skill`, `models`, `assumptions`, `measurements`, `artifact-identity` and
 `unavailable-sources`. Errors report card (null), check index, rule and message; exit 3.
-Success reports checks, defects, counts per status and defects by severity; exit 0.
+Success reports checks, defects, counts per status, defects by severity and a `warnings` list; exit 0.
 An emitted scaffold fails `status`, `evidence` and `models`, never passing as a finished audit.
 
 ## Shared record fields
@@ -103,6 +121,21 @@ assumption states which stage was examined so a reader can tell the two apart.
 For a document artifact, "no way to produce it" means the document does not state it;
 values only a run could show are `insufficient-evidence`. The `artifact-stage`
 assumption states which reading was applied.
+
+Inspect relevant, accessible source within scope before declaring evidence unavailable.
+Judge structural claims from that source. Retain `insufficient-evidence` wherever the
+available evidence does not settle the question, naming what would settle it. Readable
+source does not force a verdict; runtime receipts (a CI run, a review record, a failed
+checkpoint, a run log) are not the only permitted uncertainty.
+
+| Artifact | Defect | Insufficient evidence |
+| --- | --- | --- |
+| Test suite | Inspected result writer omits the criteria version | Result schema is provided only by an unavailable plugin needed to establish criteria-version recording |
+| Library | Inspected review-result type has no judge identity field | Unavailable caller configuration would establish the judge identity passed to the library |
+| Document | Inspected workflow document states no escalation route | Referenced decision record needed to establish the escalation route is unavailable |
+| CI configuration | Inspected job discards the delta instead of recording it | Missing run log would establish whether the configured delta was recorded |
+| Absent artifact | Inspected in-scope specification explicitly excludes checkpoint records | Neither the artifact nor source establishing checkpoint recording is available |
+
 Severity carries how much a defect matters here. Applying a design card is a separate
 applicability judgment.
 
@@ -119,7 +152,7 @@ the file's directory when it does not exist yet. FILE receives the record with a
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
 Run `check_citations.py record.json [--root DIR ...] [--output FILE|-]` after validation.
-It scans evidence, reason, statement, note and instantiation strings for `path:N` or
+It scans evidence, reason, statement, note, instantiation, check and self_review_points strings for `path:N` or
 `path:N-M` (paths must contain a dot or slash). Every cited line range carries its path;
 a bare range after a comma is prose and is not checked. When the record has a plan, it also checks
 that every requirement id mentioned in those strings (`V2`, `V3`) exists in

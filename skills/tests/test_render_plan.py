@@ -286,3 +286,27 @@ class RenderContractTests(ScriptCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(json.loads(result.stdout), {'text': self.text()})
         self.assertEqual(result.stderr, '')
+
+    def test_applied_unknown_summary_counts_cards(self):
+        self.assertIn("Applied cards with unknown conditions: 0.", self.section("Summary"))
+        applied = [c for c in self.value["cards"] if c["decision"] == "apply"]
+        self.assertGreaterEqual(len(applied), 2)
+        for count, card in enumerate(applied, 1):
+            for condition in card["use_when"][1:]:
+                condition.update(verdict="unknown", evidence="No source settles this condition.")
+            self.assertIn(f"Applied cards with unknown conditions: {count}.", self.section("Summary"))
+        self.assertIn("Operator decisions:\n\nNone.", self.section("Summary"))
+        self.assertIn("Decision: apply", self.section("Not verified"))
+
+    def test_resolution_separator_has_exactly_one_period(self):
+        self.value = json.loads((ROOT / "skills/fixtures/design-resolved/record.json").read_text())
+        card = next(c for c in self.value["cards"] if "resolution" in c)
+        condition = next(c for g in ("use_when", "do_not_use_when") for c in card[g] if c["verdict"] == "unknown")
+        original = condition["condition"].rstrip(".")
+        for suffix in ("", "."):
+            condition["condition"] = original + suffix
+            # Raw render isolates punctuation; the pinned condition text is not edited.
+            text = renderer.render(self.value, self.catalog, self.meta)
+            summary = text.split("## Summary\n", 1)[1].split("\n## ", 1)[0]
+            self.assertIn(original + ". Resolution recorded " + card["resolution"]["date"] + ".\n", summary)
+            self.assertNotIn(".. Resolution recorded", summary)

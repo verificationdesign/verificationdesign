@@ -113,10 +113,44 @@ def validate(record, catalog=None, questions=None, meta=None):
             elif (isinstance(check.get("failure"), str) and check["failure"] in mapped
                   and not set(related) <= mapped[check["failure"]]):
                 fail(i, "routing", "related_cards on a mapped defect must be drawn from that failure's candidate cards")
+    groups = record.get("cause_groups", [])
+    if not isinstance(groups, list):
+        fail(None, "cause-groups", "cause_groups must be a list")
+    else:
+        grouped = set()
+        for group_index, group in enumerate(groups):
+            label = f"cause_groups[{group_index}]"
+            if (not isinstance(group, dict) or set(group) != {"cause", "checks"}
+                    or not nonempty(group.get("cause"))):
+                fail(None, "cause-groups", label + " must contain a non-empty cause and checks")
+                continue
+            members = group["checks"]
+            if not isinstance(members, list) or len(members) < 2:
+                fail(None, "cause-groups", label + " must have at least two members")
+                continue
+            for member in members:
+                if (type(member) is not int or not 0 <= member < len(checks)
+                        or not isinstance(checks[member], dict)
+                        or checks[member].get("status") != "defect"):
+                    fail(None, "cause-groups", label + " members must index existing defect entries")
+                elif member in grouped:
+                    fail(member, "cause-groups", "a defect entry may occur only once across cause_groups")
+                else:
+                    grouped.add(member)
     for _, question in questions:
         if seen.count(question) != 1:
             fail(None, "coverage", "checklist question must appear exactly once: " + question)
     return errors
+
+
+def warnings(record):
+    by_evidence = {}
+    for i, check in enumerate(record["checks"]):
+        if check["status"] == "defect":
+            by_evidence.setdefault(check["evidence"], []).append(i)
+    return [{"rule": "identical-defect-evidence", "checks": members,
+             "message": "Byte-identical evidence suggests a shared cause but does not establish one."}
+            for members in by_evidence.values() if len(members) > 1]
 
 
 def counts(record):
@@ -138,7 +172,7 @@ def main():
         emit(errors)
         print("findings validation failed", file=sys.stderr)
         return 3
-    emit(dict(valid=True, **counts(record)))
+    emit(dict(valid=True, **counts(record), warnings=warnings(record)))
     return 0
 
 

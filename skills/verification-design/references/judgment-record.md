@@ -122,7 +122,7 @@ the file's directory when it does not exist yet. FILE receives the record with a
 on stdout; `-` emits one JSON envelope containing `record` and `counts`.
 
 Run `check_citations.py record.json [--root DIR ...] [--output FILE|-]` after validation.
-It scans evidence, reason, statement, note and instantiation strings for `path:N` or
+It scans evidence, reason, statement, note, instantiation, check and self_review_points strings for `path:N` or
 `path:N-M` (paths must contain a dot or slash). Every cited line range carries its path;
 a bare range after a comma is prose and is not checked. When the record has a plan, it also checks
 that every requirement id mentioned in those strings (`V2`, `V3`) exists in

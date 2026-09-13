@@ -25,6 +25,11 @@ def render(record, catalog, meta):
     lines[start:start] = plan_lines
     totals = counts(record)
     lines += ["## Summary", "", f'Apply: {totals["apply"]}; reject: {totals["reject"]}; undecided: {totals["undecided"]}; unknown verdicts: {totals["unknown"]}.', ""]
+    applied_unknown = sum(c["decision"] == "apply" and any(
+        condition["verdict"] == "unknown"
+        for group in ("use_when", "do_not_use_when") for condition in c[group])
+        for c in record["cards"])
+    lines += [f'Applied cards with unknown conditions: {applied_unknown}.', ""]
     lines += [f'Requirements: {len(plan["requirements"])}', ""]
     by_id = {c["id"]: c for c in record["cards"]}
     lines += ["Operator decisions:", ""]
@@ -33,7 +38,7 @@ def render(record, catalog, meta):
         unknowns = [c["condition"] for g in ("use_when", "do_not_use_when") for c in by_id[card["id"]][g] if c["verdict"] == "unknown"]
         lines += [f'- {card["title"]}: ' + "; ".join(unknowns)]
         if "resolution" in by_id[card["id"]]:
-            lines[-1] += f' Resolution recorded {by_id[card["id"]]["resolution"]["date"]}.'
+            lines[-1] = lines[-1].rstrip().rstrip(".") + f'. Resolution recorded {by_id[card["id"]]["resolution"]["date"]}.'
     if not undecided:
         lines += ["None."]
     lines.append("")
