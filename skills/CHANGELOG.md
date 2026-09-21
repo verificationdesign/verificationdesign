@@ -1,5 +1,19 @@
 # Changelog
 
+## skills/v1.5.1 (2026-09-20)
+
+Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-13 to 2026-09-19 host observation
+runs recorded in the maintainer's local skills backlog. A patch release with no
+judgment behavior changes. v1.5.0 records validate after changing only
+`skill.version` to 1.5.1.
+
+- Citation checking normalizes parenthesized references before counting or resolving
+  them, preserving literal paths that exist as written under any supplied root.
+- The audit host names the routed record when reporting; the rendered document does
+  not need a line naming that file.
+- Both procedures place the unavailable-source paste instruction directly after
+  the fetch command, before record validation.
+
 ## skills/v1.5.0 (2026-09-13)
 
 Pins unchanged `corpus/v1.0.0`. Source: the two 2026-09-12 v1.4.0 like-for-like

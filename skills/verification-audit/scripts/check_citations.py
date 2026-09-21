@@ -48,7 +48,9 @@ def check(record, roots):
             path, start, end = match.groups()
             if not ("." in path or "/" in path):
                 continue
-            citation = match.group()
+            if path.startswith("(") and not any((Path(r) / path).is_file() for r in roots):
+                path = path[1:]
+            citation = path + ":" + start + ("-" + end if end is not None else "")
             entries.setdefault(citation, set()).add(entry)
             if citation in seen:
                 continue

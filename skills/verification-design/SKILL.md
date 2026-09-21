@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.5.0"
+  version: "1.5.1"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -67,6 +67,9 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/load_catalog.py fetch principles --offline
    ```
 
+   Paste any exit-4 JSON objects from this command into the record's
+   `unavailable_sources` list before final validation and rendering.
+
 5. Write `plan.design` (two to eight sentences describing the components and workflow)
    and numbered `plan.requirements`, each stating what must be true and naming the
    check, its inputs, and what pass and fail look like. Read an existing design document
@@ -107,8 +110,6 @@ Run commands from this skill directory, with absolute paths for operator-visible
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any exit-4 JSON objects from the fetch command in step 4 into the record's
-   `unavailable_sources` list before final validation and rendering.
 
    ```bash
    python3 scripts/check_citations.py /absolute/path/record.json --root /absolute/path/artifact-dir --root /absolute/path/evidence

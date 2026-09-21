@@ -172,3 +172,69 @@ class CitationTests(ScriptCase):
             self.assertEqual(report["counts"]["unknown-requirement"], 1)
             self.assertEqual(report["citations"], [{"citation": "V9", "entry": "$.workflow.self_review_points[0]",
                                                       "status": "unknown-requirement"}])
+
+    def assert_parenthesized_report(self, record, citation, status="found", roots=None, resolved_root=None):
+        roots = roots or [self.root]
+        for kind in ("audit", "design"):
+            with self.subTest(kind=kind):
+                args = [arg for root in roots for arg in ("--root", root)]
+                result = self.call(kind, "check_citations.py", record, *args)
+                self.assertEqual(result.returncode, 0 if status == "found" else 3, result.stdout + result.stderr)
+                report = json.loads(result.stdout)
+                counts = dict(found=0, missing=0, **{"out-of-bounds": 0, "requirements": 0, "unknown-requirement": 0})
+                counts[status] = 1
+                self.assertEqual(report["counts"], counts)
+                if status == "found":
+                    self.assertEqual(report["citations"], [])
+                    self.assertEqual(report["resolved"], [{"citation": citation,
+                        "root": resolved_root if resolved_root is not None else str(roots[0])}])
+                else:
+                    self.assertEqual(report["resolved"], [])
+                    self.assertEqual(report["citations"], [{"citation": citation, "entry": "$.evidence", "status": status}])
+                expected = [{"citation": citation, "entries": 3}] if len(record) == 3 else []
+                self.assertEqual(report["repeated"], expected)
+
+    def test_parenthesized_reference_resolves(self):
+        self.assert_parenthesized_report({"evidence": "(sample.txt:3)"}, "sample.txt:3")
+
+    def test_parenthesized_reference_range_resolves(self):
+        (self.root / "dir").mkdir()
+        (self.root / "dir/x.md").write_text("one\ntwo\nthree\nfour\nfive\n")
+        self.assert_parenthesized_report({"evidence": "see (dir/x.md:3-5)."}, "dir/x.md:3-5")
+
+    def test_parenthesized_missing_reference_normalizes(self):
+        self.assert_parenthesized_report({"evidence": "(nope.md:1)"}, "nope.md:1", "missing")
+
+    def test_parenthesized_reference_bounds(self):
+        self.assert_parenthesized_report({"evidence": "(sample.txt:2-4)"}, "sample.txt:2-4", "out-of-bounds")
+
+    def test_parenthesized_mixed_spelling_identity(self):
+        self.assert_parenthesized_report({"evidence": "sample.txt:3", "note": "(sample.txt:3)",
+            "reason": "(sample.txt:3)"}, "sample.txt:3")
+
+    def test_parenthesized_directory_second_root_precedes_stripping(self):
+        second = self.root / "second"
+        (second / "(custom)").mkdir(parents=True)
+        (second / "(custom)/file.md").write_text("one\ntwo\nthree\n")
+        (self.root / "custom)").mkdir()
+        (self.root / "custom)/file.md").write_text("one\ntwo\nthree\n")
+        self.assert_parenthesized_report({"evidence": "(custom)/file.md:3"}, "(custom)/file.md:3",
+            roots=[self.root, second], resolved_root=str(second))
+
+    def test_parenthesized_written_path_keeps_bounds_failure(self):
+        (self.root / "(sample.txt").write_text("one\n")
+        self.assert_parenthesized_report({"evidence": "(sample.txt:3)"}, "(sample.txt:3", "out-of-bounds")
+
+    def test_parenthesized_reference_strips_only_one_character(self):
+        self.assert_parenthesized_report({"evidence": "((nope.md:1)"}, "(nope.md:1", "missing")
+
+    def test_parenthesized_absolute_reference_resolves(self):
+        citation = str(self.root / "sample.txt") + ":3"
+        for kind in ("audit", "design"):
+            with self.subTest(kind=kind):
+                result = self.call(kind, "check_citations.py", {"evidence": "(" + citation + ")"}, "--root", self.root)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                report = json.loads(result.stdout)
+                self.assertEqual(report["counts"]["found"], 1)
+                self.assertEqual(report["citations"], [])
+                self.assertEqual(report["resolved"], [{"citation": citation, "root": None}])

@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.5.0"
+  version: "1.5.1"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -64,6 +64,9 @@ Run commands from this skill directory, with absolute paths for operator-visible
    python3 scripts/load_catalog.py fetch principles --offline
    ```
 
+   Paste any exit-4 JSON objects from this command into the record's
+   `unavailable_sources` list before final validation and rendering.
+
    Fill every scaffold question in `record.draft.json`
    against the artifact, with evidence for sound and defect judgments and reasons for
    the other statuses. An unmapped defect needs a non-empty `failure_note`.
@@ -98,8 +101,6 @@ Run commands from this skill directory, with absolute paths for operator-visible
    in `assumptions`, then revalidate. This check does not assess evidence meaning.
    A root is required whenever the record cites files; roots are directories.
    Several roots may be given; first file match wins, so order them deliberately.
-   Paste any exit-4 JSON objects from the fetch command in step 4 into the record's
-   `unavailable_sources` list before final validation and rendering.
 
    ```bash
    python3 scripts/check_citations.py /absolute/path/record.draft.json --root /absolute/path/artifact-dir --root /absolute/path/evidence
@@ -109,7 +110,7 @@ Run commands from this skill directory, with absolute paths for operator-visible
    attaches every card the map lists for the failure string as a candidate and makes no
    applicability judgment. Before routing, name in `related_cards` the candidates you
    judge applicable, or any card for an unmapped defect. The routed `record.json` is the finished
-   record from here on; cite it, not `record.draft.json`.
+   record from here on; name that file, not `record.draft.json`, when reporting.
 
    ```bash
    python3 scripts/route_failures.py /absolute/path/record.draft.json --output /absolute/path/record.json
@@ -185,7 +186,8 @@ invocation controls do not prevent a model from opening it as a file.
 - `artifact_identity` and `measurements` cover what was read and run. When there is no
   artifact, omit both and record that in a `measurement-basis` assumption.
 - Citation check exited 0 or its failures are explained in assumptions; record revalidated.
-- The routed `record.json` is the file cited as the record; `related_cards` names judged cards where routing offered candidates,
+- The routed `record.json` is the record of record and the file the host names when it reports,
+  not a line in the rendered document; `related_cards` names judged cards where routing offered candidates,
   or is absent when no card applies. An unmapped defect with a `failure_note` is a complete answer.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Every `insufficient-evidence` entry names the missing evidence and explains why inspected sources do not settle the question.
