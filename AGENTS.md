@@ -155,6 +155,7 @@ This is a local notes repo, not a security harness. Keep verification a lightwei
 
 - Verify: `python3 -m research_tools verify`
 - Verify including scout artifact links: `python3 -m research_tools verify --include-scout-links`
+- Link liveness confirms arXiv abs and pdf links by id through the export API in batches, with delays fixed in code. HTTP 429, or 406 from arXiv, is throttled rather than dead and stops requests to that host; any export API failure stops all arXiv checks. A stop fails the check whatever is confirmed: rerun later, never retry in a loop.
 - Scout: `python3 -m research_tools scout --dry-run`
 - Scout exact window: `python3 -m research_tools scout --start-date 2026-05-30 --end-date 2026-06-02`
 - Pattern lint: `python3 ai-design-patterns/scripts/lint_patterns.py`

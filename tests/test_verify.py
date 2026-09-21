@@ -192,39 +192,163 @@ class VerifyTests(unittest.TestCase):
         self.profile = replace(self.profile, principles={"a": "Seasonal sampling"})
         self.assert_failure("principles match canonical doc", "count observed 3, expected 1")
 
-    def test_links(self):
-        requested = []
+    def link_fakes(self, missing=(), api_status=None, api_body=None, page_status=None, retry_after=None):
+        """Fake fetch and sleep sharing one event trace.
+
+        The export API lists every requested id except `missing`, each at version 2. Ids must
+        arrive unversioned: live API behavior for a pinned id is unverified, so the checker
+        never relies on it. `api_status` maps a 1-based API request number to an HTTP error status.
+        """
+        events = []
+        api_status, page_status = api_status or {}, page_status or {}
+        headers = {"Retry-After": retry_after} if retry_after else {}
         class Response:
-            def __init__(self, status): self.status = status
+            def __init__(self, status, body=b""): self.status, self.body = status, body
             def __enter__(self): return self
             def __exit__(self, *args): pass
+            def read(self): return self.body
+        def http_error(url, status):
+            error = verify.urllib.error.HTTPError(url, status, "", headers, None)
+            self.addCleanup(error.close)
+            return error
         def fetch(request, timeout):
+            url = request.full_url
+            if url.startswith(verify.ARXIV_API_URL):
+                self.assertEqual(timeout, 60)
+                query = verify.urllib.parse.parse_qs(verify.urllib.parse.urlsplit(url).query)
+                ids = query["id_list"][0].split(",")
+                self.assertEqual(query["max_results"], [str(len(ids))])
+                events.append(("API", ids))
+                number = sum(1 for kind, _ in events if kind == "API")
+                if number in api_status:
+                    raise http_error(url, api_status[number])
+                if api_body is not None:
+                    return Response(200, api_body)
+                for requested in ids:
+                    self.assertNotRegex(requested, r"v\d+$")
+                entries = "".join(f"<entry><id>http://arxiv.org/abs/{i}v2</id></entry>" for i in ids if i not in missing)
+                return Response(200, f'<feed xmlns="http://www.w3.org/2005/Atom"><id>q</id>{entries}</feed>'.encode())
             self.assertEqual(timeout, 15)
-            requested.append(request.full_url)
-            return Response(200)
-        checks = self.run_checks(skip_links=False, fetch=fetch)
-        self.assertTrue(all(c.ok for c in checks), checks)
-        expected = set(URLS) | {"https://arxiv.org/abs/2605.30244", "https://arxiv.org/abs/2605.29711", "https://arxiv.org/abs/2605.29277"}
-        self.assertEqual(set(requested), expected)
-        self.assertEqual(len(requested), 5)
-        self.assertEqual(checks[0].observed, "5 unique URLs checked; 0 manually confirmed; 0 failures")
-        def bad_fetch(request, timeout):
-            return Response(404 if request.full_url == URLS[0] else 200)
-        checks = self.run_checks(skip_links=False, fetch=bad_fetch)
-        self.assertEqual([c.name for c in checks if not c.ok], ["link liveness"])
-        self.assertEqual(checks[0].details, [URLS[0] + " -> HTTP 404"])
-        # A confirmation is consulted only after the fetch fails, so confirmed URLs are still re-tested.
+            events.append((request.get_method(), url))
+            status = page_status.get((request.get_method(), url), page_status.get(url, 200))
+            if status >= 400:
+                raise http_error(url, status)
+            return Response(status)
+        return fetch, (lambda seconds: events.append(("sleep", seconds))), events
+
+    def links(self, **fakes):
+        fetch, sleep, events = self.link_fakes(**fakes)
+        checks = self.run_checks(skip_links=False, fetch=fetch, sleep=sleep)
+        self.assertEqual([c.name for c in checks if not c.ok], [] if checks[0].ok else ["link liveness"])
+        return checks[0], events
+
+    def write_links(self, urls):
+        (self.root / "README.md").write_text("\n".join(f"- <{url}>" for url in urls) + "\n")
+
+    STOP = " This is a stop, not a dead link: rerun later, do not retry now."
+    FIXTURE_IDS = ["2601.00001", "2601.00002", "2605.29277", "2605.29711", "2605.30244"]
+
+    def test_links(self):
+        check, events = self.links()
+        self.assertTrue(check.ok, check)
+        # Five arXiv abs URLs cost one export API request and no arxiv.org page request.
+        self.assertEqual(events, [("API", self.FIXTURE_IDS)])
+        self.assertEqual(check.observed, "5 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 0 manually confirmed; 0 dead; 0 not checked")
+        check, events = self.links(missing={"2601.00001"})
+        self.assertEqual(check.details, [URLS[0] + " -> not listed by the arXiv export API"])
+        # A confirmation is consulted only after the check fails, so confirmed URLs are still re-tested.
         (self.root / "research/link-confirmations.txt").write_text(f"2026-09-11 {URLS[0]} -- Checked manually\n")
-        requested.clear()
-        def bad_fetch_recording(request, timeout):
-            requested.append(request.full_url)
-            return Response(404 if request.full_url == URLS[0] else 200)
-        checks = self.run_checks(skip_links=False, fetch=bad_fetch_recording)
-        self.assertIn(URLS[0], requested)
-        self.assertTrue(checks[0].ok, checks[0])
-        self.assertEqual(checks[0].observed, "5 unique URLs checked; 1 manually confirmed; 0 failures")
-        checks = self.run_checks(skip_links=False, fetch=fetch)
-        self.assertEqual(checks[0].observed, "5 unique URLs checked; 0 manually confirmed; 0 failures")
+        check, events = self.links(missing={"2601.00001"})
+        self.assertEqual(events, [("API", self.FIXTURE_IDS)])
+        self.assertTrue(check.ok, check)
+        self.assertEqual(check.observed, "5 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 1 manually confirmed; 0 dead; 0 not checked")
+        check, events = self.links()
+        self.assertEqual(check.observed, "5 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 0 manually confirmed; 0 dead; 0 not checked")
+
+    def test_links_arxiv_batches(self):
+        ids = [f"2602.{n:05d}" for n in range(1, 253)]
+        self.write_links([f"https://arxiv.org/abs/{i}" for i in ids])
+        check, events = self.links()
+        self.assertTrue(check.ok, check)
+        # 252 README ids plus the five fixture ids: batches of 100, 100 and 57, the scout's
+        # ten seconds between them and none before the first.
+        self.assertEqual([len(e[1]) if e[0] == "API" else e for e in events], [100, ("sleep", 10.0), 100, ("sleep", 10.0), 57])
+
+    def test_links_arxiv_url_shapes_and_versions(self):
+        self.write_links([
+            "https://arxiv.org/abs/2602.00001", "https://arxiv.org/pdf/2602.00001v1",
+            "https://www.arxiv.org/pdf/2602.00002v2.pdf", "https://arxiv.org/abs/2602.00002v1/",
+            "https://arxiv.org/abs/2602.00003v1", "https://arxiv.org/abs/2602.00003v9",  # v9 does not exist, v1 does
+            "https://arxiv.org/abs/cs/0101001v1", "https://arxiv.org/pdf/math.AG/0101002",  # legacy ids
+            "https://arxiv.org/abs/2602.00004.pdf", "https://arxiv.org/abs/2602.00005?context=cs",  # not id URLs
+            "https://arxiv.org/abs/2602.00006v0",  # versions start at 1, so this is not an id URL either
+        ])
+        check, events = self.links()
+        self.assertEqual(events, [
+            ("API", sorted(self.FIXTURE_IDS + ["2602.00001", "2602.00002", "2602.00003", "cs/0101001", "math.AG/0101002"])),
+            # Shapes the id pattern rejects fall through to the paced page check; none is dropped.
+            ("sleep", 10.0), ("HEAD", "https://arxiv.org/abs/2602.00004.pdf"),
+            ("sleep", 10.0), ("HEAD", "https://arxiv.org/abs/2602.00005?context=cs"),
+            ("sleep", 10.0), ("HEAD", "https://arxiv.org/abs/2602.00006v0"),
+        ])
+        self.assertEqual(check.details, ["https://arxiv.org/abs/2602.00003v9 -> version not listed by the arXiv export API (listed v2)"])
+        self.assertEqual(check.observed, "16 unique URLs; 13 arXiv URLs as 10 ids via 1 API requests; 0 manually confirmed; 1 dead; 0 not checked")
+
+    def test_links_arxiv_highest_listed_version_wins(self):
+        self.write_links(["https://arxiv.org/abs/2602.00001v2", "https://arxiv.org/abs/2602.00001v4"])
+        feed = "".join(f"<entry><id>http://arxiv.org/abs/{i}</id></entry>" for i in ["2602.00001v3", "2602.00001v1"] + [i + "v1" for i in self.FIXTURE_IDS])
+        check, events = self.links(api_body=f'<feed xmlns="http://www.w3.org/2005/Atom">{feed}</feed>'.encode())
+        self.assertEqual(check.details, ["https://arxiv.org/abs/2602.00001v4 -> version not listed by the arXiv export API (listed v3)"])
+
+    def test_links_arxiv_api_failure_stops_all_arxiv_checks(self):
+        self.write_links(["https://arxiv.org/html/2602.00001", "https://export.arxiv.org/abs/x?y", "https://example.org/a"])
+        for status, label in ((429, "HTTP 429 (throttled), Retry-After 120"), (406, "HTTP 406 (throttled), Retry-After 120"), (500, "HTTP 500, Retry-After 120")):
+            check, events = self.links(api_status={1: status}, retry_after="120")
+            # One API request, no retry, no sleep on Retry-After, and no arXiv page request after the stop.
+            self.assertEqual(events, [("API", self.FIXTURE_IDS), ("HEAD", "https://example.org/a")])
+            self.assertEqual(check.observed, "8 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 0 manually confirmed; 0 dead; 7 not checked")
+            self.assertEqual(check.details, [f"arXiv export API -> {label}: 7 URLs not checked." + self.STOP])
+        for body, label in ((b"<html>busy</html>", "unexpected API response root html"), (b"not xml", "syntax error: line 1, column 0"),
+                            (b'<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>http://arxiv.org/api/errors#incorrect_id_format_for_x</id>'
+                             b"<summary>incorrect id format for x</summary></entry></feed>", "API error entry: incorrect id format for x")):
+            check, events = self.links(api_body=body)
+            self.assertEqual(events, [("API", self.FIXTURE_IDS), ("HEAD", "https://example.org/a")])
+            self.assertEqual(check.details, [f"arXiv export API -> {label}: 7 URLs not checked." + self.STOP])
+
+    def test_links_arxiv_failure_in_a_later_batch(self):
+        self.write_links([f"https://arxiv.org/abs/2602.{n:05d}" for n in range(1, 101)])
+        check, events = self.links(api_status={2: 429}, missing={"2601.00001"})
+        self.assertEqual([e[0] for e in events], ["API", "sleep", "API"])
+        # The first batch's verdicts stand; only the second batch is unchecked.
+        self.assertEqual(check.observed, "105 unique URLs; 105 arXiv URLs as 105 ids via 2 API requests; 0 manually confirmed; 1 dead; 5 not checked")
+        self.assertEqual(check.details, [URLS[0] + " -> not listed by the arXiv export API",
+                                         "arXiv export API -> HTTP 429 (throttled): 5 URLs not checked." + self.STOP])
+
+    def test_links_page_checks_are_paced_and_stop_on_throttle(self):
+        pages = ["https://arxiv.org/html/2602.00001", "https://arxiv.org/html/2602.00002", "https://arxiv.org/html/2602.00003",
+                 "https://example.org/a", "https://example.org/b", "https://example.org/c"]
+        self.write_links(pages)
+        check, events = self.links(page_status={pages[1]: 406, pages[4]: 403}, retry_after="30")
+        self.assertEqual(events, [
+            ("API", self.FIXTURE_IDS),
+            # html pages are not implied by the id, so they stay on the page check. arXiv hosts
+            # share one pace with the API, and the 406 stops them: the third page is never asked.
+            ("sleep", 10.0), ("HEAD", pages[0]), ("sleep", 10.0), ("HEAD", pages[1]),
+            ("HEAD", pages[3]), ("sleep", 3.0), ("HEAD", pages[4]), ("sleep", 3.0), ("GET", pages[4]), ("sleep", 3.0), ("HEAD", pages[5]),
+        ])
+        self.assertEqual(check.observed, "11 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 0 manually confirmed; 1 dead; 2 not checked")
+        self.assertEqual(check.details, [pages[4] + " -> HTTP 403",
+                                         "arxiv.org -> HTTP 406 (throttled), Retry-After 30: 2 URLs not checked." + self.STOP])
+
+    def test_links_throttle_on_get_fallback_and_confirmations_do_not_hide_a_stop(self):
+        pages = ["https://example.org/a", "https://example.org/b"]
+        self.write_links(pages)
+        (self.root / "research/link-confirmations.txt").write_text("".join(f"2026-09-11 {url} -- Checked manually\n" for url in pages))
+        check, events = self.links(page_status={("HEAD", pages[0]): 405, ("GET", pages[0]): 429}, retry_after="45")
+        self.assertEqual(events[1:], [("HEAD", pages[0]), ("sleep", 3.0), ("GET", pages[0])])
+        self.assertFalse(check.ok)
+        self.assertEqual(check.observed, "7 unique URLs; 5 arXiv URLs as 5 ids via 1 API requests; 0 manually confirmed; 0 dead; 2 not checked")
+        self.assertEqual(check.details, ["example.org -> HTTP 429 (throttled), Retry-After 45: 2 URLs not checked." + self.STOP])
 
     def test_skip_links_never_fetches(self):
         def guard(*args, **kwargs):

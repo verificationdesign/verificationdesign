@@ -10,12 +10,16 @@ import os
 import re
 import subprocess
 import sys
+import time
 import urllib.error
+import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
 
+from research_tools.arxiv_oai import MIN_DELAY_SECONDS
 from research_tools.profile import Profile, load_profile
 from research_tools import records, scout
 
@@ -36,6 +40,19 @@ CITATION_LABEL_RE = re.compile(
 )
 
 LEGACY_BASELINE = 13
+
+USER_AGENT = "ai-research-verify/1.0"
+# abs and pdf pages exist exactly when the id does, so they are confirmed through the
+# export API in batches instead of one page request per URL. Other arxiv.org paths
+# (html renderings) are not implied by the id and stay on the page check.
+ARXIV_ID = r"(\d{4}\.\d{4,5}|[a-z-]+(?:\.[A-Z]{2})?/\d{7})(?:v([1-9]\d*))?"
+ARXIV_ID_URL_RE = re.compile(rf"^https?://(?:www\.)?arxiv\.org/(?:abs/{ARXIV_ID}|pdf/{ARXIV_ID}(?:\.pdf)?)/?$")
+ARXIV_ENTRY_ID_RE = re.compile(rf"/abs/{ARXIV_ID}$")
+ARXIV_API_URL = "https://export.arxiv.org/api/query"
+ARXIV_API_BATCH = 100
+ATOM_NS = "{http://www.w3.org/2005/Atom}"
+# Delays are fixed in code, like the scout's: arXiv hosts get the scout's floor.
+HOST_DELAY_SECONDS = 3.0
 
 
 @dataclass
@@ -70,23 +87,118 @@ def collect_links(path: Path) -> list[str]:
     return markdown_urls + bare_urls
 
 
-def url_ok(url: str, fetch=None) -> tuple[bool, str]:
+def page_status(url: str, fetch=None, sleep=None) -> tuple[bool, str, str | None]:
+    """HEAD, then GET on 403/405. Returns (ok, status, Retry-After of a failing response)."""
     fetch = urllib.request.urlopen if fetch is None else fetch
-    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "ai-research-verify/1.0"})
+    request = urllib.request.Request(url, method="HEAD", headers={"User-Agent": USER_AGENT})
     try:
         with fetch(request, timeout=15) as response:
-            return 200 <= response.status < 400, f"HTTP {response.status}"
+            return 200 <= response.status < 400, f"HTTP {response.status}", None
     except urllib.error.HTTPError as exc:
         if exc.code in {403, 405}:
-            get_request = urllib.request.Request(url, headers={"User-Agent": "ai-research-verify/1.0"})
+            get_request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+            if sleep is not None:
+                sleep(host_delay(urllib.parse.urlsplit(url).hostname or ""))
             try:
                 with fetch(get_request, timeout=15) as response:
-                    return 200 <= response.status < 400, f"HTTP {response.status}"
+                    return 200 <= response.status < 400, f"HTTP {response.status}", None
+            except urllib.error.HTTPError as get_exc:
+                return False, f"HTTP {get_exc.code}", retry_after(get_exc)
             except Exception as get_exc:  # noqa: BLE001
-                return False, str(get_exc)
-        return False, f"HTTP {exc.code}"
+                return False, str(get_exc), None
+        return False, f"HTTP {exc.code}", retry_after(exc)
     except Exception as exc:  # noqa: BLE001
-        return False, str(exc)
+        return False, str(exc), None
+
+
+def url_ok(url: str, fetch=None, sleep=None) -> tuple[bool, str]:
+    return page_status(url, fetch, sleep)[:2]
+
+
+def retry_after(exc: urllib.error.HTTPError) -> str | None:
+    return exc.headers.get("Retry-After") if exc.headers else None
+
+
+def is_arxiv_host(host: str) -> bool:
+    return host == "arxiv.org" or host.endswith(".arxiv.org")
+
+
+def pace_key(host: str) -> str:
+    """arXiv hosts share one pace and one stop: the export API and the site are one service."""
+    return "arxiv.org" if is_arxiv_host(host) else host
+
+
+def host_delay(host: str) -> float:
+    return MIN_DELAY_SECONDS if is_arxiv_host(host) else HOST_DELAY_SECONDS
+
+
+def is_throttle(host: str, status: str) -> bool:
+    """HTTP 429 anywhere, and arXiv's HTTP 406, mean slow down, not dead link."""
+    return status == "HTTP 429" or (is_arxiv_host(host) and status == "HTTP 406")
+
+
+def stop_label(status: str, host: str, retry: str | None) -> str:
+    if is_throttle(host, status):
+        status += " (throttled)"
+    return status + (f", Retry-After {retry}" if retry else "")
+
+
+def arxiv_ids_present(ids: list[str], fetch) -> dict[str, int]:
+    """One export API request; maps each listed base id to the highest version listed."""
+    query = urllib.parse.urlencode({"id_list": ",".join(ids), "max_results": len(ids)}, safe=",/")
+    request = urllib.request.Request(f"{ARXIV_API_URL}?{query}", headers={"User-Agent": USER_AGENT})
+    with fetch(request, timeout=60) as response:
+        if response.status != 200:
+            raise urllib.error.HTTPError(request.full_url, response.status, "", getattr(response, "headers", None), None)
+        feed = ET.fromstring(response.read())
+    if feed.tag != f"{ATOM_NS}feed":
+        raise ValueError(f"unexpected API response root {feed.tag}")
+    present: dict[str, int] = {}
+    for entry in feed.iter(f"{ATOM_NS}entry"):
+        entry_id = (entry.findtext(f"{ATOM_NS}id") or "").strip()
+        if "/api/errors" in entry_id:
+            raise ValueError("API error entry: " + " ".join((entry.findtext(f"{ATOM_NS}summary") or entry_id).split()))
+        match = ARXIV_ENTRY_ID_RE.search(entry_id)
+        if match:
+            present[match.group(1)] = max(present.get(match.group(1), 0), int(match.group(2) or 0))
+    return present
+
+
+def check_arxiv_ids(urls: list[str], fetch, sleep) -> tuple[dict[str, str], list[str], str | None, int, int]:
+    """Confirm arXiv abs/pdf URLs by id. Returns (dead, unchecked, stop reason, ids, requests made).
+
+    Any API failure stops the arXiv portion at once: no retry, the rest is left unchecked.
+    Ids are always requested unversioned, which lists the latest version. A pinned version
+    passes when it is no later than that, since versions are sequential.
+    """
+    by_id: dict[str, list[tuple[str, int]]] = {}
+    for url in urls:
+        groups = [g for g in ARXIV_ID_URL_RE.match(url).groups() if g is not None]
+        by_id.setdefault(groups[0], []).append((url, int(groups[1]) if len(groups) > 1 else 0))
+    ids = sorted(by_id)
+    dead: dict[str, str] = {}
+    requests_made = 0
+    for start in range(0, len(ids), ARXIV_API_BATCH):
+        batch = ids[start:start + ARXIV_API_BATCH]
+        if requests_made:
+            sleep(MIN_DELAY_SECONDS)
+        requests_made += 1
+        try:
+            present = arxiv_ids_present(batch, fetch)
+        except Exception as exc:  # noqa: BLE001
+            if isinstance(exc, urllib.error.HTTPError):
+                status = stop_label(f"HTTP {exc.code}", "export.arxiv.org", retry_after(exc))
+            else:
+                status = str(exc) or type(exc).__name__
+            unchecked = [url for arxiv_id in ids[start:] for url, _version in by_id[arxiv_id]]
+            return dead, unchecked, f"arXiv export API -> {status}", len(ids), requests_made
+        for arxiv_id in batch:
+            for url, version in by_id[arxiv_id]:
+                if arxiv_id not in present:
+                    dead[url] = "not listed by the arXiv export API"
+                elif version > present[arxiv_id]:
+                    dead[url] = f"version not listed by the arXiv export API (listed v{present[arxiv_id]})"
+    return dead, [], None, len(ids), requests_made
 
 
 def load_link_confirmations(link_confirmations: Path) -> dict[str, str]:
@@ -108,26 +220,53 @@ def load_link_confirmations(link_confirmations: Path) -> dict[str, str]:
     return confirmations
 
 
-def check_links(paths: list[Path], link_confirmations: Path, fetch=None) -> Check:
+def check_links(paths: list[Path], link_confirmations: Path, fetch=None, sleep=None) -> Check:
+    fetch = urllib.request.urlopen if fetch is None else fetch
+    sleep = time.sleep if sleep is None else sleep
     urls: list[str] = []
     for path in paths:
         urls.extend(collect_links(path))
+    unique = sorted(set(urls))
     confirmations = load_link_confirmations(link_confirmations)
-    failures: list[str] = []
-    manually_confirmed = 0
-    for url in sorted(set(urls)):
-        ok, status = url_ok(url, fetch)
-        if not ok:
-            if url in confirmations:
-                manually_confirmed += 1
-            else:
-                failures.append(f"{url} -> {status}")
-    return Check(
-        "link liveness",
-        not failures,
-        f"{len(set(urls))} unique URLs checked; {manually_confirmed} manually confirmed; {len(failures)} failures",
-        failures,
+    arxiv_urls = [url for url in unique if ARXIV_ID_URL_RE.match(url)]
+    dead, unchecked, stop_reason, arxiv_ids, api_requests = check_arxiv_ids(arxiv_urls, fetch, sleep)
+    stops = [stop_reason] if stop_reason else []
+    visited = {"arxiv.org"} if api_requests else set()
+    stopped = {"arxiv.org"} if stop_reason else set()
+    for url in unique:
+        if ARXIV_ID_URL_RE.match(url):
+            continue
+        host = urllib.parse.urlsplit(url).hostname or ""
+        key = pace_key(host)
+        if key in stopped:
+            unchecked.append(url)
+            continue
+        if key in visited:
+            sleep(host_delay(host))
+        visited.add(key)
+        ok, status, retry = page_status(url, fetch, sleep)
+        if ok:
+            continue
+        if is_throttle(host, status):
+            stopped.add(key)
+            stops.append(f"{host} -> {stop_label(status, host, retry)}")
+            unchecked.append(url)
+        else:
+            dead[url] = status
+    # Confirmations answer a completed failed check only. A URL that was never requested is
+    # not confirmed by them, and a stop fails the check whatever is confirmed.
+    manually_confirmed = sum(1 for url in dead if url in confirmations)
+    failures = [f"{url} -> {status}" for url, status in sorted(dead.items()) if url not in confirmations]
+    observed = (
+        f"{len(unique)} unique URLs; {len(arxiv_urls)} arXiv URLs as {arxiv_ids} ids via {api_requests} API requests; "
+        f"{manually_confirmed} manually confirmed; {len(failures)} dead; {len(unchecked)} not checked"
     )
+    if stops:
+        failures.append(
+            f"{'; '.join(stops)}: {len(unchecked)} URLs not checked. "
+            "This is a stop, not a dead link: rerun later, do not retry now."
+        )
+    return Check("link liveness", not failures, observed, failures)
 
 
 def check_citations(path: Path) -> Check:
@@ -594,7 +733,7 @@ def check_principles(path: Path, profile: Profile) -> Check:
 
 
 def run(root: Path, profile: Profile, *, skip_links: bool, include_scout_links: bool,
-        base_ref: str, fetch=None, profile_path: Path | None = None) -> list[Check]:
+        base_ref: str, fetch=None, sleep=None, profile_path: Path | None = None) -> list[Check]:
     if profile_path is None:
         profile_path = root / "research/scouts/config.json"
     docs = [root / path for path in profile.canonical_docs]
@@ -620,7 +759,7 @@ def run(root: Path, profile: Profile, *, skip_links: bool, include_scout_links: 
         link_paths = paths + [root / "research/synthesis.md"] + sorted(review_dir.glob("*.md")) + sorted(triage_dir.rglob("*.md"))
         if include_scout_links:
             link_paths += sorted(scout_dir.glob("*.md"))
-        checks.insert(0, check_links(link_paths, root / "research/link-confirmations.txt", fetch))
+        checks.insert(0, check_links(link_paths, root / "research/link-confirmations.txt", fetch, sleep))
     return checks
 
 
