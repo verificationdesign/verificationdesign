@@ -9,11 +9,27 @@ excluding `- `) in `question`, with its integer `principle` (1 to 9).
 Every entry has non-empty string `evidence` and `status`; `severity` is high, medium or
 low on a defect and null on every other status:
 
-- `sound`: checked behavior with evidence; severity null.
+- `sound`: checked behavior with evidence; severity null. An inference from silence
+  (no other channel is named, so the boundary must be this one) is not checked behavior
+  and cannot ground `sound`; silence can show absence under the complete-declaration
+  test below, but cannot show that a boundary or rule was drawn.
 - `defect`: in-scope artifact evidence, failure equal to a mapped failure or `unmapped`,
-  severity high, medium or low.
-- `not-applicable`: the question cannot apply to this artifact and scope, for example
-  no model review or no second reviewer exists. Evidence is the reason. Severity null,
+  severity high, medium or low. Optional `basis` is `principle` (the checklist question
+  is the requirement, the default when absent) or `requirement` (a stated acceptance
+  criterion of the artifact, quoted with its location in evidence).
+- `conflict`: a stated requirement asks for what a principle forbids, or excuses what
+  a principle demands. Evidence quotes the principle question's demand and the
+  requirement with its location, and states what each would have the artifact do.
+  Severity null, no failure, failure note, routing or cards. This is not a defect and
+  is not counted as one; the operator resolves it.
+- `not-applicable`: the question cannot apply to this artifact and scope. Evidence
+  begins with exactly one reason-class prefix: `Construct absent:` names the entry
+  (by question or index) where the parent absence is filed as a defect, or states that
+  none is; `Excluded by scope:` quotes the part of the scope that excludes the question.
+  When the operator's scope names the construct as the principle's subject (the scope
+  is pinning and the question asks what would notice a moved pin), its absence is a
+  defect; `not-applicable` is right only when the construct lies outside what the scope
+  names. Whether the artifact promised the construct is not the test. Severity null,
   no failure and no routing.
 - `not-checked`: evidence explains why no check was performed; severity null.
 - `insufficient-evidence`: evidence names what is missing and what would settle it;
@@ -28,8 +44,8 @@ For `insufficient-evidence`, explain why judgment is unavailable, write `No sour
 
 Additional in-scope defects use `free: true`, principle 1 to 9 and an original question.
 Free entries never substitute for checklist questions. Non-defects may use null failure;
-not-applicable and out-of-scope require failure absent or empty and cannot carry cards
-or routed fields. No fix proposals anywhere.
+not-applicable, conflict and out-of-scope require failure absent or null, failure note absent
+or empty, and cannot carry cards or routed fields. No fix proposals anywhere.
 
 The no-fix rule is enforced by the procedure and the operator's read, not by scripts.
 A mechanical scan for fix language was considered too weak to justify a false sense
@@ -68,7 +84,8 @@ applicable; on an unmapped defect it may name any card, rendered as cards named 
 judgment. Non-defects cannot carry it. The renderer rejects incorrect routing.
 
 Rules: `structure`, `coverage` (including free out-of-scope restrictions), `status`
-(the six statuses above), `evidence`, `failure`, `severity`, `routing`, `cause-groups`, plus the shared
+(the seven statuses above), `basis` (defects only; `principle` or `requirement`,
+with non-empty evidence for `requirement`), `evidence`, `failure`, `severity`, `routing`, `cause-groups`, plus the shared
 rules `skill`, `models`, `assumptions`, `measurements`, `artifact-identity` and
 `unavailable-sources`. Errors report card (null), check index, rule and message; exit 3.
 Success reports checks, defects, counts per status, defects by severity and a `warnings` list; exit 0.
@@ -112,15 +129,28 @@ An emitted scaffold fails `status`, `evidence` and `models`, never passing as a 
   Paste JSON here before validating, never into rendered output. The renderer places
   fenced JSON under `### Unavailable sources`. Optional fields may be absent.
 
-Defects are judged against the nine principles, not the artifact's own requirements.
-The absence of a record a principle asks for is a defect when the artifact provides no
-way to produce that record. When the record would come from a stage that is not in the
-evidence set (a test run, a CI report, a deployment), the status is
-`insufficient-evidence`, naming the receipt that would settle it; the `artifact-stage`
-assumption states which stage was examined so a reader can tell the two apart.
-For a document artifact, "no way to produce it" means the document does not state it;
-values only a run could show are `insufficient-evidence`. The `artifact-stage`
-assumption states which reading was applied.
+Defects are judged against the nine principles and the artifact's own stated acceptance
+criteria; both are requirements, and `basis` says which.
+When the record would come from a stage that is not in the evidence set (a test run,
+a CI report, a deployment), the status is `insufficient-evidence`, naming the receipt
+that would settle it.
+On questions such as "where is X recorded", "what records X" or "which steps emit X",
+the evidence sentence states which proposition it answers before citing: the artifact
+provides no mechanism to record or emit X (answered from source), or X was or was not
+recorded or emitted on a run (answered only by a receipt).
+The second kind is `insufficient-evidence` when the receipt is not in the evidence set,
+even when the source declares no producing step and the file is short and fully readable.
+Example openings: "The result writer provides no mechanism to record the criteria
+version: ..."; "Whether this run recorded the criteria version is unsettled without
+the result receipt: ...".
+For the first kind, absence is a defect when the artifact in scope is the complete
+declaration of the behavior asked about (a workflow, schema or configuration); when
+it describes or points at a system whose behavior lives elsewhere (a README or design
+note), the status is `insufficient-evidence`, naming the source that would settle it.
+The `artifact-stage` assumption states which stage and reading were examined.
+A host-written assumption may narrow the reading applied, but may not exclude in-scope
+source lines that answer a structural question; `insufficient-evidence` resting on that
+exclusion files absence as unavailable and is a procedure failure.
 
 Inspect relevant, accessible source within scope before declaring evidence unavailable.
 Judge structural claims from that source. Retain `insufficient-evidence` wherever the
@@ -135,6 +165,13 @@ checkpoint, a run log) are not the only permitted uncertainty.
 | Document | Inspected workflow document states no escalation route | Referenced decision record needed to establish the escalation route is unavailable |
 | CI configuration | Inspected job discards the delta instead of recording it | Missing run log would establish whether the configured delta was recorded |
 | Absent artifact | Inspected in-scope specification explicitly excludes checkpoint records | Neither the artifact nor source establishing checkpoint recording is available |
+
+A negative claim about the whole artifact is supported by its citations only when the
+sentence is bounded to that artifact and the evidence establishes exhaustive coverage:
+a search command with its result, or a cited range covering the whole file.
+"Nothing anywhere records the exit code: job.yml:1-30" exceeds the artifact bound
+when the runner's own logs record it. "The only stop conditions in the file are timeout
+and cancellation: job.yml:8-10" does not establish exhaustive coverage of the file.
 
 Severity carries how much a defect matters here. Applying a design card is a separate
 applicability judgment.

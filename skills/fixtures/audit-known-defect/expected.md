@@ -8,7 +8,7 @@ Corpus revision: `e632a86b2ca8fbb7f83b3130ba083784c7817667`
 
 Corpus tag: `corpus/v1.0.0`
 
-Skill: verification-audit 1.5.1
+Skill: verification-audit 1.6.0
 
 Skill pins: catalog `b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f`; principles `03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a`; checklist `a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80`
 
@@ -27,6 +27,7 @@ Defects: 1. high: 1; medium: 0; low: 0.
 Author-assigned cause groups: 0; ungrouped defect rows: 1.
 
 - defect: 1
+- conflict: 0
 - sound: 0
 - not-applicable: 1
 - not-checked: 16
@@ -58,6 +59,10 @@ Candidate cards from the failure map (a lookup, not an applicability judgment):
 - candidate: [Adversary][adversary] ([pinned source][adversary-src])
 - candidate: [Admissibility Gate][admissibility-gate] ([pinned source][admissibility-gate-src])
 
+## Requirement conflicts
+
+None.
+
 ## Checked and sound
 
 None.
@@ -68,7 +73,7 @@ None.
 
 When independent reviewers disagree, where are their claims and evidence recorded separately? [Principles][p8]
 
-Reason: artifact/workflow.md:3-4 names one generating agent reviewing its own output; no independent reviewers exist to disagree.
+Reason: Construct absent: Parent absence is filed as a defect at check index 2. artifact/workflow.md:3-4 names one generating agent reviewing its own output; no independent reviewers exist to disagree.
 
 ## Not checked
 

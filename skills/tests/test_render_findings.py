@@ -44,17 +44,17 @@ class RenderFindingsTests(ScriptCase):
         checks = record["checks"]
         severities = {s: sum(c["status"] == "defect" and c["severity"] == s for c in checks) for s in ("high", "medium", "low")}
         self.assertIn("Defects: 1. " + "; ".join(f"{s}: {n}" for s, n in severities.items()) + ".", summary.splitlines())
-        for status in ("defect", "sound", "not-applicable", "not-checked", "insufficient-evidence", "out-of-scope"):
+        for status in ("defect", "conflict", "sound", "not-applicable", "not-checked", "insufficient-evidence", "out-of-scope"):
             self.assertIn(f'- {status}: {sum(c["status"] == status for c in checks)}', summary.splitlines())
         self.assertIn("- " + re.sub(r" \[Principles\]\([^)]+\)", "", checks[2]["question"]), summary.splitlines())
         self.assertEqual(self.section(self.render(self.good), "Summary").split("Unmapped defects:")[1].strip(), "None.")
 
     def test_ff_5_sections(self):
         text = self.render(self.good)
-        names = ("Defects", "Checked and sound", "Not applicable", "Not checked", "Insufficient evidence", "Observed outside scope")
+        names = ("Defects", "Requirement conflicts", "Checked and sound", "Not applicable", "Not checked", "Insufficient evidence", "Observed outside scope")
         headings = [line[3:] for line in text.splitlines() if line.startswith("## ")]
         self.assertEqual([n for n in headings if n in names], list(names))
-        for name in ("Checked and sound", "Insufficient evidence"):
+        for name in ("Requirement conflicts", "Checked and sound", "Insufficient evidence"):
             self.assertEqual(self.section(text, name).strip(), "None.")
 
     def test_ff_6_check_order(self):
@@ -137,7 +137,7 @@ class RenderFindingsTests(ScriptCase):
         text = self.output.read_text()
         self.assertIn("No routed card: outside the six mapped failures; see the failure note above.", text)
         headings = [line for line in text.splitlines() if line.startswith("## ")]
-        self.assertEqual(headings, ["## Assumptions", "## Summary", "## Defects", "## Checked and sound", "## Not applicable", "## Not checked", "## Insufficient evidence", "## Observed outside scope", "## Sources"])
+        self.assertEqual(headings, ["## Assumptions", "## Summary", "## Defects", "## Requirement conflicts", "## Checked and sound", "## Not applicable", "## Not checked", "## Insufficient evidence", "## Observed outside scope", "## Sources"])
 
     def test_ff_9_judged_candidates(self):
         record = json.loads((ROOT / "skills/fixtures/audit-known-defect/record.json").read_text())
@@ -210,3 +210,28 @@ class RenderFindingsTests(ScriptCase):
             self.assertEqual(record["checks"], before)
         empty = json.loads((ROOT / "skills/fixtures/audit-missing-evidence/record.json").read_text())
         self.assertIn("Author-assigned cause groups: 0; ungrouped defect rows: 0.", self.render(empty))
+
+    def test_requirement_basis_rendered_after_severity(self):
+        record = copy.deepcopy(self.good)
+        record["checks"][2]["basis"] = "requirement"
+        text = self.render(record)
+        self.assertIn("Severity: high\n\nBasis: stated requirement\n\nFailure:", text)
+        self.assertEqual(text.count("Basis: stated requirement"), 1)
+
+    def test_principle_basis_not_rendered(self):
+        record = copy.deepcopy(self.good)
+        expected = self.render(record)
+        record["checks"][2]["basis"] = "principle"
+        self.assertEqual(self.render(record), expected)
+        self.assertNotIn("Basis:", expected)
+
+    def test_conflict_section_evidence_and_totals(self):
+        record = copy.deepcopy(self.good)
+        record["checks"][0].update(status="conflict", evidence="The principle demands independent review; spec.md:2 requires self-approval.")
+        text = self.render(record)
+        section = self.section(text, "Requirement conflicts")
+        self.assertIn("Evidence: " + record["checks"][0]["evidence"], section)
+        for label in ("Severity:", "Failure:", "Reason:", "candidate:"):
+            self.assertNotIn(label, section)
+        self.assertIn("- conflict: 1", self.section(text, "Summary"))
+        self.assertIn("Defects: 1.", self.section(text, "Summary"))

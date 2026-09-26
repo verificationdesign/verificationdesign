@@ -6,7 +6,7 @@ compatibility: Python 3.11 or later, standard library only. Explicit-only invoca
 disable-model-invocation: true
 metadata:
   disable-model-invocation: "true"
-  version: "1.5.1"
+  version: "1.6.0"
   corpus-revision: "e632a86b2ca8fbb7f83b3130ba083784c7817667"
   corpus-tag: "corpus/v1.0.0"
   catalog-sha256: "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f"
@@ -68,15 +68,30 @@ Run commands from this skill directory, with absolute paths for operator-visible
    `unavailable_sources` list before final validation and rendering.
 
    Fill every scaffold question in `record.draft.json`
-   against the artifact, with evidence for sound and defect judgments and reasons for
+   against the artifact, with evidence for sound, defect and conflict judgments and reasons for
    the other statuses. An unmapped defect needs a non-empty `failure_note`.
    Free defects use original questions. Record uncertainty rather
    than inventing a defect; scripts do not make these judgments. A record the principle
-   asks for is a defect when the artifact has no way to produce it; when it would come
-   from a stage outside the evidence set (a run, a CI report), record
-   `insufficient-evidence` and name the evidence that would settle it, inspecting
-   accessible in-scope source before recording that status.
-   Use `not-applicable` with a reason when a question cannot apply to the artifact and scope.
+   asks for is a defect when the complete declaration of that behavior has no way to
+   produce it; when it would come from a stage outside the evidence set (a run, a CI
+   report), record `insufficient-evidence` and name the receipt that would settle it.
+   For "where is X recorded", "what records X" or "which steps emit X", state the
+   proposition before citing: no source mechanism records or emits X, or X was or was
+   not recorded or emitted on a run. The latter needs a receipt and is
+   `insufficient-evidence` without one, even when a short, fully readable file declares
+   no producing step; see the examples and complete-declaration test in findings-record.md.
+   Inspect accessible in-scope source before recording evidence unavailable.
+   A host-written assumption may narrow the reading, but may not exclude in-scope source
+   lines answering a structural question; `insufficient-evidence` resting on that exclusion
+   files absence as unavailable and is a procedure failure.
+   When a question has two limbs, answer the applicable limb with the status it earns
+   and name the other limb inapplicable in the same evidence sentence.
+   Use `not-applicable` with a reason-class prefix as specified in findings-record.md
+   when a question cannot apply to the artifact and scope.
+   When a stated requirement of the artifact asks for what a principle forbids or excuses
+   what a principle demands, record `conflict` and quote both demands with the requirement's
+   location, with no severity. A defect judged against a stated acceptance criterion rather
+   than the checklist question carries `basis: "requirement"` and quotes the criterion with its location.
    Use `out-of-scope` free observations for things fresh eyes noticed that the scope excludes, never as defects.
    Fill the record-level fields as well:
    - `models`: the model family producing this record as `verifier`, and the family that
@@ -138,7 +153,7 @@ and paste the JSON into the record's `unavailable_sources` list. The renderer pl
 - `scripts/load_catalog.py`: verify the packaged snapshot, fetch pinned source text, or report drift without switching catalogs.
 - `scripts/validate_findings.py`: check checklist coverage, evidence and defect fields.
 - `scripts/route_failures.py`: attach the failure map's candidate cards to recorded defects; a lookup, not a judgment.
-- `scripts/render_findings.py`: validate routing and render six findings sections.
+- `scripts/render_findings.py`: validate routing and render seven findings sections.
 
 ## Output
 
@@ -191,6 +206,7 @@ invocation controls do not prevent a model from opening it as a file.
   or is absent when no card applies. An unmapped defect with a `failure_note` is a complete answer.
 - Sources identify human URLs, pinned source URLs and the corpus revision.
 - Every `insufficient-evidence` entry names the missing evidence and explains why inspected sources do not settle the question.
+- Requirement conflicts quote both demands and remain for the operator to resolve.
 - Unknown judgments and unavailable evidence remain visible.
 - Output rendered to the requested file and substantive judgments left for operator review.
-- Defects, Checked and sound, Not applicable, Not checked, Insufficient evidence, and Observed outside scope sections present; no fix proposals.
+- Defects, Requirement conflicts, Checked and sound, Not applicable, Not checked, Insufficient evidence, and Observed outside scope sections present; no fix proposals.

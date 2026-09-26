@@ -11,17 +11,18 @@ Section order:
 2. Measurements
 3. Summary
 4. Defects
-5. Checked and sound
-6. Not applicable
-7. Not checked
-8. Insufficient evidence
-9. Observed outside scope
-10. Sources
+5. Requirement conflicts
+6. Checked and sound
+7. Not applicable
+8. Not checked
+9. Insufficient evidence
+10. Observed outside scope
+11. Sources
 
 Summary counts defects by severity and every status, and names unmapped defects.
 It also reports author-assigned cause groups and ungrouped defect rows as two figures
 on one line.
-All six findings sections are always present; empty sections say `None.`.
+All seven findings sections are always present; empty sections say `None.`.
 Mapped failure notes render when non-empty, including shared-cause notes.
 Mapped defects list their cards under `Candidate cards from the failure map (a lookup,
 not an applicability judgment):`, each bullet prefixed `candidate:` or, when the id is
@@ -29,7 +30,10 @@ in `related_cards`, `judged applicable:`. Unmapped defects with `related_cards` 
 them under `Cards named by judgment (the failure map has no entry for this defect):`.
 Unmapped defects without say: No routed card: outside the six mapped failures; see the failure note above.
 
-Evidence labels apply to sound and defect entries and holding or not-holding conditions.
+Defects with `basis: "requirement"` render `Basis: stated requirement` after Severity;
+absent or `principle` basis prints no line.
+
+Evidence labels apply to sound, defect and conflict entries and holding or not-holding conditions.
 Reason labels apply to not-checked, not-applicable, insufficient-evidence, out-of-scope
 and unknown verdicts. Do not double a final full stop. Assumptions are bullets as
 `topic: statement`; each measurement bullet begins with its id and includes every field

@@ -34,6 +34,10 @@ Optional; omit when absent.
 
 <rendered record content>
 
+## Requirement conflicts
+
+<rendered record content>
+
 ## Checked and sound
 
 <rendered record content>

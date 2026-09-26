@@ -147,7 +147,7 @@
       "principle": 8,
       "question": "When independent reviewers disagree, where are their claims and evidence recorded separately? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#8-simulate-debate)",
       "status": "not-applicable",
-      "evidence": "Construct absent: Parent absence is filed as a defect at check index 2. artifact/workflow.md:3-4 names one generating agent reviewing its own output; no independent reviewers exist to disagree.",
+      "evidence": "No independent reviewers exist to disagree.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -190,14 +190,5 @@
       "failure_note": ""
     }
   ],
-  "assumptions": [],
-  "cause_groups": [
-    {
-      "cause": "Illustrative shared cause",
-      "checks": [
-        0,
-        1
-      ]
-    }
-  ]
+  "assumptions": []
 }

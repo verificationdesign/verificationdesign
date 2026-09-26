@@ -28,6 +28,10 @@ lists copy every condition verbatim in catalog order, in objects with `condition
 `verdict` (`holds`, `does-not-hold`, `unknown`) and string `evidence`.
 Judge each condition against the card's intent; when the literal wording would decide
 differently, say so in the evidence. Non-unknown verdicts require non-empty evidence. Every card has a non-empty `reason`.
+When a design has more than one surface a card could apply to (a tracker the job writes
+to and a report it compares against), the reason names the surface judged and says
+whether the other surface changes the decision. A decision is not grounded on a clause
+the design text contradicts.
 For `unknown`, evidence is the reason the condition could not be judged. When no source
 bears on it, write `No source in the evidence set addresses this condition.` Do not cite
 an unrelated passage; a citation on an unknown verdict must bear on the condition.

@@ -1,5 +1,32 @@
 # Changelog
 
+## skills/v1.6.0 (2026-09-26)
+
+Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-13 to 2026-09-20 blinded
+adjudication and the maintainer's calibration rulings of 2026-09-26. A minor release
+that changes judgment guidance, adds two vocabulary items (`conflict`, `basis`), and
+adds a reason-class prefix on not-applicable. v1.5.1 records validate after changing
+`skill.version` and adding the prefix to any not-applicable evidence.
+
+- Recording questions state the proposition before citing: source mechanism or run
+  outcome. Run outcomes need receipts even when the source declares no producing step.
+- Structural absence is a defect in a complete declaration; descriptions of behavior
+  elsewhere require that source before judgment.
+- Host assumptions cannot exclude in-scope source answering a structural question.
+- Not-applicable evidence starts with `Construct absent:` and identifies the parent
+  defect or its absence, or `Excluded by scope:` and quotes the scope exclusion.
+- Missing constructs named by the scope are defects, regardless of whether the
+  artifact promised them.
+- Two-limb questions answer the applicable limb and name the other inapplicable.
+- Sound judgments need checked behavior; silence cannot establish a boundary or rule.
+- Universal negative claims require an artifact bound and exhaustive cited coverage.
+- Design reasons identify the judged surface and whether other surfaces change the
+  decision, without relying on clauses contradicted by the design.
+- Defects may name a stated acceptance criterion with `basis: "requirement"`; the
+  default remains `principle`. Requirement basis renders after Severity.
+- Requirement conflicts quote both demands, remain for operator resolution, and render
+  separately from defects in the new Requirement conflicts section.
+
 ## skills/v1.5.1 (2026-09-20)
 
 Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-13 to 2026-09-19 host observation

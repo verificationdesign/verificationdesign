@@ -17,11 +17,11 @@
     {
       "principle": 1,
       "question": "What external observation, distinct from the generator saying done, records completion? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
-      "status": "not-checked",
+      "status": "conflict",
       "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
       "failure": null,
       "failure_note": "",
-      "severity": null
+      "severity": "low"
     },
     {
       "principle": 1,
@@ -190,14 +190,5 @@
       "failure_note": ""
     }
   ],
-  "assumptions": [],
-  "cause_groups": [
-    {
-      "cause": "Illustrative shared cause",
-      "checks": [
-        0,
-        1
-      ]
-    }
-  ]
+  "assumptions": []
 }
