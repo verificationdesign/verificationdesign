@@ -27,6 +27,12 @@ adds a reason-class prefix on not-applicable. v1.5.1 records validate after chan
 - Requirement conflicts quote both demands, remain for operator resolution, and render
   separately from defects in the new Requirement conflicts section.
 
+Blind tests of the five fixtures passed on Claude Code 2.1.283 and Codex CLI 0.157.0 against
+this release on 2026-09-27, with the design-resolved second phase supplying the later build;
+the maintainer adjudicated the architect's read of each output against the fixture's
+required result. No fixture exercises `conflict` or `basis: "requirement"`, so those two
+additions are covered by the repository tests only. Invocation-control probes were not rerun.
+
 ## skills/v1.5.1 (2026-09-20)
 
 Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-13 to 2026-09-19 host observation
@@ -40,6 +46,9 @@ judgment behavior changes. v1.5.0 records validate after changing only
   not need a line naming that file.
 - Both procedures place the unavailable-source paste instruction directly after
   the fetch command, before record validation.
+
+v1.5.1 was tagged without a blind fixture rerun; the v1.6.0 blind results were run against
+v1.6.0 only and do not establish v1.5.1 behavior.
 
 ## skills/v1.5.0 (2026-09-13)
 
