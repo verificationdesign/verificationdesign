@@ -87,7 +87,19 @@ minor for a re-pin), refresh affected records and expected outputs, update CHANG
 and tag the reviewed skills release with `skills/vX.Y.Z`. The maintainer owns tags
 and release decisions.
 
-Run `python3 scripts/check_skills.py` for hermetic pin, fixture and loopback HTTP
+### Skills release checklist
+
+1. Bump `version` in both SKILL.md files together and add the CHANGELOG entry, `## skills/vX.Y.Z (date)`.
+2. Run `make verify`, including link liveness and `check_skills.py --links`; all checks must pass.
+3. Commit the release candidate; do not push it yet.
+4. Run blind host tests on the frozen packages of that commit, on both hosts with all fixtures. Record host versions, outputs and results in the host-tests note; add the blind-test paragraph to CHANGELOG and the blind-test sentence to README. A patch release with no judgment change may skip the rerun only if its CHANGELOG entry explicitly records no blind rerun (v1.3.0 and v1.5.1 precedent).
+5. The maintainer adjudicates the blind results.
+6. Commit the receipts, then have the maintainer create the annotated tag `skills/vX.Y.Z` on that release commit (v1.4.0 and v1.6.0 precedent). For a re-pin, tag `corpus/vX.Y.Z` first, as described above.
+7. Rerun `python3 skills/check_skills.py`; the release tag check must report no warning.
+8. On the maintainer's instruction, push the commit and tag together: `git push --atomic origin main skills/vX.Y.Z`, adding `corpus/vX.Y.Z` to the same push for a re-pin.
+9. Confirm the CI run for that push is green.
+
+Run `python3 skills/check_skills.py` for hermetic pin, fixture and loopback HTTP
 tests; `--links` adds live URL and source-hash checks, and `--skills-ref` invokes the
 pinned reference validator using uvx on a temporary copy with only the top-level
 invocation flag removed. The last two checks require network and run locally, not

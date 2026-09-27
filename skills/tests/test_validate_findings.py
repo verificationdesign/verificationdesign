@@ -73,7 +73,7 @@ class ValidateFindingsTests(ScriptCase):
     def test_free_conflict_fails_coverage(self):
         record = copy.deepcopy(self.good)
         extra = copy.deepcopy(record["checks"][0])
-        extra.update(free=True, question="Original extra question", status="conflict")
+        extra.update(free=True, question="Original extra question", status="conflict", evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
         record["checks"].append(extra)
         self.rules(record, {"coverage"})
 
@@ -86,7 +86,7 @@ class ValidateFindingsTests(ScriptCase):
     def test_vf_6_statuses(self):
         for status in ("conflict", "sound", "not-applicable", "not-checked", "insufficient-evidence"):
             record = copy.deepcopy(self.good)
-            record["checks"][0].update(status=status, evidence="Construct absent: No parent defect is filed.")
+            record["checks"][0].update(status=status, evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
             self.rules(record, set())
         for status in ("unknown", None, [], 1):
             self.change(0, "status", status, "status")
@@ -129,7 +129,7 @@ class ValidateFindingsTests(ScriptCase):
             for missing in (False, True):
                 record = copy.deepcopy(self.good)
                 check = record["checks"][-1 if status == "out-of-scope" else 0]
-                check.update(status=status, evidence="Construct absent: No parent defect is filed.")
+                check.update(status=status, evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
                 if missing:
                     del check["severity"]
                 else:
@@ -141,7 +141,7 @@ class ValidateFindingsTests(ScriptCase):
             for key, value, rule in (("failure", "unmapped", "failure"), ("failure_note", "note", "failure"),
                                      ("cards", [], "routing"), ("routed", False, "routing")):
                 record = copy.deepcopy(self.good)
-                record["checks"][-1 if status == "out-of-scope" else 0].update(status=status, evidence="Construct absent: No parent defect is filed.", **{key: value})
+                record["checks"][-1 if status == "out-of-scope" else 0].update(status=status, evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.', **{key: value})
                 self.rules(record, {rule})
 
     def test_vf_13_related_candidates(self):
@@ -213,7 +213,7 @@ class ValidateFindingsTests(ScriptCase):
 
     def test_cause_groups_conflict_member(self):
         record = self.grouped_record()
-        record["checks"][0]["status"] = "conflict"
+        record["checks"][0].update(status="conflict", evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
         record["cause_groups"][0]["checks"] = [3, 0]
         self.rules(record, {"cause-groups"})
 
@@ -259,7 +259,7 @@ class ValidateFindingsTests(ScriptCase):
     def test_defect_basis_values(self):
         for basis in ("principle", "requirement"):
             record = copy.deepcopy(self.good)
-            record["checks"][2]["basis"] = basis
+            record["checks"][2].update(basis=basis, evidence='spec.md:2 requires "independent review".')
             self.rules(record, set())
         for basis in (None, "", "other", [], {}, 1):
             self.change(2, "basis", basis, "basis")
@@ -268,7 +268,7 @@ class ValidateFindingsTests(ScriptCase):
         for status in ("sound", "conflict", "not-checked", "insufficient-evidence", "not-applicable"):
             record = copy.deepcopy(self.good)
             record["checks"][0].update(status=status, basis="principle",
-                                       evidence="Construct absent: No parent defect is filed.")
+                                       evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
             self.rules(record, {"basis"})
         self.change(-1, "basis", "requirement", "basis")
 
@@ -280,7 +280,7 @@ class ValidateFindingsTests(ScriptCase):
 
     def test_conflict_valid_and_not_counted_as_defect(self):
         record = copy.deepcopy(self.good)
-        record["checks"][0].update(status="conflict", evidence="The principle demands independent review; spec.md:2 requires self-approval.")
+        record["checks"][0].update(status="conflict", evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
         self.rules(record, set())
         self.assertEqual(self.v.counts(record)["statuses"]["conflict"], 1)
         self.assertEqual(self.v.counts(record)["defects"], 1)
@@ -290,3 +290,50 @@ class ValidateFindingsTests(ScriptCase):
             bad = copy.deepcopy(record)
             bad["checks"][0][key] = value
             self.rules(bad, {rule})
+
+    def test_conflict_evidence_shape(self):
+        cases = [
+            ('"one demand" at spec.md:2', False),
+            ('"one" versus "two"', False),
+            ('"one" versus "two" at spec.md:2', True),
+            ('“one” versus “two” at spec.md:2', True),
+            ('"one" versus “two” at dir/spec:2-4', True),
+            ('"one" versus "two" at spec:2', False),
+            ('"one" versus "two" at 12:30', False),
+            ('" " versus "two" at spec.md:2', False),
+            ('“ ” versus “two” at spec.md:2', False),
+            ('`one` versus `two` at spec.md:2', False),
+            ('"one” versus “two" at spec.md:2', False),
+            ('"one" versus "two" at absent.md:0-999', True),
+        ]
+        for evidence, valid in cases:
+            with self.subTest(evidence=evidence):
+                record = copy.deepcopy(self.good)
+                record["checks"][0].update(status="conflict", evidence=evidence)
+                self.rules(record, set() if valid else {"evidence"})
+
+    def test_requirement_evidence_shape(self):
+        cases = [
+            ('"criterion" without location', False),
+            ('criterion at spec.md:2', False),
+            ('"criterion" at spec.md:2', True),
+            ('“criterion” at spec.md:2', True),
+            ('`criterion` at spec.md:2', False),
+            ('" " at spec.md:2', False),
+            ('"criterion" at spec:2', False),
+        ]
+        for evidence, valid in cases:
+            with self.subTest(evidence=evidence):
+                record = copy.deepcopy(self.good)
+                record["checks"][2].update(basis="requirement", evidence=evidence)
+                self.rules(record, set() if valid else {"basis"})
+                record["checks"][2]["basis"] = "principle"
+                self.rules(record, set())
+                del record["checks"][2]["basis"]
+                self.rules(record, set())
+
+    def test_other_statuses_need_no_quotes_or_location(self):
+        for status in ("sound", "not-checked", "insufficient-evidence", "not-applicable"):
+            record = copy.deepcopy(self.good)
+            record["checks"][0].update(status=status, evidence="Construct absent: Nothing recorded.")
+            self.rules(record, set())

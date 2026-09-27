@@ -213,7 +213,7 @@ class RenderFindingsTests(ScriptCase):
 
     def test_requirement_basis_rendered_after_severity(self):
         record = copy.deepcopy(self.good)
-        record["checks"][2]["basis"] = "requirement"
+        record["checks"][2].update(basis="requirement", evidence='spec.md:2 requires "independent review".')
         text = self.render(record)
         self.assertIn("Severity: high\n\nBasis: stated requirement\n\nFailure:", text)
         self.assertEqual(text.count("Basis: stated requirement"), 1)
@@ -227,7 +227,7 @@ class RenderFindingsTests(ScriptCase):
 
     def test_conflict_section_evidence_and_totals(self):
         record = copy.deepcopy(self.good)
-        record["checks"][0].update(status="conflict", evidence="The principle demands independent review; spec.md:2 requires self-approval.")
+        record["checks"][0].update(status="conflict", evidence='Construct absent: "Independent review" conflicts with "self-approval" at spec.md:2.')
         text = self.render(record)
         section = self.section(text, "Requirement conflicts")
         self.assertIn("Evidence: " + record["checks"][0]["evidence"], section)

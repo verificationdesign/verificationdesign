@@ -11,6 +11,12 @@ CITATION = re.compile(r"(?<![\w/.:~-])([\w./~@+()-]+):(\d+)(?:-(\d+))?(?![\w-])"
 REQUIREMENT = re.compile(r"\bV[1-9]\d*\b")
 
 
+def citations(text):
+    """Yield file:line matches with the shared path-shape filter."""
+    return (match for match in CITATION.finditer(text)
+            if "." in match[1] or "/" in match[1])
+
+
 def strings(value, entry="$", field=None):
     if isinstance(value, dict):
         for key, child in value.items():
@@ -44,10 +50,8 @@ def check(record, roots):
                 else:
                     counts["unknown-requirement"] += 1
                     failures.append(dict(citation=ref, entry=entry, status="unknown-requirement"))
-        for match in CITATION.finditer(text):
+        for match in citations(text):
             path, start, end = match.groups()
-            if not ("." in path or "/" in path):
-                continue
             if path.startswith("(") and not any((Path(r) / path).is_file() for r in roots):
                 path = path[1:]
             citation = path + ":" + start + ("-" + end if end is not None else "")
@@ -92,8 +96,7 @@ def main():
     resolve_output(args.output, args.record)
     record = read_record(args.record)
     if not args.root and any(
-        "." in match[1] or "/" in match[1]
-        for _, text in strings(record) for match in CITATION.finditer(text)
+        any(citations(text)) for _, text in strings(record)
     ):
         p.error("--root is required whenever the record cites files")
     result = check(record, args.root)

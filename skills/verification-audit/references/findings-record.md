@@ -16,10 +16,14 @@ low on a defect and null on every other status:
 - `defect`: in-scope artifact evidence, failure equal to a mapped failure or `unmapped`,
   severity high, medium or low. Optional `basis` is `principle` (the checklist question
   is the requirement, the default when absent) or `requirement` (a stated acceptance
-  criterion of the artifact, quoted with its location in evidence).
+  criterion of the artifact, quoted with its location in evidence). Rule `basis` requires
+  at least one non-empty straight-double or curly-double quoted span and one `file:line`
+  (or `file:start-end`) location whose path contains `.` or `/`; backticks do not count.
 - `conflict`: a stated requirement asks for what a principle forbids, or excuses what
   a principle demands. Evidence quotes the principle question's demand and the
   requirement with its location, and states what each would have the artifact do.
+  Rule `evidence` requires at least two non-empty quoted spans and one location in
+  the same formats as requirement basis; these checks establish shape, not meaning.
   Severity null, no failure, failure note, routing or cards. This is not a defect and
   is not counted as one; the operator resolves it.
 - `not-applicable`: the question cannot apply to this artifact and scope. Evidence
@@ -85,7 +89,7 @@ judgment. Non-defects cannot carry it. The renderer rejects incorrect routing.
 
 Rules: `structure`, `coverage` (including free out-of-scope restrictions), `status`
 (the seven statuses above), `basis` (defects only; `principle` or `requirement`,
-with non-empty evidence for `requirement`), `evidence`, `failure`, `severity`, `routing`, `cause-groups`, plus the shared
+with a quoted criterion and location for `requirement`), `evidence`, `failure`, `severity`, `routing`, `cause-groups`, plus the shared
 rules `skill`, `models`, `assumptions`, `measurements`, `artifact-identity` and
 `unavailable-sources`. Errors report card (null), check index, rule and message; exit 3.
 Success reports checks, defects, counts per status, defects by severity and a `warnings` list; exit 0.

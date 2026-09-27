@@ -78,10 +78,39 @@ def source_path(url, revision):
     return "/".join(urllib.parse.urlsplit(url).path.split("/")[4:])
 
 
+def release_tag_status(version, git_run):
+    """Decide from an injected git callable; never mutate refs or fetch tags."""
+    ref = "refs/tags/skills/v" + version
+    try:
+        result = git_run("show-ref", "--verify", "--quiet", ref)
+        if result.returncode == 1:
+            return "WARN", "absent locally (if tags were not fetched, check could not run)"
+        if result.returncode:
+            return "WARN", "check could not run: " + result.stderr.strip()
+        result = git_run("rev-parse", "--verify", ref + "^{commit}")
+        if result.returncode:
+            return "WARN", "check could not run: " + result.stderr.strip()
+        commit = result.stdout.strip()
+        result = git_run("merge-base", "--is-ancestor", commit, "HEAD")
+        if result.returncode == 0:
+            return "PASS", "skills/v" + version + " is HEAD or an ancestor of HEAD"
+        if result.returncode == 1:
+            return "WARN", commit + " is not an ancestor of HEAD (history may be shallow)"
+        return "WARN", "check could not run: " + result.stderr.strip()
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "WARN", "check could not run: " + str(exc)
+
+
 class Reporter:
     def __init__(self):
         self.failed = 0
         self.checks = 0
+        self.warnings = 0
+
+    def warn(self, name, observed, expected, hint):
+        self.checks += 1
+        self.warnings += 1
+        print(f"WARN {name}: observed={observed}, expected={expected}; {hint}")
 
     def check(self, name, observed, expected, errors=()):
         errors = list(errors)
@@ -96,7 +125,7 @@ class Reporter:
 def fixture_checks(report):
     positive, rendered, negative = 0, 0, 0
     errors, render_errors, negative_errors = [], [], []
-    names = ("design-sound", "design-applicability-violation", "design-resolved", "audit-known-defect", "audit-missing-evidence")
+    names = ("design-sound", "design-applicability-violation", "design-resolved", "audit-known-defect", "audit-missing-evidence", "audit-requirement-conflict")
     with tempfile.TemporaryDirectory(prefix="verification-fixtures-") as tmp:
         for name in names:
             folder = SKILLS / "fixtures" / name
@@ -141,9 +170,9 @@ def fixture_checks(report):
                     negative += 1
                 else:
                     negative_errors.append(f"{bad.name}: exit={result.returncode}, rules={rules}, expected={expected}")
-    report.check("fixture validators", positive, 5, errors)
-    report.check("fixture renders", rendered, 5, render_errors)
-    report.check("negative fixtures", negative, 28, negative_errors)
+    report.check("fixture validators", positive, 6, errors)
+    report.check("fixture renders", rendered, 6, render_errors)
+    report.check("negative fixtures", negative, 32, negative_errors)
 
 
 def helper_checks(report):
@@ -277,6 +306,16 @@ def main():
             report.check(name + " snapshot", 0, 17, [str(exc)])
     same = sum(metas[0].get(k) == metas[1].get(k) and isinstance(metas[0].get(k), str) and bool(metas[0][k]) for k in loader.PIN_KEYS)
     report.check("pin consistency", same, 5)
+    version = metas[0].get("version")
+    expected = f"skills/v{version} is HEAD or an ancestor of HEAD"
+    if isinstance(version, str) and version and version == metas[1].get("version"):
+        status, observed = release_tag_status(version, lambda *args: run(["git", *args]))
+    else:
+        status, observed = "WARN", "check could not run: no shared version"
+    if status == "PASS":
+        report.check("release tag", observed, expected)
+    else:
+        report.warn("release tag", observed, expected, "See MAINTAINING.md: Skills release checklist.")
     checklist_file = SKILLS / NAMES[1] / loader.CHECKLIST_PATH
     observed = hashlib.sha256(checklist_file.read_bytes()).hexdigest() if checklist_file.exists() else "absent"
     report.check("checklist pin", observed, metas[1].get(loader.CHECKLIST_KEY),
@@ -284,7 +323,7 @@ def main():
     for path, label in (("assets/catalog.json", "snapshot byte identity"), ("scripts/load_catalog.py", "loader byte identity")):
         report.check(label, int((SKILLS/NAMES[0]/path).read_bytes() == (SKILLS/NAMES[1]/path).read_bytes()), 1)
     if not catalogs:
-        print(f"Summary: {report.checks} checks, {report.failed} failed; dependency checks blocked.")
+        print(f"Summary: {report.checks} checks, {report.failed} failed, {report.warnings} warnings; dependency checks blocked.")
         return 3
     catalog, meta = catalogs[0], metas[0]
     revision = meta["corpus-revision"]
@@ -356,7 +395,7 @@ def main():
         link_checks(report, files, catalog, meta)
     else:
         print("SKIP links: --links not requested; hermetic mode")
-    print(f"Summary: {report.checks} checks, {report.failed} failed.")
+    print(f"Summary: {report.checks} checks, {report.failed} failed, {report.warnings} warnings.")
     return 3 if report.failed else 0
 
 

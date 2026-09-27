@@ -1,5 +1,30 @@
 # Changelog
 
+## skills/v1.6.1 (2026-09-27)
+
+Patch release. Pins unchanged `corpus/v1.0.0`. Source: the maintainer's validator-gap
+ruling of 2026-09-27. Conflict evidence now requires at least two non-empty quoted
+spans and a file:line location (rule `evidence`); requirement-basis defect evidence
+requires at least one quoted span and a file:line location (rule `basis`). These
+checks enforce shape only, not the meaning of the quotes or the cited text.
+
+Migrate v1.6.0 records by changing `skill.version` to `1.6.1`; conflict and
+requirement-basis evidence may also need quotes and a location. Straight double
+quotes and curly double quotes count; backticks do not. File existence and line
+bounds remain the citation checker's responsibility.
+
+Adds the `audit-requirement-conflict` script fixture, including negatives for empty
+evidence, one-demand conflict evidence and requirement-basis evidence without a location.
+
+Blind tests of the six fixtures ran on Claude Code 2.1.283 and Codex CLI 0.157.0 against
+this release on 2026-09-27, with the design-resolved second phase supplying the later build.
+Thirteen of fourteen outputs met the fixture's required result, and both hosts filed the new
+fixture's conflict and requirement-basis defect. On design-applicability-violation Claude
+applied Comparator, overriding the design's explicit cost exclusion; the maintainer ruled
+that the exclusion is to be followed as stated, so the fixture stands and that output is a
+host miss. The verification-design package is unchanged from v1.6.0 apart from its version.
+Invocation-control probes were not rerun.
+
 ## skills/v1.6.0 (2026-09-26)
 
 Pins unchanged `corpus/v1.0.0`. Source: the 2026-09-13 to 2026-09-20 blinded

@@ -72,8 +72,9 @@ unflagged control activating. This table describes host invocation controls, not
 correctness of these skills' judgments. Blind task-level tests (fixture artifacts only,
 records and expected outputs withheld) passed on Claude Code and Codex for v1.0.0 and
 v1.1.0 on 2026-09-08, for v1.2.0 on 2026-09-10, for v1.4.0 and v1.5.0 on 2026-09-13 and
-for v1.6.0 on 2026-09-27 (five fixtures; v1.3.0 and v1.5.1 were tagged without a rerun, see
-the changelog); each output was judged against the fixture's required result and the
+for v1.6.0 on 2026-09-27 (five fixtures) and for v1.6.1 on 2026-09-27 (six fixtures; one
+Claude output missed its required result, see the changelog; v1.3.0 and v1.5.1 were tagged
+without a rerun); each output was judged against the fixture's required result and the
 maintainer adjudicated the result.
 The maintainer reruns blind host tests for each release before tagging it; the
 compatibility line names only versions on which the probes were actually rerun.

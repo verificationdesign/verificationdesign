@@ -7,11 +7,12 @@ They do not establish the truth of agent judgments or replace blind host tests.
 - `design-applicability-violation`: a holding exclusion rejects Comparator; five negatives isolate exclusion, absent applicability, unknown exclusion, missing condition and reordered condition failures.
 - `design-resolved`: Comparator applied; Executable Analog undecided at spec stage, with a later build resolution and four resolution negatives.
 - `audit-known-defect`: one self-review defect under principle 2, routed via the failure map.
+- `audit-requirement-conflict`: a self-approval requirement conflicts with principle 2; a separate missing receipt writer violates a stated acceptance criterion.
 - `audit-missing-evidence`: unavailable deployed behavior stays insufficient-evidence; a sound claim without evidence fails.
 
 Each directory contains a small raw artifact, a filled record and expected markdown.
 Negative records have a sibling expected JSON file with `exit_code` and exact `rules`.
-The checker validates all five positive records, compares all rendered bytes (routed and unrouted) and checks all twenty-three negatives.
+The checker validates all six positive records, compares all rendered bytes (routed and unrouted) and checks all thirty-two negatives.
 
 Version 1.1.0 also covers assumptions, priority, measurements, unavailable sources,
 instantiation, six audit statuses and unfilled scaffold rejection. Individual READMEs
@@ -26,3 +27,5 @@ applicable among four candidates), one negative for a related card outside the f
 map, and `kind` on every fixture measurement.
 
 Design records require a `plan` with design prose and numbered checks serving applied patterns; four design-sound negatives cover a missing plan, an unserved applied card, a cited non-applied card, and a requirement id gap.
+
+2026-09-27, with v1.6.1: `audit-requirement-conflict` adds a positive conflict and a requirement-basis defect, byte-compared routed and unrouted rendering, and two empty-evidence negatives. Two additional negatives reject one-demand conflict evidence and requirement-basis evidence without a location. This is script coverage; blind host tests on the new artifact have not run.

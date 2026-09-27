@@ -7,8 +7,20 @@ sys.dont_write_bytecode = True
 from load_catalog import ROOT, SnapshotError, cli_main, emit, load_catalog, parser, read_record
 
 from record_fields import validate_common
+from check_citations import citations
 
 STATUSES = ("defect", "conflict", "sound", "not-applicable", "not-checked", "insufficient-evidence", "out-of-scope")
+
+
+QUOTED = re.compile(r'"([^"]*)"|“([^“”]*)”')
+
+
+def evidence_shape(value, quotes):
+    if not isinstance(value, str):
+        return False
+    spans = sum(bool((m[1] if m[1] is not None else m[2]).strip())
+                for m in QUOTED.finditer(value))
+    return spans >= quotes and any(citations(value))
 
 
 def nonempty(value):
@@ -85,14 +97,16 @@ def validate(record, catalog=None, questions=None, meta=None):
             fail(i, "status", "unsupported status")
         if not nonempty(check.get("evidence")):
             fail(i, "evidence", "every status requires evidence or a reason stating what is missing")
+        if status == "conflict" and nonempty(check.get("evidence")) and not evidence_shape(check["evidence"], 2):
+            fail(i, "evidence", "conflict evidence needs two quoted demands and a file:line location")
         if status == "not-applicable" and nonempty(check.get("evidence")):
             if not check["evidence"].startswith(("Construct absent:", "Excluded by scope:")):
                 fail(i, "status", "not-applicable evidence must start with Construct absent: or Excluded by scope:")
         if "basis" in check:
             if status != "defect" or check["basis"] not in ("principle", "requirement"):
                 fail(i, "basis", "basis is allowed only on defects and must be principle or requirement")
-            elif check["basis"] == "requirement" and not nonempty(check.get("evidence")):
-                fail(i, "basis", "requirement basis needs non-empty evidence")
+            elif check["basis"] == "requirement" and not evidence_shape(check.get("evidence"), 1):
+                fail(i, "basis", "requirement basis evidence needs a quoted criterion and a file:line location")
         if status == "defect":
             failure = check.get("failure")
             if not isinstance(failure, str) or failure not in failures | {"unmapped"}:

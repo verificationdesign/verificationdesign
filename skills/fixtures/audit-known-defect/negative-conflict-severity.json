@@ -2,7 +2,7 @@
   "corpus_revision": "e632a86b2ca8fbb7f83b3130ba083784c7817667",
   "skill": {
     "name": "verification-audit",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "catalog_sha256": "b1d737c5ea62e18fc276b8efe64d963e1326c7f93c8b2e639515ed2583ce2d3f",
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a",
     "checklist_sha256": "a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80"
@@ -18,7 +18,7 @@
       "principle": 1,
       "question": "What external observation, distinct from the generator saying done, records completion? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
       "status": "conflict",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "The principle demands \"independent review\"; spec.md:2 requires \"self-approval\".",
       "failure": null,
       "failure_note": "",
       "severity": "low"

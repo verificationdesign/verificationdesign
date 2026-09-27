@@ -7,28 +7,27 @@
     "principles_sha256": "03033f7084e8fee60e5f7fff7249238af9f375942ad856d4cf485d22d68bf61a",
     "checklist_sha256": "a21fcd0d80aebd1970dea6960e71c8d18da704f37b16d87c9d7c5a41ececcd80"
   },
-  "artifact": "skills/fixtures/audit-known-defect/artifact",
-  "scope": "Check generator/verifier independence in the inventory summary workflow.",
+  "artifact": "skills/fixtures/audit-requirement-conflict/artifact",
+  "scope": "Check the stated self-approval requirement against principle 2 and the receipt-writing implementation against AC2.",
   "models": {
-    "generator": "unknown",
-    "verifier": "fixture author, no model review"
+    "generator": "openai-gpt",
+    "verifier": "openai-gpt"
   },
   "checks": [
     {
       "principle": 1,
       "question": "What external observation, distinct from the generator saying done, records completion? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
-      "status": "sound",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "status": "not-checked",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
-      "severity": null,
-      "basis": "principle"
+      "severity": null
     },
     {
       "principle": 1,
       "question": "Which expected and observed values are recorded for each completion check? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#1-external-signals-over-self-review)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -36,20 +35,17 @@
     {
       "principle": 2,
       "question": "Who evaluates the generated output, and what evidence separates that evaluator from the generator? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#2-independence-between-generation-and-verification)",
-      "status": "defect",
-      "evidence": "artifact/workflow.md:3-4 names the same generating agent and context for review; artifact/generate.py:5-10 reports completion from its own text without an independent source.",
-      "failure": "The agent reviews itself and misses obvious problems.",
-      "failure_note": "The same self-review cause can affect multiple findings; this fixture records one defect.",
-      "severity": "high",
-      "related_cards": [
-        "verification/blind-oracle"
-      ]
+      "status": "conflict",
+      "evidence": "artifact/spec.md:6 requires \"The generating agent must be the sole approver of its own summary, using the same context; no independent evaluator is permitted.\" The principle 2 question asks \"Who evaluates the generated output, and what evidence separates that evaluator from the generator?\" The requirement demands sole self-approval; principle 2 demands an evaluator independent of the generator. These demands conflict and remain for the operator to resolve.",
+      "failure": null,
+      "failure_note": "",
+      "severity": null
     },
     {
       "principle": 2,
       "question": "Which generator context is withheld from the verifier, and where is that boundary recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#2-independence-between-generation-and-verification)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -58,7 +54,7 @@
       "principle": 3,
       "question": "Which intermediate steps emit observable signals before the final completion decision? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#3-step-level-checkpoints)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -67,7 +63,7 @@
       "principle": 3,
       "question": "Where are a failed checkpoint and the resulting stop or escalation recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#3-step-level-checkpoints)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -76,7 +72,7 @@
       "principle": 4,
       "question": "Which checks search for a counterexample to completion, with the observed result recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#4-adversarial-framing)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -85,7 +81,7 @@
       "principle": 4,
       "question": "What evidence, recorded in the artifact, shows that a failing artifact can be rejected by the verification procedure? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#4-adversarial-framing)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -94,7 +90,7 @@
       "principle": 5,
       "question": "Where are the expected conditions and criterion identifiers specified before evaluation? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#5-explicit-criteria)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -103,7 +99,7 @@
       "principle": 5,
       "question": "How does the artifact record the criteria version used for each verdict? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#5-explicit-criteria)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -112,7 +108,7 @@
       "principle": 6,
       "question": "Which claims are checked by executable assertions or comparisons, and where are their results? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#6-executable-verification-is-king)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -121,7 +117,7 @@
       "principle": 6,
       "question": "Which claims still depend on judgment, and what evidence bounds those claims? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#6-executable-verification-is-king)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -130,7 +126,7 @@
       "principle": 7,
       "question": "When model review is used, what generator and verifier model families are recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -139,7 +135,7 @@
       "principle": 7,
       "question": "When model review is used, what evidence supports the selected verifier model family for this artifact and scope? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#7-cross-family-beats-self-verification)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -147,8 +143,8 @@
     {
       "principle": 8,
       "question": "When independent reviewers disagree, where are their claims and evidence recorded separately? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#8-simulate-debate)",
-      "status": "not-applicable",
-      "evidence": "Construct absent: Parent absence is filed as a defect at check index 2. artifact/workflow.md:3-4 names one generating agent reviewing its own output; no independent reviewers exist to disagree.",
+      "status": "not-checked",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -157,7 +153,7 @@
       "principle": 8,
       "question": "What explicit rule routes unresolved disagreement or stops further review? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#8-simulate-debate)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -166,7 +162,7 @@
       "principle": 9,
       "question": "What before-state or isolated baseline lets a check attribute its observation to this run? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#9-isolate-verification-from-ambient-state)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
@@ -175,21 +171,27 @@
       "principle": 9,
       "question": "Where are run identifiers, state changes and observed deltas recorded? [Principles](https://raw.githubusercontent.com/verificationdesign/verificationdesign/e632a86b2ca8fbb7f83b3130ba083784c7817667/verification_design.md#9-isolate-verification-from-ambient-state)",
       "status": "not-checked",
-      "evidence": "Not checked: this fixture isolates generator/verifier independence; no other check was performed.",
+      "evidence": "Not checked: this script fixture checks the stated self-approval conflict and AC2 receipt-writing implementation only; this checklist behavior was not evaluated.",
       "failure": null,
       "failure_note": "",
       "severity": null
     },
     {
       "free": true,
-      "principle": null,
-      "question": "Does the workflow define a retention period?",
-      "status": "out-of-scope",
-      "evidence": "artifact/workflow.md:1-4 describes review ownership but no retention period; retention is outside the independence scope.",
-      "severity": null,
-      "failure": null,
-      "failure_note": ""
+      "principle": 9,
+      "question": "Does generate.py implement the receipt file required by AC2?",
+      "status": "defect",
+      "basis": "requirement",
+      "evidence": "",
+      "failure": "unmapped",
+      "failure_note": "The missing required file writer is a structural acceptance-criterion failure, outside the six mapped agent behaviors.",
+      "severity": "medium"
     }
   ],
-  "assumptions": []
+  "assumptions": [
+    {
+      "topic": "artifact-stage",
+      "statement": "This is a source inspection of the complete toy workflow declaration in artifact/spec.md:1-7 and artifact/generate.py:1-4, not an executed run or a blind model evaluation. The remaining checklist behaviors were not evaluated."
+    }
+  ]
 }
