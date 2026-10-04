@@ -4,6 +4,7 @@ import contextlib
 import datetime as dt
 import io
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import urllib.parse
@@ -85,6 +86,46 @@ class OAITests(unittest.TestCase):
         """Removing the default HTTPS transport makes the live-access guard stop tripping."""
         with self.assertRaisesRegex(AssertionError, "live OAI access"):
             oai.OAIClient(10, 60).get({"verb": "ListRecords"})
+
+    def test_default_transport_request_shape(self):
+        """Removing the ALPN pin, the Accept header, or skip_accept_encoding changes the
+        wire shape that the arXiv edge accepted on 2026-10-04 (it answers 406 otherwise)."""
+        class FakeConnection:
+            def __init__(self, host, timeout=None, context=None):
+                self.host, self.timeout, self.context = host, timeout, context
+                self.events = []
+
+            def putrequest(self, method, url, skip_host=False, skip_accept_encoding=False):
+                self.events.append(("request", method, url, skip_accept_encoding))
+
+            def putheader(self, name, value):
+                self.events.append(("header", name, value))
+
+            def endheaders(self):
+                self.events.append(("end",))
+
+            def getresponse(self):
+                return SimpleNamespace(status=200, reason="OK", headers={}, read=lambda: SAMPLE)
+
+        made = []
+        with patch("http.client.HTTPSConnection", side_effect=lambda *a, **k: made.append(FakeConnection(*a, **k)) or made[-1]), \
+                patch("ssl.create_default_context") as factory:
+            client = oai.OAIClient(10, 60, monotonic=lambda: 100.0, sleep=lambda seconds: None)
+            self.assertEqual(client.get({"verb": "ListRecords"}), SAMPLE)
+            self.assertEqual(client.get({"verb": "ListRecords"}), SAMPLE)
+        self.assertEqual(len(made), 1)
+        conn = made[0]
+        self.assertEqual((conn.host, conn.timeout), (oai.OAI_HOST, 60))
+        self.assertIs(conn.context, factory.return_value)
+        factory.return_value.set_alpn_protocols.assert_called_once_with(["http/1.1"])
+        self.assertEqual(conn.events[:4], [
+            ("request", "GET", "/oai?verb=ListRecords", True),
+            ("header", "User-Agent", oai.USER_AGENT),
+            ("header", "Accept", "*/*"),
+            ("end",),
+        ])
+        self.assertNotIn("Accept-Encoding", [e[1] for e in conn.events if e[0] == "header"])
+        self.assertEqual(client.last_request_at, 100.0)
 
     def test_dropped_connection(self):
         """Removing the OSError retry branch prevents recovery within budget."""
@@ -170,7 +211,7 @@ class OAITests(unittest.TestCase):
         client.get({"verb": "ListRecords"})
         self.assertEqual(fake.sleeps, [10, 10])
         self.assertEqual(len(fake.calls), 4)
-        self.assertEqual(fake.calls[0][1], {"User-Agent": oai.USER_AGENT})
+        self.assertEqual(fake.calls[0][1], {"User-Agent": oai.USER_AGENT, "Accept": "*/*"})
 
     def test_resumption_token(self):
         """Removing token-only continuation params fails this synthetic pagination case."""

@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 import email.utils
 import http.client
+import ssl
 import sys
 import time
 import urllib.parse
@@ -18,6 +19,14 @@ OAI_PATH = "/oai"
 OAI_NS = "{http://www.openarchives.org/OAI/2.0/}"
 ARXIV_NS = "{http://arxiv.org/OAI/arXiv/}"
 USER_AGENT = "ai-research-scout/2.0 (mechanical arxiv discovery)"
+# arXiv's Fastly edge answered 406 to http.client's default request shape when the
+# window ended within about two days of today (probed 2026-10-04). Two changes together
+# make it pass, matching curl's observed shape: an explicit TLS context (unlike the
+# stdlib default helper it leaves post_handshake_auth off; ALPN http/1.1 is set
+# explicitly so the shape does not depend on the interpreter's default) and request
+# headers that send "Accept: */*" without the implicit "Accept-Encoding: identity".
+REQUEST_HEADERS = {"User-Agent": USER_AGENT, "Accept": "*/*"}
+ALPN_PROTOCOLS = ["http/1.1"]
 MIN_DELAY_SECONDS = 10.0
 MAX_OAI_PAGES_PER_CATEGORY = 20
 MAX_RETRY_AFTER_SECONDS = 300.0
@@ -34,6 +43,17 @@ class OAIError(Exception):
     def __init__(self, code: str, message: str) -> None:
         super().__init__(f"OAI {code}: {message}".strip())
         self.code = code
+
+
+def ssl_context() -> ssl.SSLContext:
+    """Explicit TLS context: ALPN http/1.1, post_handshake_auth left at its False default.
+
+    The stdlib's HTTPSConnection default helper enables post_handshake_auth; the arXiv edge
+    accepted the handshake only in the probe modes that did not (explicit context or TLS 1.2).
+    """
+    context = ssl.create_default_context()
+    context.set_alpn_protocols(ALPN_PROTOCOLS)
+    return context
 
 
 class OAIClient:
@@ -61,7 +81,7 @@ class OAIClient:
         if self._custom_transport:
             self.last_request_at = self.monotonic()
         try:
-            status, reason, headers, payload = self.transport(path, {"User-Agent": USER_AGENT})
+            status, reason, headers, payload = self.transport(path, dict(REQUEST_HEADERS))
         except Exception:
             self.close()
             raise
@@ -73,9 +93,15 @@ class OAIClient:
 
     def _transport(self, path, headers):
         if self.connection is None:
-            self.connection = http.client.HTTPSConnection(OAI_HOST, timeout=self.timeout)
-        self.connection.request("GET", path, headers=headers)
-        # Preserve the legacy timestamp: after request(), before response reading.
+            self.connection = http.client.HTTPSConnection(
+                OAI_HOST, timeout=self.timeout, context=ssl_context())
+        # putrequest instead of request(): skip the implicit "Accept-Encoding: identity"
+        # header, which the edge rejects together with a missing Accept header.
+        self.connection.putrequest("GET", path, skip_accept_encoding=True)
+        for name, value in headers.items():
+            self.connection.putheader(name, value)
+        self.connection.endheaders()
+        # Preserve the legacy timestamp: after the request is sent, before response reading.
         self.last_request_at = self.monotonic()
         response = self.connection.getresponse()
         return response.status, response.reason, response.headers, response.read()
