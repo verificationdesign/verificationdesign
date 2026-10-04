@@ -31,6 +31,8 @@ The main theorem depends on restrictive assumptions: future requirements are con
 
 Disposition: hold-and-watch. Checkable mechanism for operator attention or budget: yes. The scheduling algorithm and objective expose executable observables: the allowed review count K, review-stage indices, gap sequence, deliverable-size or stage-based cost proxy, and computed loss. A test can verify schedule construction and compare candidate schedules under declared parameters. This is a checkable budget-allocation mechanism, but it is not yet evidence that the proxy optimizes real human attention. Hold pattern-card promotion until a human-operator study or independent replication tests measurable time or cognitive cost. Expand-on: yes. Seed topics: executable oversight scheduling under measured human review cost; replication of nonuniform review schedules with human operators; sensitivity tests for stage-dependent error growth.
 
+2026-10-04 update: expand-on registered. Seed topics wired into research/scouts/config.json under oversight_scheduling: oversight scheduling, human review cost, review budget allocation, review-stage placement, review stage placement, nonuniform review schedules, non-uniform review schedules, human review scheduling, stage-dependent error growth, stage dependent error growth, review schedule replication, review cost measurement. Disposition unchanged.
+
 ## Claims Needing Human Review
 
 - Whether the algorithm is useful enough under declared assumptions to become an exploratory pattern before human validation.

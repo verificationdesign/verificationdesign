@@ -31,6 +31,8 @@ The formal result begins after semantic evidence has been lowered into the graph
 
 Disposition: fold-a-narrow-warning. The checkable SMT decision mechanism lowers the fold bar for a warning that formal authorization is only as complete as its evidence graph, policy translation, mediation boundary, and backend conformance. Canonical prose should recommend tests that delete or corrupt labels and dependency edges, bypass the gateway, and compare a counterexample with the realized effect. Hold the reported effectiveness and generalization claims pending independent reproduction. Expand-on: yes. Seed topics: permission-graph completeness testing; semantic extraction failures in formal agent authorization; independent replication of runtime SMT gateways.
 
+2026-10-04 update: expand-on registered. Seed topics wired into research/scouts/config.json under agent_authorization_testing: permission-graph completeness, permission graph completeness, formal agent authorization, semantic extraction failures, runtime SMT gateways, SMT gateway replication, intent-certificate authorization, intent certificate authorization, request-to-effect bounds, request to effect bounds, complete-mediation audits, complete mediation audits, agent gateway evaluation. Disposition unchanged.
+
 ## Claims Needing Human Review
 
 - Whether grade C is too generous without an artifact inspected in this review, despite the independently checkable solver formulation.

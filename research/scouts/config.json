@@ -43,6 +43,41 @@
         "factual consistency detection"
       ]
     },
+    "agent_authorization_testing": {
+      "note": "research/reviewed/2026-08-19-fava-permission-graphs.md; research/reviewed/2026-08-19-intent-governed-tool-authorization.md",
+      "phrases": [
+        "permission-graph completeness",
+        "permission graph completeness",
+        "formal agent authorization",
+        "semantic extraction failures",
+        "runtime SMT gateways",
+        "SMT gateway replication",
+        "intent-certificate authorization",
+        "intent certificate authorization",
+        "request-to-effect bounds",
+        "request to effect bounds",
+        "complete-mediation audits",
+        "complete mediation audits",
+        "agent gateway evaluation"
+      ]
+    },
+    "oversight_scheduling": {
+      "note": "research/reviewed/2026-08-19-nonuniformity-human-ai-coworking.md",
+      "phrases": [
+        "oversight scheduling",
+        "human review cost",
+        "review budget allocation",
+        "review-stage placement",
+        "review stage placement",
+        "nonuniform review schedules",
+        "non-uniform review schedules",
+        "human review scheduling",
+        "stage-dependent error growth",
+        "stage dependent error growth",
+        "review schedule replication",
+        "review cost measurement"
+      ]
+    },
     "operator_attention": {
       "note": "research/reviewed/2026-06-30-automation-bias-overreliance.md",
       "phrases": [
@@ -71,7 +106,13 @@
         "overreliance",
         "over-reliance",
         "rubber-stamp",
-        "rubber stamping"
+        "rubber stamping",
+        "AI recommendation uptake",
+        "recommendation omission",
+        "justified rejection",
+        "operator-attention interventions",
+        "operator attention interventions",
+        "randomized attention interventions"
       ]
     }
   },

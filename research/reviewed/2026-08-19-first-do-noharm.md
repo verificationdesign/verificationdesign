@@ -30,6 +30,8 @@ This note is constrained to the abstract. It cannot assess randomization, alloca
 
 Disposition: hold-and-watch. The abstract supports discovery, not canonical characterization. The reported result that AI-assisted physicians still scored below many AI systems alone makes operator uptake the load-bearing reason to keep watching this source, and the reported concentration of severe errors in omissions strengthens that warning. Checkable mechanism for operator attention or budget: no. The abstract supplies no executable attention measure, review-budget control, or observable mechanism that distinguishes non-attention from deliberate non-use. These additions do not change the disposition because the method and quantitative denominators remain unavailable at this read scope. Expand-on: yes. Seed topics: observable uptake measures in human-AI decision support; randomized operator-attention interventions; recommendation omission versus justified rejection.
 
+2026-10-04 update: expand-on registered. Seed topics wired into research/scouts/config.json under operator_attention: AI recommendation uptake, recommendation omission, justified rejection, operator-attention interventions, operator attention interventions, randomized attention interventions. Disposition unchanged.
+
 ## Claims Needing Human Review
 
 - Whether the full paper operationalizes "omitted valuable recommendations" in a way that separates attention from clinical judgment.

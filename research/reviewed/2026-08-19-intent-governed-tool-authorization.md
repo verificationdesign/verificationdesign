@@ -34,6 +34,8 @@ All evaluated tasks and data are synthetic. Reference certificates, resource bou
 
 Disposition: fold-a-narrow-warning. The checkable mechanism lowers the fold bar for a scoped design warning: static credentials and coarse intent labels are insufficient evidence that a proposed payload is justified by the current request, so authorization tests should probe manifest monotonicity, certificate binding and expiry, payload-effect bounds, and direct-call bypasses. Do not fold the effectiveness numbers or a general claim that IGAC confines production agents. Expand-on: yes. Seed topics: independent evaluations of intent-certificate authorization; executable tests for request-to-effect bound fidelity; complete-mediation audits for agent gateways.
 
+2026-10-04 update: expand-on registered. Seed topics wired into research/scouts/config.json under agent_authorization_testing: permission-graph completeness, permission graph completeness, formal agent authorization, semantic extraction failures, runtime SMT gateways, SMT gateway replication, intent-certificate authorization, intent certificate authorization, request-to-effect bounds, request to effect bounds, complete-mediation audits, complete mediation audits, agent gateway evaluation. Disposition unchanged.
+
 ## Claims Needing Human Review
 
 - Whether the deterministic monotonicity mechanism is sufficiently distinct from existing capability and purpose-limitation patterns to merit a new canonical warning.
