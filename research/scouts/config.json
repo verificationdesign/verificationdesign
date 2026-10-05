@@ -58,7 +58,19 @@
         "request to effect bounds",
         "complete-mediation audits",
         "complete mediation audits",
-        "agent gateway evaluation"
+        "agent gateway evaluation",
+        "tool-call authorization",
+        "tool call authorization",
+        "authorization policy",
+        "runtime authorization",
+        "action authorization",
+        "least privilege",
+        "permission model",
+        "agent permissions",
+        "permission scoping",
+        "scoped permissions",
+        "capability tokens",
+        "policy enforcement point"
       ]
     },
     "oversight_scheduling": {
@@ -75,7 +87,20 @@
         "stage-dependent error growth",
         "stage dependent error growth",
         "review schedule replication",
-        "review cost measurement"
+        "review cost measurement",
+        "human oversight allocation",
+        "oversight allocation",
+        "review sampling",
+        "selective human review",
+        "selective review",
+        "escalation policy",
+        "review frequency",
+        "audit sampling",
+        "spot-check",
+        "spot checks",
+        "oversight budget",
+        "monitoring budget",
+        "review allocation"
       ]
     },
     "operator_attention": {
