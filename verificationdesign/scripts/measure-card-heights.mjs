@@ -47,17 +47,15 @@ try {
             title: category.querySelector('.category-title')?.textContent?.trim() ?? '',
             heights: [...category.querySelectorAll('.card-list li > a')].map((card) => Math.round(card.getBoundingClientRect().height)),
           })),
-          ghosts: document.querySelectorAll('.card-gloss-ghost').length,
           lineHeight: Number.parseFloat(getComputedStyle(document.querySelector('.card-gloss')).lineHeight) || 24,
         }));
         const html = decodeHtml(await page.content());
         const intentCounts = intents.map((intent) => html.split(intent).length - 1);
         const intentsOnce = intentCounts.filter((count) => count === 1).length;
         const heights = measurement.categories.map(({ title, heights: values }) => `${JSON.stringify(title)}=[${values.join(',')}]`).join(' ');
-        console.log(`${item.path} width=${width} heights=${heights} ghosts=${measurement.ghosts} intents_once=${intentsOnce}/${intents.length}`);
+        console.log(`${item.path} width=${width} heights=${heights} intents_once=${intentsOnce}/${intents.length}`);
 
         if (shotsDir) await page.screenshot({ path: join(shotsDir, `${item.name}-${width}.png`), fullPage: true });
-        if (measurement.ghosts !== 0) failures.push(`${item.path} width=${width}: ghosts=${measurement.ghosts}`);
         if (intentsOnce !== intents.length) failures.push(`${item.path} width=${width}: intents_once=${intentsOnce}/${intents.length}`);
         for (const category of measurement.categories) {
           if (new Set(category.heights).size > 1) failures.push(`${item.path} width=${width}: unequal heights in ${category.title}`);

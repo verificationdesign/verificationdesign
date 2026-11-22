@@ -74,19 +74,28 @@ const socialImage = new URL('/og.png', Astro.site).toString();
           button.className = 'copy-button';
           button.type = 'button';
           var copyText = document.body.dataset;
-          button.setAttribute('aria-label', copyText.copyLabel || 'Copy code to clipboard');
+          var idleLabel = copyText.copyLabel || 'Copy code to clipboard';
+          var idleText = copyText.copyIdle || 'Copy';
+          var resetTimer;
+          function setCopyState(text, label) {
+            button.setAttribute('aria-label', label);
+            button.textContent = text;
+          }
           button.setAttribute('aria-live', 'polite');
-          button.textContent = copyText.copyIdle || 'Copy';
+          setCopyState(idleText, idleLabel);
           button.addEventListener('click', async function () {
             var code = pre.querySelector('code');
             var text = code ? code.textContent : pre.textContent;
+            var status;
             try {
               await navigator.clipboard.writeText(text || '');
-              button.textContent = copyText.copyCopied || 'Copied';
-              setTimeout(function () { button.textContent = copyText.copyIdle || 'Copy'; }, 1500);
-            } catch (err) {
-              button.textContent = copyText.copyFailed || 'Failed';
+              status = copyText.copyCopied || 'Copied';
+            } catch {
+              status = copyText.copyFailed || 'Failed';
             }
+            clearTimeout(resetTimer);
+            setCopyState(status, status);
+            resetTimer = setTimeout(function () { setCopyState(idleText, idleLabel); }, 1500);
           });
           pre.appendChild(button);
         });

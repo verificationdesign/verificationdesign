@@ -44,7 +44,7 @@ const Heading = headingLevel;
 
 <div class="category-grid">
   {visible.map((key) => (
-    <section class="category">
+    <section class="category" id={key}>
       <Heading class="category-title">{CATEGORY_INFO[key].label}</Heading>
       <p class="category-blurb">
         {CATEGORY_INFO[key].blurb}

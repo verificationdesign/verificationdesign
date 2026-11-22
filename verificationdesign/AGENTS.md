@@ -26,7 +26,7 @@ The site is an interface over the research material, not a second source of trut
 - Accessibility smoke check: `npm run a11y`
 - Full verification: `npm run verify`
 
-`npm run verify` runs build, Astro checks, card lint, and the accessibility smoke check. If the accessibility step cannot launch a browser in the current environment, report that as an unverified item.
+`npm run verify` runs the site build, builds and checks the Markdown twins, checks internal links, runs Astro checks, lints cards and site prose, and runs the accessibility smoke check. If the accessibility step cannot launch a browser in the current environment, report that as an unverified item.
 
 ## UX Work
 

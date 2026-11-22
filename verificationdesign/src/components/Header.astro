@@ -4,11 +4,18 @@ import { getUi } from '../i18n/ui';
 
 const t = getUi();
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const isActive = (route: string) => {
-  const r = route.replace(/\/$/, '') || '/';
-  return r === '/' ? path === '/' : path === r || path.startsWith(r + '/');
+const currentState = (route: string) => {
+  const section = route.replace(/\/$/, '') || '/';
+  if (path === section) return 'page';
+  if (section !== '/' && path.startsWith(section + '/')) return 'true';
 };
-const isHome = isActive(t.routes.home);
+const isHome = currentState(t.routes.home) === 'page';
+const navItems = [
+  { route: t.routes.patterns, label: t.nav.patterns },
+  { route: t.routes.principles, label: t.nav.principles },
+  { route: t.routes.references, label: t.nav.references },
+  { route: t.routes.about, label: t.nav.about },
+];
 ---
 
 <header class="site-header">
@@ -26,34 +33,18 @@ const isHome = isActive(t.routes.home);
     )}
     <nav aria-label={t.nav.primary}>
       <ul>
-        <li>
-          {isActive(t.routes.patterns) ? (
-            <span class="nav-current" aria-current="page">{t.nav.patterns}</span>
-          ) : (
-            <a href={t.routes.patterns}>{t.nav.patterns}</a>
-          )}
-        </li>
-        <li>
-          {isActive(t.routes.principles) ? (
-            <span class="nav-current" aria-current="page">{t.nav.principles}</span>
-          ) : (
-            <a href={t.routes.principles}>{t.nav.principles}</a>
-          )}
-        </li>
-        <li>
-          {isActive(t.routes.references) ? (
-            <span class="nav-current" aria-current="page">{t.nav.references}</span>
-          ) : (
-            <a href={t.routes.references}>{t.nav.references}</a>
-          )}
-        </li>
-        <li>
-          {isActive(t.routes.about) ? (
-            <span class="nav-current" aria-current="page">{t.nav.about}</span>
-          ) : (
-            <a href={t.routes.about}>{t.nav.about}</a>
-          )}
-        </li>
+        {navItems.map(({ route, label }) => {
+          const current = currentState(route);
+          return (
+            <li>
+              {current === 'page' ? (
+                <span class="nav-current" aria-current="page">{label}</span>
+              ) : (
+                <a href={route} class:list={{ 'nav-current': current }} aria-current={current}>{label}</a>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </nav>
   </div>

@@ -9,6 +9,7 @@
     "build": "astro build",
     "build:twins": "node scripts/build-md-twins.mjs",
     "check:twins": "node scripts/check-md-twins.mjs",
+    "check:links": "node scripts/check-internal-links.mjs",
     "smoke:live": "node scripts/smoke-live.mjs",
     "measure:cards": "node scripts/measure-card-heights.mjs",
     "preview": "astro preview",
@@ -17,7 +18,7 @@
     "lint:voice": "node scripts/lint-voice.mjs",
     "test:comparator-mark": "node scripts/check-comparator-mark-centering.mjs",
     "a11y": "pa11y-ci $(grep -rL 'http-equiv=\"refresh\"' dist --include='*.html')",
-    "verify": "npm run build && npm run build:twins && npm run check:twins && npm run check && npm run lint:cards && npm run lint:voice && npm run a11y",
+    "verify": "npm run build && npm run build:twins && npm run check:twins && npm run check:links && npm run check && npm run lint:cards && npm run lint:voice && npm run a11y",
     "astro": "astro"
   },
   "dependencies": {

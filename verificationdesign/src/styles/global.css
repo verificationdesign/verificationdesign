@@ -245,7 +245,8 @@ hr {
   text-decoration: none;
 }
 .site-header nav a:hover { color: var(--text); }
-.site-header nav .nav-current { color: var(--text); cursor: default; }
+.site-header nav .nav-current { color: var(--text); }
+.site-header nav span.nav-current { cursor: default; }
 
 .site-footer {
   border-top: 1px solid var(--border);

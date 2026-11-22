@@ -56,6 +56,10 @@ export function extractCategory(content) {
   return CATEGORY_FROM_SUBTITLE[match[1]] || null;
 }
 
+function relatedTitle(name) {
+  return name.trim().replace(/:$/, '').trim();
+}
+
 export function extractRelated(content) {
   const match = content.match(/##\s+Related Patterns\s*\n([\s\S]*?)(?=\n##\s|\n*$)/);
   if (!match) return [];
@@ -64,18 +68,23 @@ export function extractRelated(content) {
   const re = /\*\*([^*]+)\*\*/g;
   let m;
   while ((m = re.exec(block)) !== null) {
-    names.push(m[1].trim());
+    names.push(relatedTitle(m[1]));
   }
   return names;
 }
 
-function linkRelatedPatterns(content, linksByTitle) {
+function linkRelatedPatterns(content, linksByTitle, title) {
   return content.replace(
     /(##\s+Related Patterns\s*\n)([\s\S]*?)(?=\n##\s|\n*$)/,
     (_match, heading, block) => {
       const linkedBlock = block.replace(/\*\*([^*]+)\*\*/g, (bold, name) => {
-        const href = linksByTitle.get(name.trim().toLowerCase());
-        return href ? `[**${name}**](${href})` : bold;
+        const target = relatedTitle(name);
+        const relatedCard = linksByTitle.get(target.toLowerCase());
+        if (!relatedCard) throw new Error(`${title} names unknown related pattern: ${target}`);
+        if (!relatedCard.included) return bold;
+        const start = name.indexOf(target);
+        const suffix = name.slice(start + target.length);
+        return `${name.slice(0, start)}[**${target}${suffix.trimEnd()}**](${relatedCard.href})${suffix.slice(suffix.trimEnd().length)}`;
       });
       return `${heading}${linkedBlock}`;
     },
@@ -128,12 +137,9 @@ export function cardsLoader({ sourcePath }) {
         }
 
         const slug = file.replace(/\.md$/, '');
-        if (allowlist && !allowlist.has(slug)) {
-          continue;
-        }
-
-        cardInputs.push({ file, filePath, content, title, category, slug });
-        linksByTitle.set(title.toLowerCase(), `/patterns/${category}/${slug}/`);
+        const included = !allowlist || allowlist.has(slug);
+        linksByTitle.set(title.toLowerCase(), { href: `/patterns/${category}/${slug}/`, included });
+        if (included) cardInputs.push({ file, filePath, content, title, category, slug });
       }
 
       for (const input of cardInputs) {
@@ -142,7 +148,7 @@ export function cardsLoader({ sourcePath }) {
         const updated = cardUpdated(filePath, (message) => logger.warn(message));
         const related = extractRelated(content);
         const intent = extractIntent(content);
-        const renderedContent = linkRelatedPatterns(content, linksByTitle);
+        const renderedContent = linkRelatedPatterns(content, linksByTitle, title);
 
         const data = await parseData({
           id,

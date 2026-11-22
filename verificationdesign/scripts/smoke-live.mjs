@@ -87,10 +87,9 @@ for (const path of ['/', '/patterns/']) {
   await request(path, 'text/html', (body) => {
     const html = decodeHtml(body);
     const agentLinks = ['/llms.txt', '/llms-full.txt'].filter((href) => html.includes(`href="${href}"`)).length;
-    const ghosts = html.split('card-gloss-ghost').length - 1;
     const intentsOnce = cards.filter((card) => html.split(card.intent).length === 2).length;
-    console.log(`${path}: agent_links=${agentLinks}/2 ghosts=${ghosts} intents_once=${intentsOnce}/${cards.length}`);
-    return agentLinks === 2 && ghosts === 0 && intentsOnce === cards.length;
+    console.log(`${path}: agent_links=${agentLinks}/2 intents_once=${intentsOnce}/${cards.length}`);
+    return agentLinks === 2 && intentsOnce === cards.length;
   });
 }
 await request('/principles.md/', '', () => true, undefined, true);

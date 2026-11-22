@@ -41,7 +41,9 @@ Runs `pa11y-ci` against generated HTML in `dist/`.
 
     npm run verify
 
-Runs build, Astro type checks, card lint, and the accessibility smoke check.
+Runs the site build, builds and checks the Markdown twins, checks internal
+links, runs Astro type checks, lints cards and site prose, and runs the
+accessibility smoke check.
 
 ## Draft gating
 
@@ -67,7 +69,7 @@ stable and add locale-prefixed alternates such as `/es/patterns/...`.
         config.ts          collection schemas
         loaders/           custom content loaders (reads source cards)
       layouts/             BaseLayout, CardLayout
-      components/          Header, Footer, CategoryGrid, Breadcrumb, CopyButton
+      components/          Header, Footer, CategoryGrid, Breadcrumb
       i18n/                UI strings and locale defaults
       lib/                 reference aggregation utilities
       pages/               routes

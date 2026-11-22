@@ -80,6 +80,9 @@ jobs:
       - name: Check markdown twins
         run: npm run check:twins
 
+      - name: Check internal links
+        run: npm run check:links
+
       - name: Check
         run: npm run check
 
