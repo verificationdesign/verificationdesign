@@ -17,6 +17,7 @@ export const FAILURE_MAP = [
       { label: 'Cross-Family', href: '/patterns/orchestration/cross-family/' },
       { label: 'Adversary', href: '/patterns/orchestration/adversary/' },
       { label: 'Admissibility Gate', href: '/patterns/verification/admissibility-gate/' },
+      { label: 'Evidence Manifest', href: '/patterns/context-and-state/evidence-manifest/' },
     ],
   },
   {

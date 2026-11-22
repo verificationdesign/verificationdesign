@@ -3,6 +3,7 @@ export const READING_ORDER = [
   'context-and-state/guardrail-decorator',
   'context-and-state/causal-tag',
   'context-and-state/trajectory-cursor',
+  'context-and-state/evidence-manifest',
   'context-and-state/state-baseline',
   'verification/executable-analog',
   'verification/blind-oracle',

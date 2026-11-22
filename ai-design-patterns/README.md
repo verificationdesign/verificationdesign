@@ -1,6 +1,6 @@
 # AI Design Patterns
 
-A catalog of 18 pattern cards for verifying the work of agentic systems, in three families:
+A catalog of 19 pattern cards for verifying the work of agentic systems, in three families:
 
 - **Context and State**: what exists before the model acts.
 - **Verification**: how claims about agent work are checked against external, executable signals.
