@@ -32,6 +32,7 @@ const ORDER = [
   'orchestration/escalation-chain',
   'orchestration/backpressure',
   'orchestration/tool-adapter',
+  'orchestration/effect-witness',
 ];
 const CATEGORY = {
   'Context Pattern': 'context-and-state',

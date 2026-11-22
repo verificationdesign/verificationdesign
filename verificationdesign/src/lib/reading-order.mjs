@@ -18,4 +18,5 @@ export const READING_ORDER = [
   'orchestration/escalation-chain',
   'orchestration/backpressure',
   'orchestration/tool-adapter',
+  'orchestration/effect-witness',
 ];

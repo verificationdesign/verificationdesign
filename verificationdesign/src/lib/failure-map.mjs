@@ -53,6 +53,7 @@ export const FAILURE_MAP = [
     links: [
       { label: 'Guardrail Decorator', href: '/patterns/context-and-state/guardrail-decorator/' },
       { label: 'Tool Adapter', href: '/patterns/orchestration/tool-adapter/' },
+      { label: 'Effect Witness', href: '/patterns/orchestration/effect-witness/' },
       { label: 'Constitution', href: '/patterns/context-and-state/constitution/' },
     ],
   },

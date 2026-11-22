@@ -82,7 +82,7 @@ for (const twin of twins) {
 }
 await request('/llms.txt', 'text/plain', (body) => body.split(/\r?\n/)[0] === '# Verification Design');
 await request('/llms-full.txt', 'text/plain', (body) => body.startsWith('---\nCanonical: https://verificationdesign.com/principles/\nSource: verification_design.md\n'));
-await request('/catalog.json', 'application/json', (body) => { try { return JSON.parse(body).cards?.length === 19; } catch { return false; } });
+await request('/catalog.json', 'application/json', (body) => { try { return JSON.parse(body).cards?.length === 20; } catch { return false; } });
 for (const path of ['/', '/patterns/']) {
   await request(path, 'text/html', (body) => {
     const html = decodeHtml(body);
