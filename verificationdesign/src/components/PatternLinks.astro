@@ -1,0 +1,17 @@
+---
+import { getUi } from '../i18n/ui';
+
+interface Props {
+  cards: { category: string; slug: string; title: string }[];
+}
+
+const { cards } = Astro.props;
+const t = getUi();
+---
+
+<p>
+  {t.principles.patterns}:
+  {cards.map((card, index) => (
+    <>{index > 0 && ', '}<a href={`/patterns/${card.category}/${card.slug}/`}>{card.title}</a></>
+  ))}
+</p>

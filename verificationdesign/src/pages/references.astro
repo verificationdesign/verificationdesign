@@ -29,6 +29,7 @@ const references = await collectReferences(
     <ol class="reference-list">
       {references.map((reference) => (
         <li>
+          {reference.context && <span class="reference-context">{reference.context}</span>}
           <a href={reference.href}>{reference.label}</a>
           <span class="reference-sources">
             {' '}Cited from{' '}

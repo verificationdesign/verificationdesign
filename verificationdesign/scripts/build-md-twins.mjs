@@ -210,12 +210,12 @@ const references = await collectReferences(orderedCards.map((card) => ({
   href: `/patterns/${card.category}/${card.slug}/`,
   body: card.body,
 })));
-const referencesBody = [
+const formatReferences = (includeContext) => [
   '# References',
   '',
   ...references.map((reference) => {
     const sources = reference.sources.map((source) => `[${source.title}](${new URL(source.href, SITE)})`).join(', ');
-    return `- [${reference.label}](${reference.href}): Cited from ${sources}.`;
+    return `- ${includeContext ? reference.context ?? '' : ''}[${reference.label}](${reference.href}): Cited from ${sources}.`;
   }),
   '',
 ].join('\n');
@@ -224,7 +224,7 @@ await emit('references.md', `${frontmatter({
   canonical: `${SITE}/references/`,
   license: LICENSE,
   generated: true,
-})}${referencesBody}`);
+})}${formatReferences(true)}`);
 registerTwin('references.md', `${SITE}/references/`);
 
 const llms = [
@@ -278,7 +278,7 @@ await emit('llms.txt', llms);
 const fullBlocks = [
   { canonical: `${SITE}/principles/`, source: 'verification_design.md', body: principlesBody },
   ...orderedCards.map((card) => ({ canonical: card.canonical, source: card.source, body: card.body })),
-  { canonical: `${SITE}/references/`, source: 'generated', body: referencesBody },
+  { canonical: `${SITE}/references/`, source: 'generated', body: formatReferences(false) },
 ];
 const full = fullBlocks.map((block) => [
   '---',

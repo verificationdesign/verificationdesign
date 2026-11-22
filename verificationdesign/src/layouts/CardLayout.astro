@@ -2,12 +2,14 @@
 import BaseLayout from './BaseLayout.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import CardNav from '../components/CardNav.astro';
+import { PRINCIPLE_MAP } from '../lib/principle-map.mjs';
 import { getUi } from '../i18n/ui';
 import { cardSourceUrl, REPO_ISSUES_URL } from '../lib/repo';
 
 const { entry, headings, prev, next, markdownPath } = Astro.props;
 const data = entry.data;
 const t = getUi();
+const principles = PRINCIPLE_MAP.filter((principle) => principle.cards.includes(data.slug));
 
 const breadcrumb = [
   { label: t.card.breadcrumbRoot, href: t.routes.patterns },
@@ -51,6 +53,12 @@ const cardSchema = JSON.stringify([
   <article class="card-page">
     <script is:inline type="application/ld+json" set:html={cardSchema} />
     <Breadcrumb items={breadcrumb} />
+    <p>
+      {t.card.principles}:
+      {principles.map((principle, index) => (
+        <>{index > 0 && ', '}<a href={`${t.routes.principles}#${principle.anchor}`}>{principle.number}. {principle.title}</a></>
+      ))}
+    </p>
 
     {sectionHeadings.length > 0 && (
       <details class="section-nav">
@@ -70,6 +78,7 @@ const cardSchema = JSON.stringify([
     <p class="card-updated">
       {t.card.updated} {data.updated} ·
       <a href={cardSourceUrl(data.slug)}>{t.card.viewSource}</a> ·
+      <a href={markdownPath}>{t.card.markdown}</a> ·
       <a href={REPO_ISSUES_URL}>{t.card.reportError}</a>
     </p>
 

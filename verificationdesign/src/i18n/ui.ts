@@ -18,6 +18,9 @@ export const ui = {
       about: '/about/',
       book: '/book/',
     },
+    principles: {
+      patterns: 'Patterns',
+    },
     card: {
       breadcrumbRoot: 'Patterns',
       navigation: 'Pattern navigation',
@@ -26,6 +29,8 @@ export const ui = {
       sections: 'Sections in this pattern',
       updated: 'Updated',
       viewSource: 'View source',
+      markdown: 'Markdown',
+      principles: 'Principles',
       reportError: 'Report an error',
     },
     copy: {
@@ -41,6 +46,7 @@ export const ui = {
       agents: 'For agents:',
       agentIndex: 'index',
       fullCorpus: 'full corpus',
+      license: 'Written content CC BY 4.0. Card code samples CC0. Site code MIT.',
     },
   },
 } as const;

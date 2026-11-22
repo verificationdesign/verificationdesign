@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import CategoryGrid from '../components/CategoryGrid.astro';
+import FailureChooser from '../components/FailureChooser.astro';
 ---
 
 <BaseLayout llmsTxt={true}>
@@ -43,6 +44,7 @@ import CategoryGrid from '../components/CategoryGrid.astro';
       </p>
     </section>
 
+    <FailureChooser headingLevel="h2" />
     <CategoryGrid />
   </div>
 </BaseLayout>

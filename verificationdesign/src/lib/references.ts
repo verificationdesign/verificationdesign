@@ -11,6 +11,7 @@ export type ReferenceEntry = {
   label: string;
   href: string;
   sources: ReferenceSource[];
+  context?: string;
 };
 
 type ReferenceInput = {
@@ -121,6 +122,13 @@ export async function collectReferences(cards: ReferenceInput[]): Promise<Refere
     title: 'Verification Design Principles',
     href: '/principles/',
   });
+
+  for (const [, topic, paper, href] of referencesTable.matchAll(
+    /^\| ([^|]+?) \| ([^|]+?) \| \[[^\]]+\]\((https?:\/\/[^)]+)\) \|\s*$/gm,
+  )) {
+    const reference = references.get(normalizeHref(href).toLowerCase());
+    if (reference) reference.context = `${topic}. ${paper}. `;
+  }
 
   for (const page of PROSE_PAGES) {
     const pageSource = await readFile(resolve(process.cwd(), page.file), 'utf8');

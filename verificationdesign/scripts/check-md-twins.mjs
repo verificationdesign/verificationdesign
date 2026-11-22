@@ -393,10 +393,12 @@ console.log(`Check 14 homepage llms.txt link: links=${plainAlternates} mismatche
 
 const principlesSource = normalizeBody(await readFile(join(REPO, 'verification_design.md'), 'utf8'));
 const referencesTwin = parsed.get('references.md');
+const referenceLine = /^- (.*?)\[([^\]]+)\]\(([^)]+)\):/gm;
+const corpusReferences = (referencesTwin?.body ?? '').replace(referenceLine, '- [$2]($3):');
 const expectedFullBlocks = [
   { canonical: `${SITE}/principles/`, source: 'verification_design.md', body: principlesSource },
   ...ORDER.map((id) => { const card = byId.get(id); return { canonical: `${SITE}/patterns/${id}/`, source: card.source, body: card.sourceBody }; }),
-  { canonical: `${SITE}/references/`, source: 'generated', body: normalizeBody(referencesTwin?.body ?? '') },
+  { canonical: `${SITE}/references/`, source: 'generated', body: normalizeBody(corpusReferences) },
 ];
 const expectedFull = normalizeBody(expectedFullBlocks.map((block) => ['---', `Canonical: ${block.canonical}`, `Source: ${block.source}`, '', block.body.replace(/\n$/, ''), ''].join('\n')).join('\n'));
 if (normalizeBody(fullText) !== expectedFull) fail('llms-full.txt: exact normalized bytes differ');
@@ -452,11 +454,14 @@ const catalogText = (await readFile(join(DIST, 'catalog.json'), 'utf8')).replace
 if (catalogText !== expectedCatalogText) fail('catalog.json: canonical bytes differ');
 console.log(`Check 18 catalog.json bytes: cards=${expectedCatalog.cards.length} failures=${expectedCatalog.failures.length} bytes=${Buffer.byteLength(catalogText)} equal=${catalogText === expectedCatalogText}`);
 
-const referenceMarkdownPairs = [...(referencesTwin?.body ?? '').matchAll(/^- \[([^\]]+)\]\(([^)]+)\):/gm)].map((match) => [match[1], match[2]]);
+const referenceMarkdownEntries = [...(referencesTwin?.body ?? '').matchAll(referenceLine)]
+  .map((match) => [match[1].trim(), match[2], match[3]]);
 const referencesHtml = decodeHtml(await readFile(join(DIST, 'references/index.html'), 'utf8')).replace(/>\s+</g, '><');
-const referenceHtmlPairs = [...referencesHtml.matchAll(/<li><a href="([^"]+)">(.*?)<\/a><span class="reference-sources">/g)].map((match) => [match[2], match[1]]);
-if (JSON.stringify(referenceMarkdownPairs) !== JSON.stringify(referenceHtmlPairs)) fail('references.md: labels and links differ from HTML');
-console.log(`Check 19 references parity: markdown=${referenceMarkdownPairs.length} html=${referenceHtmlPairs.length} equal=${JSON.stringify(referenceMarkdownPairs) === JSON.stringify(referenceHtmlPairs)}`);
+const referenceHtmlEntries = [...referencesHtml.matchAll(/<li>(?:<span class="reference-context">(.*?)<\/span>)?<a href="([^"]+)">(.*?)<\/a><span class="reference-sources">/g)]
+  .map((match) => [match[1]?.trim() ?? '', match[3], match[2]]);
+const referencesMatch = JSON.stringify(referenceMarkdownEntries) === JSON.stringify(referenceHtmlEntries);
+if (!referenceMarkdownEntries.length || !referencesMatch) fail('references.md: context, labels, or links differ from HTML');
+console.log(`Check 19 references parity: markdown=${referenceMarkdownEntries.length} html=${referenceHtmlEntries.length} equal=${referencesMatch}`);
 
 if (errors.length) {
   for (const error of errors) console.error(`FAIL: ${error}`);
