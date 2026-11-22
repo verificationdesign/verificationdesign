@@ -293,3 +293,4 @@ Do not reach for Comparator when:
 * **Judge Harness:** handles cases where no named comparator fits, but only with calibration and reliability checks.
 * **Constitution:** can name expected values and accepted comparator operators.
 * **Delta:** produces relative observed values that Comparator can evaluate with a declared numeric tolerance operator.
+* **Fault Seed:** uses labelled wrong candidates to measure which failures the comparator catches.

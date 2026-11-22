@@ -229,3 +229,4 @@ When no executable analog exists, route the claim explicitly to a validated judg
 * **Blind Oracle:** Blind Oracle protects the expected value from draft contamination; Executable Analog is its executable specialization, the strongest form when the comparison can run as code.
 * **Judge Harness:** when no executable analog exists, route the claim to a validated judge harness rather than an inline LLM judgment.
 * **Admissibility Gate:** keeps the challenge independent of the producer, which reduces the risk that the agent writes a tautological check for its own work.
+* **Fault Seed:** measures which known violations an executable analog rejects at its normal entry point.

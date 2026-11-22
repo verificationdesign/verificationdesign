@@ -231,3 +231,4 @@ Do not reach for State Baseline when:
 * **Constitution:** can require baseline capture as part of the criteria contract.
 * **Trajectory Cursor:** tracks position and state inside a multi-step process.
 * **Executable Analog:** turns the snapshot or restore check into a runnable verifier.
+* **Effect Witness:** restores the baseline before replaying approval and rejection so both decisions start from equivalent records.

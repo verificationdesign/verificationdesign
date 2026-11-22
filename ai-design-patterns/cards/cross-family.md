@@ -159,6 +159,8 @@ verifier_config_source: explicit_config
 harness: none
 ```
 
+**Design judgment.** On the same labelled cases, report each checker's solo miss rate and the pair's joint-miss rate with a common denominator of cases the checks should catch. Compare the observed joint-miss rate with the product of the solo rates, which is the prediction under independence. When agreement is required to issue a verdict, report the share of eligible cases left without one.
+
 ## Failure Modes
 
 Family inequality is a configuration fact; its effect on correlated error must be measured on the target workload, not assumed from the configuration.
@@ -167,6 +169,8 @@ Family inequality is a configuration fact; its effect on correlated error must b
 * **Leaky Default:** the framework exposes a configurable verifier slot, but the default resolves to the same family the application is built on. Refuse to construct the verifier when the family is unset.
 * **Role Diversity Mistaken for Verifier Diversity:** players, writers, managers, and researchers are diverse across families, but the judge defaults to one family. Identify the verification boundary separately from role assignment.
 * **Unrecorded Identities:** generation and verification use different families in practice, but the verdict does not name them. Stamp `generator_*` and `verifier_*` fields into every verdict.
+
+* **Unmeasured Shared Misses (design judgment):** counting a second judge from another family as an independent layer without measuring how often both judges miss the same cases leaves the stack's joint coverage unknown.
 
 ## Use When
 
@@ -189,6 +193,8 @@ Do not reach for Cross-Family when:
 
 If only one family is reachable, label the result as informal and maximize executable checks.
 
+When judges from both families see the candidate and score its plausibility, use family diversity alongside an external correctness check where available (design judgment). One study reports that different-family reference-free judges still accepted the same wrong answers in low-accuracy GSM8K tests. [arXiv:2607.05904](https://arxiv.org/abs/2607.05904)
+
 ## Evidence
 
 * **Verification Design Principle 7:** the design doc names Cross-Family Beats Self-Verification and frames same-family review as weaker than independent verification.
@@ -197,6 +203,11 @@ If only one family is reachable, label the result as informal and maximize execu
 * **zen same-family tiers:** the mining note records a provider-wide same-family pipeline where review, fix, and escalation stay inside the chosen family.
 * **[ChatArena](https://github.com/Farama-Foundation/chatarena) and [DeepEval](https://github.com/confident-ai/deepeval):** the cross-family sweep records role-diverse or configurable evaluation surfaces that do not, by themselves, enforce family diversity.
 * **[DSPy](https://github.com/stanfordnlp/dspy) teacher/student optimization:** the cross-family sweep records a partial Pattern instance at optimization time, where the teacher or proposer model is separate from the student model being shaped.
+
+* One study reports 581 unanimously accepted wrong answers against 497 predicted under independence in its low-accuracy GSM8K tests with candidate-conditioned judges across model families. [arXiv:2607.05904](https://arxiv.org/abs/2607.05904)
+* One study reports that rule-plus-judge pairs behaved closer to independence than judge pairs on authored agent-action block cases when escalation counted as a miss. The deterministic layer was a regular-expression rule engine. [arXiv:2610.07359](https://arxiv.org/abs/2610.07359)
+* One study reports that per-criterion generative rubric judges repeated the selected high-confidence errors of a decision model (Jev) on human-labelled benchmarks in 96.0% of verdicts, against 50.3% under its criterion-and-label-conditioned independence baseline. [arXiv:2609.29769](https://arxiv.org/abs/2609.29769)
+* One study reports that cross-provider economy judges jointly disagreed with single Arena preference votes more often than predicted under independence on battles where all judges picked a winner. Requiring agreement also lowered the share of system pairs with a called direction for pairings involving Luna. The reference is a preference vote for each battle. [arXiv:2611.04090](https://arxiv.org/abs/2611.04090)
 
 ## Related Patterns
 

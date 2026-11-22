@@ -298,3 +298,4 @@ If the failure cannot be turned into structured rerun context, route to Escalati
 * **Admissibility Gate:** defines the failure-search rubric that gives the loop useful failures.
 * **Comparator:** supplies the named operator that can drive pass/fail backpressure.
 * **Causal Tag:** tags each retry attempt so the revision trail is auditable.
+* **Effect Witness:** replays a failed release check and inspects the system of record for an unexpected release.

@@ -468,3 +468,4 @@ When tags cannot propagate, redesign the boundary or fall back to snapshot-based
 * **Trajectory Cursor:** cursor entries should carry causal tags so distributed events can be joined back to steps.
 * **Guardrail Decorator:** guardrail interventions should emit tagged parent events.
 * **Executable Analog:** tag-presence and tree-consistency checks are executable checks over the trace surface.
+* **Evidence Manifest:** compares fields from the attributed event record with the packet delivered to the checker.

@@ -373,3 +373,4 @@ If only a same-family critic is available, label the result as a weak adversaria
 * **Debate:** generalizes Adversary into multi-round, multi-critic disagreement.
 * **Escalation Chain:** receives unresolved adversary findings when the critic cannot safely approve.
 * **Backpressure:** routes adversary findings back to the proposer for revision.
+* **Fault Seed:** turns confirmed defects found by an adversary into repeatable fixtures for qualifying a gate.

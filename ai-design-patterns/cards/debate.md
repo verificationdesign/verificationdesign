@@ -50,6 +50,7 @@ The model may generate arguments. Code owns:
 * round count;
 * maximum rounds;
 * consensus threshold;
+* private initial votes, final votes, and whether the group became unanimous;
 * vote tally;
 * final decision rule.
 
@@ -57,9 +58,10 @@ The model may generate arguments. Code owns:
 
 1. **Register debaters.** Store participant ids and the order in which they speak.
 2. **Initialize debate state.** Set phase, round count, maximum rounds, consensus threshold, and decision rule.
-3. **Select speakers by schedule.** The orchestrator chooses the next speaker, not a model.
-4. **Collect structured positions.** Each turn records speaker id, round, stance, rationale, and vote.
-5. **Apply the stopping rule.** Stop when the threshold is met by distinct debaters' current votes or when the round cap is exhausted, and emit the vote tally and decision. The threshold check runs after every phase, so a debate can stop before critique or revision when the proposal votes already meet the rule. If the cap is exhausted without consensus, route the unresolved outcome to escalation.
+3. **Record private initial votes (design judgment).** Collect one vote per debater before sharing any turn. Keep the votes in orchestration state outside the shared transcript. Report them alongside the final votes and whether the group became unanimous.
+4. **Select speakers by schedule.** The orchestrator chooses the next speaker, not a model.
+5. **Collect structured positions.** Each turn records speaker id, round, stance, rationale, and vote.
+6. **Apply the stopping rule.** Stop when the threshold is met by distinct debaters' current votes or when the round cap is exhausted, and emit the vote tally and decision. The threshold check runs after every phase, so a debate can stop before critique or revision when the proposal votes already meet the rule. If the cap is exhausted without consensus, route the unresolved outcome to escalation.
 
 ## Pattern / Antipattern
 
@@ -113,6 +115,9 @@ class DebateResult:
     consensus_threshold: int
     speaker_schedule: tuple[str, ...]
     phase_sequence: tuple[Phase, ...]
+    initial_votes: dict[str, Vote]
+    final_votes: dict[str, Vote]
+    unanimity_increased: bool
     vote_tally: dict[Vote, int]
     decision: Vote
     decision_rule: DecisionRule
@@ -133,6 +138,9 @@ class DebateResult:
                 f"max_rounds: {self.max_rounds}",
                 f"phase_sequence: [{phases}]",
                 f"consensus_threshold: {self.consensus_threshold}",
+                f"initial_votes: {self.initial_votes}",
+                f"final_votes: {self.final_votes}",
+                f"unanimity_increased: {self.unanimity_increased}",
                 f"vote_tally: {{{tally}}}",
                 f"decision: {self.decision}",
                 f"decision_rule: {self.decision_rule}",
@@ -141,25 +149,22 @@ class DebateResult:
         )
 
 
-def latest_vote_tally(transcript: list[Turn]) -> Counter[Vote]:
-    latest_vote_by_speaker = {
-        turn.speaker_id: turn.vote
-        for turn in transcript
-    }
-    return Counter(latest_vote_by_speaker.values())
-
-
 def run_debate(
     debater_ids: tuple[str, ...],
     max_rounds: int,
     consensus_threshold: int,
     collect_turn,
+    collect_initial_vote,
 ) -> DebateResult:
     if not debater_ids:
         raise ValueError("debater_ids must not be empty")
     if max_rounds < 1:
         raise ValueError("max_rounds must be at least 1")
 
+    initial_votes = {
+        speaker_id: collect_initial_vote(speaker_id) for speaker_id in debater_ids
+    }
+    final_votes: dict[str, Vote] = {}
     transcript: list[Turn] = []
     phases: list[Phase] = []
     schedule: list[str] = []
@@ -186,8 +191,9 @@ def run_debate(
                     vote=content.vote,
                 )
                 transcript.append(turn)
+                final_votes[speaker_id] = turn.vote
 
-            votes = latest_vote_tally(transcript)
+            votes = Counter(final_votes.values())
             winner, count = votes.most_common(1)[0]
             if count >= consensus_threshold:
                 decision = winner
@@ -197,7 +203,6 @@ def run_debate(
             break
 
     if decision is None:
-        votes = latest_vote_tally(transcript)
         decision = "escalate"
 
     return DebateResult(
@@ -207,6 +212,12 @@ def run_debate(
         consensus_threshold=consensus_threshold,
         speaker_schedule=tuple(schedule),
         phase_sequence=tuple(phases),
+        initial_votes=initial_votes,
+        final_votes=final_votes,
+        unanimity_increased=(
+            len(set(initial_votes.values())) > 1
+            and len(set(final_votes.values())) == 1
+        ),
         vote_tally=dict(votes),
         decision=decision,
         decision_rule=decision_rule,
@@ -228,13 +239,21 @@ def collect_turn(round_index: int, speaker_id: str, phase: Phase) -> TurnContent
     )
 
 
+def collect_initial_vote(speaker_id: str) -> Vote:
+    return {"planner": "release", "critic": "revise", "operator": "escalate"}[speaker_id]
+
+
 result = run_debate(
     debater_ids=("planner", "critic", "operator"),
     max_rounds=2,
     consensus_threshold=2,
     collect_turn=collect_turn,
+    collect_initial_vote=collect_initial_vote,
 )
 
+assert result.initial_votes == {
+    "planner": "release", "critic": "revise", "operator": "escalate"
+}
 assert result.decision == "revise"
 assert result.vote_tally == {"release": 1, "revise": 2}
 assert result.decision_rule == "threshold_vote"
@@ -245,6 +264,9 @@ rounds_run: 1
 max_rounds: 2
 phase_sequence: [proposal]
 consensus_threshold: 2
+initial_votes: {'planner': 'release', 'critic': 'revise', 'operator': 'escalate'}
+final_votes: {'planner': 'release', 'critic': 'revise', 'operator': 'revise'}
+unanimity_increased: False
 vote_tally: {release: 1, revise: 2}
 decision: revise
 decision_rule: threshold_vote
@@ -269,6 +291,7 @@ split_result = run_debate(
     max_rounds=2,
     consensus_threshold=2,
     collect_turn=split_vote_turn,
+    collect_initial_vote=collect_initial_vote,
 )
 
 assert split_result.decision_rule == "max_rounds_exhausted"
@@ -298,6 +321,7 @@ Every Debate report should include:
 * maximum rounds;
 * phase sequence;
 * consensus threshold;
+* private initial votes, final votes, and whether the group became unanimous;
 * vote tally;
 * decision;
 * decision rule;
@@ -311,11 +335,16 @@ rounds_run: 1
 max_rounds: 2
 phase_sequence: [proposal]
 consensus_threshold: 2
+initial_votes: {'planner': 'release', 'critic': 'revise', 'operator': 'escalate'}
+final_votes: {'planner': 'release', 'critic': 'revise', 'operator': 'revise'}
+unanimity_increased: False
 vote_tally: {release: 1, revise: 2}
 decision: revise
 decision_rule: threshold_vote
 speaker_schedule: [planner, critic, operator]
 ```
+
+**Design judgment.** Compare initial and final votes by debater. On labelled cases, report final decision accuracy and wrong unanimity alongside a no-discussion baseline. Use independent revision with the same round budget when measuring what peer discussion adds.
 
 ## Failure Modes
 
@@ -323,6 +352,8 @@ speaker_schedule: [planner, critic, operator]
 * **Unbounded Debate:** there is no round cap, and a model decides when the group has converged. Set `max_rounds` and record why the loop stopped.
 * **Model-Chosen Speaker:** the next speaker is chosen by a model rather than a schedule. Record the speaker-selection rule or use a round-robin order.
 * **Phantom Consensus:** consensus is declared without a threshold or vote count. Require a named decision rule and a tally.
+
+* **Wrong Unanimity:** all debaters converge on an answer that disagrees with the reference. One study reports more wrong unanimity after peer discussion than after independent reflection in homogeneous groups of copies of one model. Its protocol leaves two-sided debate with a separate judge untested. [arXiv:2610.35930](https://arxiv.org/abs/2610.35930)
 
 ## Use When
 
@@ -345,6 +376,8 @@ Do not reach for Debate when:
 
 If the debate cannot create independent positions or a counted stopping rule, do not call it debate.
 
+For reference-labelled question answering like the tested peer protocol, do not use a panel of copies of one model to decide by discussion alone. Use a separate judge or an external check to decide (design judgment informed by [arXiv:2610.35930](https://arxiv.org/abs/2610.35930)).
+
 ## Evidence
 
 * **Verification Design Principle 8:** the design doc names Simulate Debate and frames debate as a way to force counterargument before conclusion.
@@ -352,6 +385,10 @@ If the debate cannot create independent positions or a counted stopping rule, do
 * **AutoGPT legacy caveat:** the same implementation lives in AutoGPT's legacy classic tree, so it is treated as a legacy v1 implementation rather than a current framework recommendation.
 * **[AutoGen](https://github.com/microsoft/autogen) RoundRobinGroupChat:** the orchestration sweep records a direct speaker-schedule instance: message thread, current turn, next-speaker index, one selected participant per turn, max turns, and termination conditions.
 * **No promoted antipattern:** the orchestration sweep did not promote a strict Debate antipattern; this card cross-references Adversary and Cross-Family rather than inventing one.
+
+* One study reports that accuracy in homogeneous model supervisor panels fell from 48.96% to 44.04% during consensus deliberation on author-written science and technology statements after assigned-position debate. Other tested supervisor settings had mixed results. [arXiv:2610.28539](https://arxiv.org/abs/2610.28539)
+* One study reports more wrong unanimity with peer discussion than with round-matched private reflection on fully parsed, non-numeric, reference-labelled MAD Bench questions. Each group used copies of a single open-weight model. [arXiv:2610.35930](https://arxiv.org/abs/2610.35930)
+* One study reports that sharing assessment summaries raised unanimity across tested failure-attribution configurations and lowered exact-match accuracy on synthetic TradingAgents trials for DeepSeek V4.1 Flash and GPT-OSS 120B. The protocol used the true culprit count to aggregate votes. The separate baseline evaluator received no case-specific culprit count. [arXiv:2606.02282](https://arxiv.org/abs/2606.02282)
 
 ## Related Patterns
 

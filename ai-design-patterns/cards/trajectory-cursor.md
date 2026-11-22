@@ -253,3 +253,4 @@ Do not reach for Trajectory Cursor when:
 * **Causal Tag:** links cursor entries to external artifacts the agent created.
 * **Executable Analog:** repeat-loop and missing-action checks are executable checks over the cursor.
 * **Constitution:** can encode required actions and cursor schema as verification criteria.
+* **Evidence Manifest:** checks that fields needed by a checkpoint survive delivery from the cursor's recorded trace.

@@ -196,3 +196,4 @@ In those cases, absolute assertions or Causal Tag are simpler and more honest.
 * **Comparator:** Delta is one named comparison operator (relative change) in the broader operator family.
 * **Executable Analog:** a delta assertion is the executable check for a state-change claim.
 * **Backpressure:** a failed delta check is a concrete failure signal that can drive a bounded rerun.
+* **Effect Witness:** uses state changes observed after approval and rejection from the same starting state to check enforcement.

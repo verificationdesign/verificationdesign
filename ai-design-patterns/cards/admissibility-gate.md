@@ -380,3 +380,4 @@ Do not reach for Admissibility Gate when:
 * **Constitution:** can require admissibility rules and default-no posture as part of the criteria contract.
 * **Cross-Family:** reduces shared blind spots when the adversarial rubric is judged by a different model family.
 * **Judge Harness:** wraps the rubric with perturbation, repetition, calibration, and consistency checks.
+* **Evidence Manifest:** checks that the evidence required by the admission rule reaches the checker with its source values intact.

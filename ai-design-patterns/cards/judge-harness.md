@@ -393,3 +393,4 @@ If a harness is infeasible, label the judge verdict as informal and report the s
 * **Admissibility Gate:** defines admissibility for acceptance; Judge Harness measures the judge's reliability under perturbation.
 * **Constitution:** provides the shared rubric the harness can calibrate against.
 * **Comparator:** replaces Judge Harness when a deterministic comparison operator can decide the verdict without invoking an LLM judge.
+* **Fault Seed:** measures rejection of known-wrong candidates alongside the harness's consistency checks.

@@ -381,3 +381,4 @@ If hook surfaces are unavailable, label the policy as advisory and add a separat
 * **Causal Tag:** callback context carries IDs that make the decision log queryable. The guardrail decision becomes another stamped event on the trace.
 * **Trajectory Cursor:** cursor and policy hooks share the same boundary. The cursor advances after the policy permits, not before.
 * **Admissibility Gate:** post-call sanitization can execute default-no rejection rules on tool or model outputs.
+* **Effect Witness:** checks the committed effect after approval and rejection at the decorated boundary and other write paths.

@@ -354,3 +354,4 @@ If escalation cannot name and validate a different next owner, label it as retry
 * **Debate:** unresolved debate can escalate when no safe consensus is reached.
 * **Adversary:** adversary findings can trigger escalation.
 * **Causal Tag:** tags escalation events so the routing path is auditable across logs.
+* **Effect Witness:** checks whether the system of record reflects the decision made after escalation.

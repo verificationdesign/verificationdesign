@@ -276,3 +276,4 @@ If derivation independence cannot be enforced, label the verification as draft-a
 * **Cross-Family:** addresses which model verifies; Blind Oracle addresses what the verifier is allowed to see.
 * **Executable Analog:** is the executable specialization, and strongest form, of Blind Oracle when expected can be derived by executing the spec.
 * **Judge Harness:** wraps a Blind Oracle judge with perturbation, repetition, and calibration when the derivation channel still has subjective slack.
+* **Evidence Manifest:** can check that the oracle receives required source evidence and that the draft stays out of its input.
