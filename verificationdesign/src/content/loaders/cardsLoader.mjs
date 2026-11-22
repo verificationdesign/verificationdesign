@@ -3,10 +3,9 @@ import { join, dirname, resolve, relative } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// Project root is four levels up from this loader file
-// (loaders -> content -> src -> verificationdesign).
-const PROJECT_ROOT = resolve(__dirname, '../../..');
+export const PROJECT_ROOT = typeof __VERIFICATIONDESIGN_ROOT__ === 'string'
+  ? __VERIFICATIONDESIGN_ROOT__
+  : fileURLToPath(new URL('../../../', import.meta.url));
 
 const CATEGORY_FROM_SUBTITLE = {
   'Context Pattern': 'context-and-state',
@@ -103,7 +102,7 @@ export function cardAllowlist() {
   return slugs.length ? new Set(slugs) : null;
 }
 
-const CARDS_DIR = resolve(process.cwd(), '../ai-design-patterns/cards');
+const CARDS_DIR = resolve(PROJECT_ROOT, '../ai-design-patterns/cards');
 
 export async function readCardCatalog(
   absoluteSource = CARDS_DIR,

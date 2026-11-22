@@ -1,10 +1,16 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   site: 'https://verificationdesign.com',
   trailingSlash: 'always',
+  vite: {
+    define: {
+      __VERIFICATIONDESIGN_ROOT__: JSON.stringify(fileURLToPath(new URL('.', import.meta.url))),
+    },
+  },
   redirects: {
     '/patterns/verification/adversarial-frame/': '/patterns/verification/admissibility-gate/',
   },

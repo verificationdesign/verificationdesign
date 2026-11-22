@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { PROJECT_ROOT } from '../content/loaders/cardsLoader.mjs';
 
 type ReferenceSource = {
   title: string;
@@ -115,7 +116,7 @@ export async function collectReferences(cards: ReferenceInput[]): Promise<Refere
     });
   }
 
-  const canonicalPath = resolve(process.cwd(), '../verification_design.md');
+  const canonicalPath = resolve(PROJECT_ROOT, '../verification_design.md');
   const canonical = await readFile(canonicalPath, 'utf8');
   const referencesTable = canonical.match(/## References\s*\n([\s\S]*)$/)?.[1] ?? '';
   collectFromMarkdown(references, referencesTable, {
@@ -131,7 +132,7 @@ export async function collectReferences(cards: ReferenceInput[]): Promise<Refere
   }
 
   for (const page of PROSE_PAGES) {
-    const pageSource = await readFile(resolve(process.cwd(), page.file), 'utf8');
+    const pageSource = await readFile(resolve(PROJECT_ROOT, page.file), 'utf8');
     collectFromSourceLinks(references, pageSource, page.source);
   }
 

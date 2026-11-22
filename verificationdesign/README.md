@@ -4,6 +4,8 @@ Astro static site for verification design principles and patterns.
 
 Pattern cards are read directly from `../ai-design-patterns/cards/` via a
 custom content loader. The site never modifies the source cards.
+The Astro config supplies the site directory to bundled code through Vite's
+`define` option. Direct Node imports resolve it from the loader's source location.
 
 ## Local dev
 
