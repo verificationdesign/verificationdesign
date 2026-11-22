@@ -139,6 +139,94 @@
         "operator attention interventions",
         "randomized attention interventions"
       ]
+    },
+    "migration_contract_coverage": {
+      "note": "research/reviewed/2026-11-22-api-migration-repair-false-accepts.md",
+      "phrases": [
+        "migration contract coverage",
+        "held-out behavioral changes",
+        "repair-menu composition sensitivity"
+      ]
+    },
+    "cross_provider_judge_replication": {
+      "note": "research/reviewed/2026-11-22-cross-provider-judge-replication.md",
+      "phrases": [
+        "reference vote reliability in judging",
+        "coverage of cross-provider replication",
+        "reasoning settings and judge alignment"
+      ]
+    },
+    "debate_wrong_unanimity": {
+      "note": "research/reviewed/2026-11-22-debate-wrong-unanimity-vs-reflection.md",
+      "phrases": [
+        "wrong unanimity under peer discussion",
+        "compute-matched private revision controls",
+        "independent judging of adversarial debate"
+      ]
+    },
+    "enforced_vs_advisory_checks": {
+      "note": "research/reviewed/2026-11-22-enforced-invariants-vs-warnings.md",
+      "phrases": [
+        "enforcement against advisory checkpoints",
+        "invariant blind spots in tool results",
+        "abstention and clean-input costs"
+      ]
+    },
+    "evaluator_commit_boundary": {
+      "note": "research/reviewed/2026-11-22-evaluator-disagreement-commit-boundary.md",
+      "phrases": [
+        "commit-boundary evaluation across model families",
+        "policy precondition evidence in verification gates",
+        "independent human annotation of state changes"
+      ]
+    },
+    "judge_record_gaps": {
+      "note": "research/reviewed/2026-11-22-judge-record-gaps-document-currency.md",
+      "phrases": [
+        "matched record omission controls",
+        "currency checks across document families",
+        "judge calibration under incomplete records"
+      ]
+    },
+    "workflow_mutation_testing": {
+      "note": "research/reviewed/2026-11-22-mutation-testing-multi-agent-workflows.md",
+      "phrases": [
+        "independent permission-coverage mutation baselines",
+        "stochastic mutant detection rates",
+        "equivalent mutant review for agent workflows"
+      ]
+    },
+    "numerical_claim_evidence": {
+      "note": "research/reviewed/2026-11-22-numerical-claim-evidence-matching.md",
+      "phrases": [
+        "claim-level matching to execution artifacts",
+        "independent labeling of numerical provenance",
+        "coverage evaluation across research agent benchmarks"
+      ]
+    },
+    "private_vote_attribution": {
+      "note": "research/reviewed/2026-11-22-private-vote-failure-attribution.md",
+      "phrases": [
+        "held-out multi-agent failure attribution",
+        "private voting with unknown culprit counts",
+        "shared summaries and attribution herding"
+      ]
+    },
+    "completion_claim_checks": {
+      "note": "research/reviewed/2026-11-22-silent-failures-cad-completion-claims.md",
+      "phrases": [
+        "independent audits of artifact graders",
+        "claim calibration under measured feedback",
+        "concurrent claim-contract ablation"
+      ]
+    },
+    "verification_transport": {
+      "note": "research/reviewed/2026-11-22-verification-transport-under-abstraction.md",
+      "phrases": [
+        "verifier calibration on live compacted histories",
+        "delegation evidence preservation",
+        "matched trace provenance restoration"
+      ]
     }
   },
   "categories": {
