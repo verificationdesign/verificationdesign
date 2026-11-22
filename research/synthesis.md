@@ -64,9 +64,20 @@ Also bears on: Principle 9
 Evidence:
 - arXiv:2607.27267, grade C, FAVA lowers an LLM-derived permission representation into a graph for an SMT-backed decision before effectful actions in authored benchmark cases.
 - arXiv:2606.22916, grade C, IGAC places a certificate-based server-side gateway between an untrusted model proposal and the action pipeline in synthetic runtime tasks.
+- arXiv:2610.27620, grade C, in finite models of declassification-based purpose policies and synthetic judge scenarios, local authorization left relational violations unobservable to a per-trace monitor, while paired execution evidence let judges detect them in the tested scenarios.
 
 Tension: The studies use different authorization representations and deterministic mechanisms, but both depend on author-specified semantic bounds and complete mediation that their evaluations do not independently establish.
 What would move this: An independent evaluation using naturally occurring requests and effects, with measured extraction errors and executable mediation-bypass probes, would change the evidence description.
+
+### Cheap and expensive rubric judges in a cascade can share confident errors, limiting the reliability gain expected from independent errors.
+
+Status: single-source
+
+Evidence:
+- arXiv:2609.29769, grade C, across human-labeled benchmark panels, generative judges repeated high-confidence decision-model errors more often than a criterion-and-label-conditioned independence baseline predicted, and cross-fitted cascades added little over the best single judge.
+
+Tension: The overlap estimate uses a confidence-selected slice, and cascade performance depends on the labels, tested model tiers, and threshold-fitting protocol.
+What would move this: Independent held-out benchmark or live evaluations measuring fallback accuracy on routed cases across model tiers would change the Status.
 
 ## 3. Step-Level Checkpoints
 
@@ -76,16 +87,19 @@ Status: single-source
 
 Evidence:
 - arXiv:2607.16530, grade C, a discrete algorithm globally minimizes the paper's oversight objective under stated assumptions and exposes review count, stage indices, gap sequence, proxy cost, and computed loss.
+- arXiv:2610.09667, grade C, on synthetic customer-request audits, a reasoning model came close to the requested review rate while selection remained predictable from identifiers, exposing a sampling implementation issue outside the evaluation of schedule optimality.
 
 Tension: The experiments use model-simulated reviewers, and stage or artifact-length cost proxies do not measure human attention, fatigue, interruption cost, or review time.
 What would move this: A different group testing checkpoint schedules with measured human review time or cognitive cost, plus sensitivity analysis for stage-dependent error growth, would change the Status.
 
 ### Tool-use verification can evaluate local action errors separately from failures in multi-step rollouts.
 
-Status: single-source
+Status: corroborated
 
 Evidence:
 - arXiv:2601.12294, grade ungraded (legacy migration, no reviewed note), ToolPRMBench uses interaction history, tool metadata, and correct versus plausible incorrect actions for offline and online PRM evaluation.
+- arXiv:2610.17633, grade C, replay and fresh continuations on selected SWE-bench Verified coding-agent failures showed that many steps flagged by judges had no measured drop in success, with localization relative to the reconstructed state, fixed policy, and remaining budget.
+- arXiv:2611.02978, grade C, in multi-turn BFCL simulator replays, checking calls against benchmark-defined effects exposed collateral actions missed by final-state scoring, with the reference trajectories and effect labels setting the scope of the distinction.
 
 Tension: A benchmark structure does not by itself establish that deploying checkpoints improves end-to-end task success.
 What would move this: Independent deployment comparisons measuring local error detection and final task outcomes would change the Status.
@@ -115,6 +129,9 @@ Also bears on: Principle 7
 Evidence:
 - arXiv:2602.02219, grade B, randomized rubric option and criterion ordering changed judgments and altered the selected best response on 16% to 39% of prompts in the tested rubric-judging setup.
 - arXiv:2606.29920, grade B, per-rubric verification accuracy varied by task, category, prompt, and batching, with batching losses becoming steep on long agent trajectories.
+- arXiv:2610.13303, grade C, label-free clarification raised inter-judge agreement on held-out SummEval items without a detectable gain in human agreement, while HealthBench and USR failed to meet the registered improvement criteria.
+- arXiv:2611.01311, grade C, on matched IETF RFC currency cases, an authoritative record with missing replacement links reduced judge detection relative to document text alone, and warning presentations recovered some catches with judge-dependent tradeoffs in false flags.
+- arXiv:2611.18471, grade C, across frozen AgentProcessBench, ATBench, PlanRewardBench, and AgentDojo executions, simulated abstraction turned some native-correct verdicts into wrong answers or unusable verdicts under unchanged criteria, with exact provenance restoring many of those judgments.
 
 Tension: One study manipulates presentation order while the other measures rubric execution and batching, so they agree on instability without identifying one shared mechanism.
 What would move this: Independent evaluation combining balanced presentation permutations with per-rubric reliability measurements on deployed agent trajectories would change the evidence description.
@@ -128,6 +145,16 @@ Evidence:
 
 Tension: The external benchmark anchor makes the reported outcome interpretable, but an annotation-scarce deployment may not supply an equivalent anchor.
 What would move this: A different group comparing generated and expert-authored criteria on a dataset with withheld human annotations would change the Status.
+
+### Checklist content can set the effective pass standard, and model-driven rubric revisions can remove checks that uniquely catch failures.
+
+Status: single-source
+
+Evidence:
+- arXiv:2610.24971, grade C, in the synthetic Recon report experiments, hand-written and generated checklists accepted different shares of correct reports, and model-driven revisions deleted checks with unique catches on labeled flaws.
+
+Tension: The revision studies use authored reports and one model family, and the gate evaluation largely replays stored per-check judgments.
+What would move this: Independent rubric-revision tests across model families on new, externally labeled tasks with live regrading would change the Status.
 
 ## 6. Executable Verification Is King
 
@@ -144,21 +171,30 @@ What would move this: Independent criterion-routing results on non-vision agent 
 
 ### A deterministic or automated gate can satisfy its surface metric while missing the failure class it is meant to detect.
 
-Status: single-source
+Status: corroborated
 Also bears on: Principle 1
 
 Evidence:
 - arXiv:2111.09525, grade B, a reviewed cluster of summarization-faithfulness evaluations found that overlap, entailment, question-answering, and generated-reference checks have documented blind spots and can reward unsupported summaries.
+- arXiv:2605.23215, grade C, only 22 of 110 FastKernels model deployments of agent-generated GPU kernel winner sets ran correctly unchanged, exposing integration failures beyond isolated checks.
+- arXiv:2610.15938, grade C, on FRANK summarization, adding a reference summary to the source reduced balanced accuracy under the principal judge's generous matching rule, with the corresponding HaluEval question-answering comparison showing improvement.
+- arXiv:2611.08269, grade C, on CPython, Node.js, and SQLite migration tasks, visible assertions still released repairs that failed withheld contracts after adding an edge input, with the observed rate dependent on the authored repair menu and the oracle audit leaving contract objections unresolved.
+- arXiv:2611.19237, grade C, in selected n8n workflow replays, rejection still produced the protected effect in 4 of 59 policy-comparable pairs with a visible approval gate, demonstrating a coverage gap in those workflows.
+- arXiv:2611.20595, grade C, in AgentOrchBench catalog count tasks, enforcing failed invariant checks reduced wrong releases relative to warnings partly through abstention and reduced correct answers on faulted runs, with procedural passages excluded from the source review.
+- arXiv:2611.14581, grade C, on tau2-bench airline and retail tasks, a transcript judge repeatedly agreed with itself yet passed human-confirmed premature writes that an expected-versus-logged write check detected, with detection partly reflecting a criterion shared with the annotators.
+- arXiv:2611.02676, grade C, hash-matching evaluation packets for selected AgentProcessBench trajectories from BFCL and tau2 omitted every structured call, and restoring calls changed error flagging in one judge configuration, with supplementary tables unavailable to the review.
+- arXiv:2610.38691, grade C, in sampled Into the Unknown research-agent submissions, most unsupported numerical claims referred to a value found under the wrong source context by the population-weighted estimate, exposing a gap in value-only matching.
 
 Tension: This pre-LLM-judge source cluster supports a general validity distinction, but it does not directly test current agent-verification gates.
 What would move this: Independent modern evaluation that injects known failures into an agent or LLM-judge workflow and measures which passing gates detect them would change the Status.
 
 ### Executable benchmark checks can pass against erroneous labels or construction rules that miss intended correctness.
 
-Status: single-source
+Status: corroborated
 
 Evidence:
 - arXiv:2605.30504, grade ungraded (legacy migration, no reviewed note), An IRT audit of seven benchmarks reports likely label errors and 95% precision among its top 200 flagged items against consensus-plus-hand-inspection labels.
+- arXiv:2611.10063, grade C, hardening the grader for stored mechanical CAD task attempts changed 18 of 519 verdicts from pass to fail, while an ambiguous task specification accounted for many silent failures in the separate primary study.
 
 Tension: The reported precision concerns selected flagged items and its reference-label procedure, not all benchmark labels.
 What would move this: Independent label audits with separately established reference judgments and measured downstream effects would change the Status.
@@ -178,6 +214,16 @@ What would move this: Independent extractive-QA evaluations with audited gold an
 
 Migrated callouts:
 > **2026-06-13 Update**: A deterministic comparator can be reliable yet invalid when its oracle under-specifies correctness. In an extractive-QA setting, Ho et al. report that Exact Match and F1 had average correlations with human judgment of 0.220 and 0.404, while an LLM judge reached up to 0.85; they also discarded 39 of 200 sampled instances because the gold answer itself was wrong. The judge is not a free substitute for oracle audit: its own job-title answer correlation was 0.352, a blind spot tied to ambiguous multi-job answers. This strengthens the 2026-06-09 oracle-validity note: executable comparators and learned judges both need evidence that the target they compare against actually represents correctness. [arXiv:2504.11972](https://arxiv.org/abs/2504.11972)
+
+### Lean compilation can accept a formalization that changes the requested meaning, and an added semantic judge can reject a faithful translation.
+
+Status: single-source
+
+Evidence:
+- arXiv:2606.31002, grade C, on university-level natural-language-to-Lean statements, human review of the tool-augmented agent's rejected compiling outputs found both genuine mistranslations and faithful translations rejected by the semantic criterion.
+
+Tension: Human auditing covers selected systems and subsets of textbook tasks, leaving broader translation fidelity and acceptance-error rates uncertain.
+What would move this: Independent Lean evaluations with blinded human audits of both accepted and rejected outputs on fresh tasks would change the Status.
 
 ## 7. Cross-Family Beats Self-Verification
 
@@ -203,10 +249,13 @@ What would move this: Ecological replication on deployed evaluation tasks that s
 
 ### LLM-judge reliability can vary across benchmarks and perturbations even when the judge comes from a different model family.
 
-Status: single-source
+Status: corroborated
 
 Evidence:
 - arXiv:2603.05399, grade ungraded (legacy migration, no reviewed note), Judge Reliability Harness reports that no evaluated judge was uniformly reliable across its benchmarks and perturbation types.
+- arXiv:2610.07359, grade C, across authored agent-action corpora, LLM judge pairs had correlated misses and clean-provenance comparisons found no cross-vendor advantage, with joint coverage sensitive to whether escalation counted as stopping the action.
+- arXiv:2610.12778, grade C, on the synthetic Oracle PL/SQL migration specification benchmark, judges from different families showed no detectable binary detection advantage over a specification-length threshold despite executable controls excluding ground-truth leakage.
+- arXiv:2611.04090, grade C, on Arena system comparisons, requiring cross-provider agreement increased precision among called directions while lowering coverage for pairings involving Luna and leaving co-occurring disagreement against a single preference vote per battle.
 
 Tension: The note challenges treating model-family separation as sufficient validation, without establishing a universally reliable replacement.
 What would move this: Independent harness results across additional judge families and deployed task formats would change the Status.
@@ -257,6 +306,18 @@ Migrated callouts:
 
 No claims recorded yet.
 
+### The effect of agent discussion can depend on who judges and how judgments are collected, and shared discussion can increase wrong unanimity relative to private judgment.
+
+Status: corroborated
+
+Evidence:
+- arXiv:2610.28539, grade C, on author-written science and technology statements, pre/post accuracy shifts differed across human and model supervisors, and homogeneous and diverse model panels moved in different directions during deliberation under the tested protocols.
+- arXiv:2610.35930, grade C, on fully parsed non-numeric MAD Bench questions with reference labels, homogeneous model groups reached wrong unanimity more often after peer discussion than after round-matched independent reflection, with a separate debate judge outside the tested protocol.
+- arXiv:2606.02282, grade C, on TradingAgents failure-attribution trials, sharing a common summary lowered exact-match accuracy for the affected backbones and increased unanimity relative to private voting, with scoring dependent on the supplied true culprit count.
+
+Tension: The studies use different supervisor populations, tasks, and protocols, with authored or benchmark-defined labels and limited evidence about adversarial debate with a separate judge.
+What would move this: Independently labeled tasks that compare debate, private revision, and separate-judge protocols at matched budgets across supervisor populations would change the evidence description.
+
 ## 9. Isolate Verification from Ambient State
 
 ### Operator-facing approval, cancellation, timeout, and authorization controls govern external effects only when the enforcement path completely mediates those effects.
@@ -282,6 +343,17 @@ Evidence:
 
 Tension: The dialogs and application distribution were narrow, and separation of task execution from authorization remains unevaluated.
 What would move this: Independent replication using naturally triggered dialogs, more applications and permission types, and joint legitimate-grant and wrongful-grant measurements would change the Status.
+
+### Output-only checks and checks of agent-editable records can leave execution identity unresolved, and independently held records can preserve evidence whose coverage and interpretation still require checks.
+
+Status: corroborated
+
+Evidence:
+- arXiv:2610.21135, grade C, in controlled DIB-Bench deployment changes, output scoring often accepted altered stacks, while manifest checks detected measured changes under an assumed trustworthy measurement path and missed changes to undeclared components.
+- arXiv:2611.23335, grade C, on single-function coding tasks, a host-signed record preserved events omitted from an altered transcript in a scripted demonstration, and detectors differed on recorded violations, with procedural passages excluded from the source review.
+
+Tension: Deployment manifest coverage and signing key isolation are study assumptions, and the edited-transcript comparison used scripted agents and keyword stand-ins.
+What would move this: Independent comparisons on live systems with audited capture coverage, custody, and separately calibrated interpretation would change the evidence description.
 
 ## Unassigned
 
