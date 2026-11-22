@@ -91,7 +91,7 @@ function linkRelatedPatterns(content, linksByTitle, title) {
   );
 }
 
-function cardAllowlist() {
+export function cardAllowlist() {
   const raw = process.env.SITE_CARD_ALLOWLIST;
   if (!raw) return null;
 
@@ -103,44 +103,43 @@ function cardAllowlist() {
   return slugs.length ? new Set(slugs) : null;
 }
 
-export function cardsLoader({ sourcePath }) {
-  const absoluteSource = resolve(__dirname, sourcePath);
+const CARDS_DIR = resolve(process.cwd(), '../ai-design-patterns/cards');
+
+export async function readCardCatalog(
+  absoluteSource = CARDS_DIR,
+  warn = console.warn,
+) {
+  const cards = [];
+  for (const file of await readdir(absoluteSource)) {
+    if (!file.endsWith('.md')) continue;
+    const filePath = join(absoluteSource, file);
+    const content = await readFile(filePath, 'utf8');
+    const title = extractTitle(content);
+    const category = extractCategory(content);
+    if (!title || !category) {
+      warn(`cardsLoader: skipping ${file} (missing title or category subtitle)`);
+      continue;
+    }
+    cards.push({ file, filePath, content, title, category, slug: file.slice(0, -3) });
+  }
+  return cards;
+}
+
+export function cardsLoader() {
+  const absoluteSource = CARDS_DIR;
 
   return {
     name: 'verification-design-cards',
     load: async ({ store, parseData, generateDigest, renderMarkdown, logger }) => {
-      let files;
-      try {
-        files = await readdir(absoluteSource);
-      } catch (err) {
-        logger.warn(`cardsLoader: cannot read ${absoluteSource}: ${err.message}`);
-        return;
-      }
-
-      const markdown = files.filter((f) => f.endsWith('.md'));
+      const catalog = await readCardCatalog(absoluteSource, (message) => logger.warn(message));
       const allowlist = cardAllowlist();
       store.clear();
 
-      const cardInputs = [];
-      const linksByTitle = new Map();
-
-      for (const file of markdown) {
-        const filePath = join(absoluteSource, file);
-        const content = await readFile(filePath, 'utf8');
-
-        const title = extractTitle(content);
-        const category = extractCategory(content);
-
-        if (!title || !category) {
-          logger.warn(`cardsLoader: skipping ${file} (missing title or category subtitle)`);
-          continue;
-        }
-
-        const slug = file.replace(/\.md$/, '');
-        const included = !allowlist || allowlist.has(slug);
-        linksByTitle.set(title.toLowerCase(), { href: `/patterns/${category}/${slug}/`, included });
-        if (included) cardInputs.push({ file, filePath, content, title, category, slug });
-      }
+      const linksByTitle = new Map(catalog.map(({ title, category, slug }) => [
+        title.toLowerCase(),
+        { href: `/patterns/${category}/${slug}/`, included: !allowlist || allowlist.has(slug) },
+      ]));
+      const cardInputs = catalog.filter(({ slug }) => !allowlist || allowlist.has(slug));
 
       for (const input of cardInputs) {
         const { filePath, content, title, category, slug } = input;

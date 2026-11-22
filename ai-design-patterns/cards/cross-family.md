@@ -209,6 +209,15 @@ When judges from both families see the candidate and score its plausibility, use
 * One study reports that per-criterion generative rubric judges repeated the selected high-confidence errors of a decision model (Jev) on human-labelled benchmarks in 96.0% of verdicts, against 50.3% under its criterion-and-label-conditioned independence baseline. [arXiv:2609.29769](https://arxiv.org/abs/2609.29769)
 * One study reports that cross-provider economy judges jointly disagreed with single Arena preference votes more often than predicted under independence on battles where all judges picked a winner. Requiring agreement also lowered the share of system pairs with a called direction for pairings involving Luna. The reference is a preference vote for each battle. [arXiv:2611.04090](https://arxiv.org/abs/2611.04090)
 
+### References
+
+| Source | Study |
+| --- | --- |
+| [arXiv:2607.05904](https://arxiv.org/abs/2607.05904) | Self-Play Reward Hacking of Reference-Free LLM Judges |
+| [arXiv:2610.07359](https://arxiv.org/abs/2610.07359) | Evaluate the Stack, Not the Layer: Do Deterministic and LLM Gates for Agent Actions Fail Independently? |
+| [arXiv:2609.29769](https://arxiv.org/abs/2609.29769) | Decision Models vs. LLMs as Rubric Judges: Cheaper, Faster, and Wrong in the Same Places |
+| [arXiv:2611.04090](https://arxiv.org/abs/2611.04090) | Swapping the Judge Changes the Ranking: A Preregistered Study of Cross-Provider Replication in LLM-Judged System Comparisons |
+
 ## Related Patterns
 
 * **Judge Harness:** cross-family is necessary, not sufficient; the verifier still needs perturbation, repetition, calibration, and reporting around it.

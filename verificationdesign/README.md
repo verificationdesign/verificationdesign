@@ -54,7 +54,11 @@ approved card slugs:
     SITE_CARD_ALLOWLIST=constitution,executable-analog,comparator npm run build
 
 The allowlist filters rendered pages, pattern indexes, references, and related
-pattern links. It does not modify source cards.
+pattern links. It does not modify source cards. Run `npm run check:preview` to
+build and check this three-card preview in `dist-preview/`. When checking twins
+for a custom preview, pass the same `SITE_CARD_ALLOWLIST` to `build:twins` and
+`check:twins`. Set `SITE_OUTPUT_DIR` for the twin and link scripts when Astro
+builds to a directory other than `dist/`.
 
 ## Internationalization posture
 

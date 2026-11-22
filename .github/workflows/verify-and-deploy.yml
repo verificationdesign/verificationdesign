@@ -95,6 +95,9 @@ jobs:
       - name: Accessibility
         run: npm run a11y
 
+      - name: Check three-card release preview
+        run: npm run check:preview
+
       - name: Ensure Pages project exists
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:

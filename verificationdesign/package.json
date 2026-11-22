@@ -10,6 +10,7 @@
     "build:twins": "node scripts/build-md-twins.mjs",
     "check:twins": "node scripts/check-md-twins.mjs",
     "check:layout": "node scripts/check-layout.mjs",
+    "check:preview": "SITE_CARD_ALLOWLIST=constitution,executable-analog,comparator SITE_OUTPUT_DIR=dist-preview sh -c \"npm run build -- --outDir dist-preview && npm run build:twins && npm run check:twins && npm run check:links\"",
     "check:links": "node scripts/check-internal-links.mjs",
     "smoke:live": "node scripts/smoke-live.mjs",
     "measure:cards": "node scripts/measure-card-heights.mjs",

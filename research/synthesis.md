@@ -92,6 +92,18 @@ Evidence:
 Tension: The experiments use model-simulated reviewers, and stage or artifact-length cost proxies do not measure human attention, fatigue, interruption cost, or review time.
 What would move this: A different group testing checkpoint schedules with measured human review time or cognitive cost, plus sensitivity analysis for stage-dependent error growth, would change the Status.
 
+> **2026-11-22 Update**: The arXiv:2610.09667 entry qualifies sampling implementation and leaves schedule optimality untested. Its finding is filed under the audit sampler claim below. Source: 2026-11-22 cards and site review (lookout-cards-site-1122-report.md).
+
+### A model-based audit sampler can approach its requested rate while its selections remain predictable from identifiers.
+
+Status: single-source
+
+Evidence:
+- arXiv:2610.09667, grade C, on synthetic customer requests with random UUIDv4 identifiers and a requested 1% review rate, one tested model selected 0.89% of requests and its selections were predictable from identifier features. The other tested models selected fewer requests.
+
+Tension: The isolated synthetic decisions and sparse selections limit what the study establishes about predictability in deployment.
+What would move this: Independent repeated audits with identifier interventions and externally supplied draws, measuring both realized rare-event rates and predictability on operational inputs, would change the Status.
+
 ### Tool-use verification can evaluate local action errors separately from failures in multi-step rollouts.
 
 Status: corroborated
@@ -187,6 +199,8 @@ Evidence:
 
 Tension: This pre-LLM-judge source cluster supports a general validity distinction, but it does not directly test current agent-verification gates.
 What would move this: Independent modern evaluation that injects known failures into an agent or LLM-judge workflow and measures which passing gates detect them would change the Status.
+
+> **2026-11-22 Update**: The Tension and What would move this lines above describe the earlier evidence state. The evidence list now includes the gate evaluations filed on 2026-11-22. The observed misses depend on the tested workflows, fixtures, and reference judgments, and independent evaluations with known-good and known-wrong cases and separately checked reference judgments would clarify detection, false rejections, and abstentions. Source: 2026-11-22 cards and site review (lookout-cards-site-1122-report.md).
 
 ### Executable benchmark checks can pass against erroneous labels or construction rules that miss intended correctness.
 

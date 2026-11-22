@@ -3,6 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 
+import { cardAllowlist } from '../src/content/loaders/cardsLoader.mjs';
+
 const SITE = 'https://verificationdesign.com';
 // Fixture: the only GitHub origin any generated link may point at.
 const REPO_FIXTURE = 'https://github.com/verificationdesign/verificationdesign';
@@ -11,8 +13,8 @@ const REPO = resolve(process.cwd(), '..');
 const REVISION = process.env.GITHUB_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO, encoding: 'utf8' }).trim();
 const sha256 = (body) => createHash('sha256').update(body).digest('hex');
 const CARDS_DIR = join(REPO, 'ai-design-patterns/cards');
-const DIST = resolve(process.cwd(), 'dist');
-const ORDER = [
+const DIST = resolve(process.cwd(), process.env.SITE_OUTPUT_DIR || 'dist');
+const FULL_ORDER = [
   'context-and-state/constitution',
   'context-and-state/guardrail-decorator',
   'context-and-state/causal-tag',
@@ -119,7 +121,7 @@ async function walkMarkdown(directory) {
   return found.sort();
 }
 
-const cards = [];
+const catalogCards = [];
 for (const file of (await readdir(CARDS_DIR)).filter((name) => name.endsWith('.md')).sort()) {
   const sourceBody = await readFile(join(CARDS_DIR, file), 'utf8');
   const title = sourceBody.match(/^#\s+(.+)$/m)?.[1]?.trim();
@@ -127,7 +129,7 @@ for (const file of (await readdir(CARDS_DIR)).filter((name) => name.endsWith('.m
   const category = CATEGORY[subtitle];
   if (!title || !category) continue;
   const slug = file.replace(/\.md$/, '');
-  cards.push({
+  catalogCards.push({
     id: `${category}/${slug}`,
     title,
     category,
@@ -138,14 +140,19 @@ for (const file of (await readdir(CARDS_DIR)).filter((name) => name.endsWith('.m
     intent: (sourceBody.match(/^## Intent\s*\n+([^\n]+)/m)?.[1] ?? '').replace(/[*`]/g, '').trim().replace(/\s+/g, ' '),
   });
 }
-const byId = new Map(cards.map((card) => [card.id, card]));
-const byTitle = new Map(cards.map((card) => [card.title, card]));
-const fixtureMissing = ORDER.filter((id) => !byId.has(id));
-const fixtureExtra = cards.filter((card) => !ORDER.includes(card.id)).map((card) => card.id);
+const byId = new Map(catalogCards.map((card) => [card.id, card]));
+const byTitle = new Map(catalogCards.map((card) => [card.title, card]));
+const fixtureMissing = FULL_ORDER.filter((id) => !byId.has(id));
+const fixtureExtra = catalogCards.filter((card) => !FULL_ORDER.includes(card.id)).map((card) => card.id);
 if (fixtureMissing.length || fixtureExtra.length) {
   fail(`reading-order membership mismatch; missing=${fixtureMissing.join(',') || 'none'} extra=${fixtureExtra.join(',') || 'none'}`);
 }
-console.log(`Check 11 reading-order fixture: fixture=${ORDER.length} filesystem=${cards.length} missing=${fixtureMissing.length} extra=${fixtureExtra.length}`);
+console.log(`Check 11 reading-order fixture: fixture=${FULL_ORDER.length} filesystem=${catalogCards.length} missing=${fixtureMissing.length} extra=${fixtureExtra.length}`);
+
+const allowlist = cardAllowlist();
+const cards = catalogCards.filter(({ slug }) => !allowlist || allowlist.has(slug));
+const selectedIds = new Set(cards.map(({ id }) => id));
+const ORDER = FULL_ORDER.filter((id) => selectedIds.has(id));
 
 const cardPaths = cards.map((card) => `patterns/${card.category}/${card.slug}.md`);
 const expected = new Set([...FIXED, ...cardPaths]);
@@ -198,13 +205,13 @@ for (const [path, twin] of parsed) {
     const relatedBlock = card.sourceBody.match(/##\s+Related Patterns\s*\n([\s\S]*?)(?=\n##\s|\n*$)/)?.[1] ?? '';
     const relatedNames = [...relatedBlock.matchAll(/\*\*([^*]+)\*\*/g)]
       .map((match) => match[1].trim().replace(/:$/, ''));
-    const predicted = relatedNames.map((title) => {
+    const predicted = relatedNames.flatMap((title) => {
       const target = byTitle.get(title);
       if (!target) {
         fail(`${path}: source names unknown related card ${title}`);
-        return { title, url: '' };
+        return [];
       }
-      return { title, url: `${SITE}/patterns/${target.category}/${target.slug}.md` };
+      return selectedIds.has(target.id) ? [{ title, url: `${SITE}/patterns/${target.id}.md` }] : [];
     });
     relatedResolved += predicted.length;
     if (JSON.stringify(twin.related) !== JSON.stringify(predicted)) fail(`${path}: related pairs differ from source prediction`);
@@ -368,17 +375,17 @@ const htmlFailures = [];
 for (const match of (chooserMatch?.[1] ?? '').matchAll(/<section class="chooser-card"><h3>(.*?)<\/h3><p>(.*?)<\/p><ul role="list">([\s\S]*?)<\/ul><\/section>/g)) {
   htmlFailures.push({
     failure: match[1], shape: match[2],
-    links: [...match[3].matchAll(/<li><a href="([^"]+)">(.*?)<\/a><\/li>/g)].map((link) => ({ href: link[1], label: link[2] })),
+    links: [...match[3].matchAll(/<li>(?:<a href="([^"]+)">(.*?)<\/a>|([^<]+))<\/li>/g)].map(([, href, label, plain]) => ({ href: href ?? null, label: label ?? plain })),
   });
 }
 const failureMarkdown = (parsed.get('patterns.md')?.body ?? '').split('\n## Start from the failure\n')[1] ?? '';
 const mdFailures = [...failureMarkdown.matchAll(/### ([^\n]+)\n\n([^\n]+)\n\n([\s\S]*?)(?=\n### |\nIf the failure)/g)].map((match) => ({
   failure: match[1], shape: match[2],
-  links: [...match[3].matchAll(/^- \[([^\]]+)\]\(([^)]+)\)$/gm)].map((link) => ({ label: link[1], href: link[2] })),
+  links: [...match[3].matchAll(/^- (?:\[([^\]]+)\]\(([^)]+)\)|(.+))$/gm)].map(([, label, href, plain]) => ({ label: label ?? plain, href: href ?? null })),
 }));
-const predictedFailures = htmlFailures.map((entry) => ({ ...entry, links: entry.links.map((link) => ({ label: link.label, href: `${SITE}${link.href.replace(/\/$/, '.md')}` })) }));
+const predictedFailures = htmlFailures.map((entry) => ({ ...entry, links: entry.links.map((link) => ({ label: link.label, href: link.href ? `${SITE}${link.href.replace(/\/$/, '.md')}` : null })) }));
 if (JSON.stringify(mdFailures) !== JSON.stringify(predictedFailures)) fail('patterns.md: failure section differs from built HTML chooser');
-console.log(`Check 13 failure-section parity: html_failures=${htmlFailures.length} markdown_failures=${mdFailures.length} html_links=${htmlFailures.flatMap((entry) => entry.links).length}`);
+console.log(`Check 13 failure-section parity: html_failures=${htmlFailures.length} markdown_failures=${mdFailures.length} html_links=${htmlFailures.flatMap((entry) => entry.links).filter(({ href }) => href).length}`);
 
 let plainAlternates = 0;
 let plainAlternateMismatches = 0;
@@ -432,7 +439,7 @@ console.log(`Check 16 llms.txt bytes: card_lines=${cards.length} bytes=${Buffer.
 
 const ordered = ORDER.map((id) => byId.get(id));
 const expectedFlat = ['# Patterns', '', ...ordered.map(cardLine), ''];
-const expectedFailureLines = ['## Start from the failure', '', 'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.', '', ...predictedFailures.flatMap((entry) => [`### ${entry.failure}`, '', entry.shape, '', ...entry.links.map((link) => `- [${link.label}](${link.href})`), '']), `If the failure is still unclear, start with [Constitution](${SITE}/patterns/context-and-state/constitution.md). Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`, ''];
+const expectedFailureLines = ['## Start from the failure', '', 'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.', '', ...predictedFailures.flatMap((entry) => [`### ${entry.failure}`, '', entry.shape, '', ...entry.links.map((link) => `- ${link.href ? `[${link.label}](${link.href})` : link.label}`), '']), `If the failure is still unclear, start with ${selectedIds.has('context-and-state/constitution') ? `[Constitution](${SITE}/patterns/context-and-state/constitution.md)` : 'Constitution'}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`, ''];
 const expectedIndexes = new Map([['patterns.md', [...expectedFlat, ...expectedFailureLines].join('\n')], ...Object.entries(categoryLabels).map(([category, title]) => [`patterns/${category}.md`, [`# ${title}`, '', ...ordered.filter((card) => card.category === category).map(cardLine), ''].join('\n')])]);
 let indexMismatches = 0;
 for (const [path, body] of expectedIndexes) if (normalizeBody(parsed.get(path)?.body ?? '') !== normalizeBody(body)) { indexMismatches += 1; fail(`${path}: exact normalized bytes differ`); }
@@ -442,12 +449,12 @@ const expectedCatalog = sorted({ schema_version: 1, revision: REVISION, content_
   principles: { html_url: `${SITE}/principles/`, markdown_url: `${SITE}/principles.md`, source_url: `${RAW_FIXTURE}${REVISION}/verification_design.md` },
   cards: ordered.map((card) => ({ id: card.id, category: card.category, title: card.title, intent: card.intent,
     html_url: `${SITE}/patterns/${card.id}/`, markdown_url: `${SITE}/patterns/${card.id}.md`, source_url: `${RAW_FIXTURE}${REVISION}/${card.source}`,
-    related: [...(card.sourceBody.match(/##\s+Related Patterns\s*\n([\s\S]*?)(?=\n##\s|\n*$)/)?.[1] ?? '').matchAll(/\*\*([^*]+)\*\*/g)].map((match) => byTitle.get(match[1].trim().replace(/:$/, ''))?.id),
+    related: [...(card.sourceBody.match(/##\s+Related Patterns\s*\n([\s\S]*?)(?=\n##\s|\n*$)/)?.[1] ?? '').matchAll(/\*\*([^*]+)\*\*/g)].map((match) => byTitle.get(match[1].trim().replace(/:$/, ''))?.id).filter((id) => selectedIds.has(id)),
     determinism_move: sectionText(card.sourceBody, 'Determinism Move').split(/\n\s*\n/)[0], observable_signal: sectionBullets(card.sourceBody, 'Observable Signal'),
     use_when: sectionBullets(card.sourceBody, 'Use When'), do_not_use_when: sectionBullets(card.sourceBody, 'Do Not Use When'),
     pattern_example: (card.sourceBody.split(/^### Pattern[^\n]*\n/m)[1] ?? '').split(/^## /m)[0].includes('```python\n') ? 'executable' : 'none',
     evidence_count: sectionBullets(card.sourceBody, 'Evidence').length, source_sha256: sha256(card.sourceBody) })),
-  failures: htmlFailures.map((entry) => ({ failure: entry.failure, shape: entry.shape, cards: entry.links.map((link) => link.href.replace(/^\/patterns\//, '').replace(/\/$/, '')) })),
+  failures: htmlFailures.map((entry) => ({ failure: entry.failure, shape: entry.shape, cards: entry.links.filter(({ href }) => href).map((link) => link.href.replace(/^\/patterns\//, '').replace(/\/$/, '')) })),
 });
 const expectedCatalogText = `${JSON.stringify(expectedCatalog, null, 2)}\n`;
 const catalogText = (await readFile(join(DIST, 'catalog.json'), 'utf8')).replace(/\r\n/g, '\n');

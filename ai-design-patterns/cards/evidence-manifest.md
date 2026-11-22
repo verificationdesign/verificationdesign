@@ -33,9 +33,9 @@ Keep a manifest that maps criteria to the fields they require. Define presence a
 
 1. Pin the manifest to the criterion and identify the authoritative run or document record. Use a stable event identity or a defined sequence when the criterion depends on relationships across events.
 2. Extract the required fields independently from the source. Capture the rendered packet at the checker's entry point, after any staging or compaction, and extract the same fields there.
-3. Compare field presence and values. Require evidence in both records. Equality can be defined on parsed structured data when serialization details carry no meaning. Preserve ordering where the criterion depends on it.
+3. Validate the packet shape before extracting fields. Compare field presence, values, and types. Require evidence in both records. Equality can be defined on parsed structured data when serialization details carry no meaning. Preserve ordering where the criterion depends on it.
 4. Pass the same checked packet to the judge when every check succeeds. On any failed check return `not_assessable` with the field observations and skip the judge. Route an unavailable assessment separately from an adverse verdict.
-5. Exercise the entry point with a faithful fixture and a negative fixture that removes or changes required evidence. Verify both the report and whether the judge was called.
+5. Exercise the entry point with a faithful fixture, a malformed packet, and fixtures that remove or change required evidence. Verify both the report and whether the judge was called.
 
 ## Pattern / Antipattern
 
@@ -65,7 +65,7 @@ def judge(packet):
 
 ### Pattern: compare source fields at the judge entry point
 
-For this fixture, all steps are in scope, including steps with an explicit empty call list. The step sequence and each call's name, arguments, and result are compared together. Each report comes from a recording entry point that receives the serialized packet and invokes the stub only after checking it.
+For this fixture, all steps are in scope, including steps with an explicit empty call list. The step sequence and each call's name, arguments, and result are compared together. The fixtures include an omitted call list, malformed JSON, a changed refund result type, and an intact packet. Each report comes from a recording entry point that receives the serialized packet and invokes the stub only after checking it.
 
 ```python
 import json
@@ -98,9 +98,39 @@ received_packets = []
 judged_packets = []
 
 
+def strict_equal(source_value, packet_value):
+    if type(source_value) is not type(packet_value):
+        return False
+    if isinstance(source_value, dict):
+        return source_value.keys() == packet_value.keys() and all(
+            strict_equal(value, packet_value[key]) for key, value in source_value.items()
+        )
+    if isinstance(source_value, list):
+        return len(source_value) == len(packet_value) and all(
+            strict_equal(left, right) for left, right in zip(source_value, packet_value)
+        )
+    return source_value == packet_value
+
+
+def reject_constant(value):
+    raise ValueError(f"{value} is not a JSON value")
+
+
 def judge_entry(criterion, source, packet):
     received_packets.append(packet)
-    received = json.loads(packet)
+    reason = None
+    try:
+        received = json.loads(packet, parse_constant=reject_constant)
+    except (ValueError, TypeError, RecursionError):
+        reason = "packet is not valid JSON"
+    else:
+        if not isinstance(received, list) or not all(
+            isinstance(step, dict) for step in received
+        ):
+            reason = "packet must be a list of objects"
+    if reason:
+        received = []
+
     checks = []
     for index in range(max(len(source), len(received))):
         source_step = source[index] if index < len(source) else {}
@@ -115,13 +145,15 @@ def judge_entry(criterion, source, packet):
                 "source_value": source_step.get(field),
                 "packet_value": packet_step.get(field),
                 "match": source_present and packet_present
-                and source_step[field] == packet_step[field],
+                and strict_equal(source_step[field], packet_step[field]),
             })
     missing = [
         row["field"] for row in checks
         if not (row["source_present"] and row["packet_present"])
     ]
     report = {"criterion": criterion, "checks": checks, "missing": missing}
+    if reason:
+        return dict(report, outcome="not_assessable", reason=reason)
     if not checks or not all(row["match"] for row in checks):
         return dict(report, outcome="not_assessable")
     judged_packets.append(packet)
@@ -135,12 +167,28 @@ bad = judge_entry(criterion, SOURCE, lossy)
 assert bad["outcome"] == "not_assessable" and "verdict" not in bad
 assert bad["missing"] == ["steps[0].tool_calls", "steps[1].tool_calls"]
 assert len(judged_packets) == 0
+malformed = "["
+malformed_report = judge_entry(criterion, SOURCE, malformed)
+assert malformed_report["outcome"] == "not_assessable"
+assert malformed_report["reason"] == "packet is not valid JSON"
+assert malformed_report["missing"] == bad["missing"]
+assert "verdict" not in malformed_report and len(judged_packets) == 0
+
+changed_steps = json.loads(faithful)
+changed_steps[1]["tool_calls"][0]["result"]["refunded"] = 1
+changed = json.dumps(changed_steps)
+changed_report = judge_entry(criterion, SOURCE, changed)
+assert changed_report["outcome"] == "not_assessable"
+assert changed_report["missing"] == []
+assert [row["match"] for row in changed_report["checks"]] == [True, False]
+assert "verdict" not in changed_report and len(judged_packets) == 0
+
 good = judge_entry(criterion, SOURCE, faithful)
 assert good["outcome"] == "assessable" and good["verdict"] == "pass"
 assert good["missing"] == [] and all(row["match"] for row in good["checks"])
-assert received_packets == [lossy, faithful]
+assert received_packets == [lossy, malformed, changed, faithful]
 assert judged_packets == [faithful]
-print(json.dumps([bad, good], indent=2))
+print(json.dumps([bad, malformed_report, changed_report, good], indent=2))
 ```
 
 ## Determinism Move
@@ -149,7 +197,7 @@ The nearest listed source is `tool_boundary_ambiguity`. The manifest turns an im
 
 ## Observable Signal
 
-Report the criterion, every required field path, presence on each side, the source and packet values, and the equality result. In the lossy fixture both call lists are present in the source and absent from the packet. In the faithful fixture their values match at both steps. Record the assessment outcome and include a verdict only for a completed assessment. When values contain sensitive data, design judgment calls for limiting report exposure while retaining enough information to diagnose the mismatch.
+Report the criterion, every required field path, presence on each side, the source and packet values, and the equality result. In the lossy fixture both call lists are present in the source and absent from the packet. The malformed fixture records its refusal reason and marks packet fields unavailable. The changed fixture reports both fields present and marks the refund step as unequal because its result type changed. In the faithful fixture the values and types match at both steps. Record the assessment outcome and include a verdict only for a completed assessment. When values contain sensitive data, design judgment calls for limiting report exposure while retaining enough information to diagnose the mismatch.
 
 ## Failure Modes
 
@@ -175,6 +223,16 @@ A checker reading required values directly from the authoritative store has no s
 * In an LLM-AggreFact comparison, three tested judges scored higher on balanced accuracy with source documents available than when judging blind. [arXiv:2610.15938](https://arxiv.org/abs/2610.15938)
 * On matched RFC replacement cases with missing links, all tested judges caught fewer replacements with an authoritative damaged record than with the texts alone. The result is scoped to the sampled RFC cases and tested presentations. [arXiv:2611.01311](https://arxiv.org/abs/2611.01311)
 * In the tested web-agent trajectories summarized in the abstract of Gaming the Judge, changing the reasoning text while holding actions and observations fixed changed judgments. For an action criterion, the design judgment here is to require the underlying actions and observations in the manifest. [arXiv:2601.14691](https://arxiv.org/abs/2601.14691)
+
+### References
+
+| Source | Study |
+| --- | --- |
+| [arXiv:2611.02676](https://arxiv.org/abs/2611.02676) | Does the Judge See What the Evaluation Requires? Input Assurance for LLM Agent Evaluation |
+| [arXiv:2611.18471](https://arxiv.org/abs/2611.18471) | Do Verifier Judgments Survive Abstraction? Measuring Verification Transport for LLM Agent Evaluation |
+| [arXiv:2610.15938](https://arxiv.org/abs/2610.15938) | The Anatomy of a Blind Spot: What an LLM Judge Must Be Shown, and How Much |
+| [arXiv:2611.01311](https://arxiv.org/abs/2611.01311) | What Do LLM Judges Actually Verify? Matched Controls and Record Gaps for Document Currency |
+| [arXiv:2601.14691](https://arxiv.org/abs/2601.14691) | Gaming the Judge: Unfaithful Chain-of-Thought Can Undermine Agent Evaluation |
 
 ## Related Patterns
 

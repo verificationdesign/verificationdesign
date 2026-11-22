@@ -1,12 +1,13 @@
 import { readFile, readdir, stat } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { extractCategory, extractRelated, extractTitle } from '../src/content/loaders/cardsLoader.mjs';
+import { extractRelated, readCardCatalog } from '../src/content/loaders/cardsLoader.mjs';
 
 const origin = 'https://verificationdesign.com';
-const dist = fileURLToPath(new URL('../dist/', import.meta.url));
-const cardsDir = fileURLToPath(new URL('../../ai-design-patterns/cards/', import.meta.url));
+const siteDir = fileURLToPath(new URL('../', import.meta.url));
+const dist = resolve(siteDir, process.env.SITE_OUTPUT_DIR || 'dist');
+const cardsDir = resolve(siteDir, '../ai-design-patterns/cards');
 const failures = [];
 
 function decodeAttribute(value) {
@@ -55,12 +56,11 @@ for await (const path of htmlFiles(dist)) {
 }
 
 const cardSources = new Map();
-for (const file of await readdir(cardsDir)) {
-  if (!file.endsWith('.md')) continue;
-  const content = await readFile(join(cardsDir, file), 'utf8');
-  const category = extractCategory(content);
-  if (!category || !extractTitle(content)) continue;
-  cardSources.set(`/patterns/${category}/${file.slice(0, -3)}/index.html`, extractRelated(content).length);
+const pathsByTitle = new Map();
+for (const { category, slug, title, content } of await readCardCatalog(cardsDir)) {
+  const path = `/patterns/${category}/${slug}/index.html`;
+  pathsByTitle.set(title.toLowerCase(), path);
+  cardSources.set(path, extractRelated(content));
 }
 
 let scanned = 0;
@@ -70,6 +70,7 @@ let fragments = 0;
 let breadcrumbs = 0;
 let expectedRelated = 0;
 let linkedRelated = 0;
+let plainRelated = 0;
 
 function resolveHref(source, href) {
   const url = new URL(href, origin + source.replace(/\/index\.html$/, '/'));
@@ -149,14 +150,18 @@ for (const [source, page] of pages) {
     }
   }
 
-  const expected = cardSources.get(source);
-  expectedRelated += expected;
+  const related = cardSources.get(source);
+  const targets = related.map((name) => pathsByTitle.get(name.toLowerCase()));
+  expectedRelated += targets.filter((path) => pages.has(path) && !pages.get(path).redirect).length;
   const list = page.html.match(/<h2\b[^>]*\bid="related-patterns"[^>]*>[\s\S]*?<\/h2>\s*<ul\b[^>]*>([\s\S]*?)<\/ul>/i);
   const items = [...(list?.[1] ?? '').matchAll(/<li\b[^>]*>([\s\S]*?)<\/li>/gi)];
-  if (items.length !== expected) {
-    failures.push(`${source}: #related-patterns: expected ${expected} items, found ${items.length}`);
+  if (items.length !== related.length) {
+    failures.push(`${source}: #related-patterns: expected ${related.length} items, found ${items.length}`);
   }
-  for (const [, item] of items) {
+  for (const [index, [, item]] of items.entries()) {
+    const name = related[index];
+    const expectedTarget = targets[index];
+    const shouldLink = pages.has(expectedTarget) && !pages.get(expectedTarget).redirect;
     const anchor = item.match(/^\s*<a\b([^>]*)>/i);
     const href = anchor && attributes(anchor[1]).get('href');
     let target;
@@ -166,15 +171,21 @@ for (const [source, page] of pages) {
     } catch {
       // The general href check reports malformed links with their source and href.
     }
-    if (cardSources.has(target) && pages.has(target) && !pages.get(target).redirect) {
+    const label = item.match(/^\s*(?:<a\b[^>]*>)?<strong>([^<]+)<\/strong>/i)?.[1];
+    const actualName = label && decodeAttribute(label).trim().replace(/:$/, '');
+    if (!expectedTarget || actualName !== name) {
+      failures.push(`${source}: #related-patterns: expected item ${name}, found ${actualName}`);
+    } else if (shouldLink && target === expectedTarget) {
       linkedRelated++;
+    } else if (shouldLink || anchor) {
+      failures.push(`${source}: #related-patterns: ${name} must ${shouldLink ? `link to ${expectedTarget}` : 'be plain text'}`);
     } else {
-      failures.push(`${source}: ${href || '#related-patterns'}: related item must start with a card link: ${item.replace(/<[^>]*>/g, '').trim()}`);
+      plainRelated++;
     }
   }
 }
 
 if (!scanned) failures.push('/: no built HTML pages found in dist');
 for (const failure of failures) console.error(failure);
-console.log(`Internal links: ${scanned} pages scanned, ${redirects} redirect stubs skipped, ${links} internal links checked, ${fragments} fragment links checked, ${breadcrumbs} JSON-LD URLs checked, Related Patterns linked ${linkedRelated} of ${expectedRelated}, ${failures.length} failures.`);
+console.log(`Internal links: ${scanned} pages scanned, ${redirects} redirect stubs skipped, ${links} internal links checked, ${fragments} fragment links checked, ${breadcrumbs} JSON-LD URLs checked, Related Patterns linked ${linkedRelated} of ${expectedRelated}, ${plainRelated} shown as plain text, ${failures.length} failures.`);
 process.exitCode = failures.length ? 1 : 0;

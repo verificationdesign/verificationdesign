@@ -1,15 +1,17 @@
 ---
 import { getCollection } from 'astro:content';
 import { FAILURE_MAP } from '../lib/failure-map.mjs';
+import { readCardCatalog } from '../content/loaders/cardsLoader.mjs';
 
+const constitutionHref = '/patterns/context-and-state/constitution/';
 const cards = await getCollection('patterns');
-const validHrefs = new Set(cards.map((card) => `/patterns/${card.data.category}/${card.data.slug}/`));
-const deadLinks = FAILURE_MAP
-  .flatMap((entry) => entry.links)
-  .filter((link) => !validHrefs.has(link.href));
+const selectedHrefs = new Set(cards.map((card) => `/patterns/${card.data.category}/${card.data.slug}/`));
+const validHrefs = new Set((await readCardCatalog()).map(({ category, slug }) => `/patterns/${category}/${slug}/`));
+const authoredHrefs = [...FAILURE_MAP.flatMap((entry) => entry.links.map(({ href }) => href)), constitutionHref];
+const deadLinks = authoredHrefs.filter((href) => !validHrefs.has(href));
 
 if (deadLinks.length > 0) {
-  throw new Error(`Chooser links missing from the card collection: ${deadLinks.map((l) => l.href).join(', ')}`);
+  throw new Error(`Chooser links missing from the card collection: ${deadLinks.join(', ')}`);
 }
 
 interface Props {
@@ -32,7 +34,7 @@ const RowHeading = Heading === 'h2' ? 'h3' : 'h4';
         <p>{entry.shape}</p>
         <ul role="list">
           {entry.links.map((link) => (
-            <li><a href={link.href}>{link.label}</a></li>
+            <li>{selectedHrefs.has(link.href) ? <a href={link.href}>{link.label}</a> : link.label}</li>
           ))}
         </ul>
       </section>
@@ -40,7 +42,7 @@ const RowHeading = Heading === 'h2' ? 'h3' : 'h4';
   </div>
   <p class="chooser-footer">
     If the failure is still unclear, start with
-    <a href="/patterns/context-and-state/constitution/">Constitution</a>.
+    {selectedHrefs.has(constitutionHref) ? <a href={constitutionHref}>Constitution</a> : 'Constitution'}.
     Most verification failures become easier to diagnose once the system has
     an explicit answer to what is being checked.
   </p>

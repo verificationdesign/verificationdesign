@@ -390,6 +390,14 @@ For reference-labelled question answering like the tested peer protocol, do not 
 * One study reports more wrong unanimity with peer discussion than with round-matched private reflection on fully parsed, non-numeric, reference-labelled MAD Bench questions. Each group used copies of a single open-weight model. [arXiv:2610.35930](https://arxiv.org/abs/2610.35930)
 * One study reports that sharing assessment summaries raised unanimity across tested failure-attribution configurations and lowered exact-match accuracy on synthetic TradingAgents trials for DeepSeek V4.1 Flash and GPT-OSS 120B. The protocol used the true culprit count to aggregate votes. The separate baseline evaluator received no case-specific culprit count. [arXiv:2606.02282](https://arxiv.org/abs/2606.02282)
 
+### References
+
+| Source | Study |
+| --- | --- |
+| [arXiv:2610.35930](https://arxiv.org/abs/2610.35930) | Who Convinced Whom? Tracing How LLMs Change Their Minds in Multi-Agent Systems |
+| [arXiv:2610.28539](https://arxiv.org/abs/2610.28539) | Humans Correct Their Judgments Through Debate, but Weaker AI Models Do Not |
+| [arXiv:2606.02282](https://arxiv.org/abs/2606.02282) | POIROT: Agents as their own auditors for failure attribution in large language model multi-agent systems |
+
 ## Related Patterns
 
 * **Adversary:** Debate generalizes the single-critic primitive into multi-round, multi-role disagreement.

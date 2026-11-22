@@ -3,10 +3,14 @@ import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PatternLinks from '../components/PatternLinks.astro';
 import { PRINCIPLE_MAP, validatePrincipleMap } from '../lib/principle-map.mjs';
+import { readCardCatalog } from '../content/loaders/cardsLoader.mjs';
 
 const cards = await getCollection('patterns');
 const cardsBySlug = new Map(cards.map((card) => [card.data.slug, card.data]));
-validatePrincipleMap([...cardsBySlug.keys()]);
+validatePrincipleMap((await readCardCatalog()).map(({ slug }) => slug));
+const selectedPatterns = PRINCIPLE_MAP.map(({ cards }) =>
+  cards.map((slug) => cardsBySlug.get(slug)).filter((card) => card !== undefined),
+);
 ---
 
 <BaseLayout
@@ -76,7 +80,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       agent's judgment. These are sycophancy-proof.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[0].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[0]} />
 
     <aside class="practice-note" aria-label="This site, in practice: external signals over self-review">
       <p class="practice-label">This site, in practice</p>
@@ -100,7 +104,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       and opine.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[1].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[1]} />
 
     <aside class="practice-note" aria-label="This site, in practice: independence between generation and verification">
       <p class="practice-label">This site, in practice</p>
@@ -121,7 +125,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       where they originate, before they compound.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[2].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[2]} />
 
     <aside class="practice-note" aria-label="This site, in practice: step-level checkpoints">
       <p class="practice-label">This site, in practice</p>
@@ -146,7 +150,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       <sup><a href="https://ojs.aaai.org/index.php/AIES/article/download/36598/38736/40673" class="source-link" aria-label="Source: SycEval, AAAI 2025">2</a></sup>.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[3].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[3]} />
 
     <aside class="practice-note" aria-label="This site, in practice: adversarial framing">
       <p class="practice-label">This site, in practice</p>
@@ -168,7 +172,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       invite it.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[4].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[4]} />
 
     <aside class="practice-note" aria-label="This site, in practice: explicit criteria">
       <p class="practice-label">This site, in practice</p>
@@ -191,7 +195,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       executable analog.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[5].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[5]} />
 
     <aside class="practice-note" aria-label="This site, in practice: executable verification is king">
       <p class="practice-label">This site, in practice</p>
@@ -224,7 +228,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       biased toward accepting incorrect outputs.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[6].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[6]} />
 
     <aside class="practice-note" aria-label="This site, in practice: cross-family beats self-verification">
       <p class="practice-label">This site, in practice</p>
@@ -246,7 +250,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       than confirmatory review.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[7].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[7]} />
 
     <aside class="practice-note" aria-label="This site, in practice: simulate debate">
       <p class="practice-label">This site, in practice</p>
@@ -266,7 +270,7 @@ validatePrincipleMap([...cardsBySlug.keys()]);
       causality.
     </p>
 
-    <PatternLinks cards={PRINCIPLE_MAP[8].cards.map((slug) => cardsBySlug.get(slug)!)} />
+    <PatternLinks cards={selectedPatterns[8]} />
 
     <aside class="practice-note" aria-label="This site, in practice: isolate verification from ambient state">
       <p class="practice-label">This site, in practice</p>

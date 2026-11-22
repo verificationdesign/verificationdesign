@@ -9,9 +9,9 @@ const { cards } = Astro.props;
 const t = getUi();
 ---
 
-<p>
+{cards.length > 0 && <p>
   {t.principles.patterns}:
   {cards.map((card, index) => (
     <>{index > 0 && ', '}<a href={`/patterns/${card.category}/${card.slug}/`}>{card.title}</a></>
   ))}
-</p>
+</p>}

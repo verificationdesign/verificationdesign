@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import {
+  cardAllowlist,
   cardUpdated,
   extractCategory,
   extractIntent,
@@ -19,7 +20,7 @@ const REPO = resolve(process.cwd(), '..');
 const REVISION = process.env.GITHUB_SHA || execFileSync('git', ['rev-parse', 'HEAD'], { cwd: REPO, encoding: 'utf8' }).trim();
 const sha256 = (body) => createHash('sha256').update(body).digest('hex');
 const CARDS_DIR = join(REPO, 'ai-design-patterns/cards');
-const DIST = resolve(process.cwd(), 'dist');
+const DIST = resolve(process.cwd(), process.env.SITE_OUTPUT_DIR || 'dist');
 const LICENSE = 'CC BY 4.0';
 const RAW_PRINCIPLES_URL = `${REPO_URL.replace('https://github.com/', 'https://raw.githubusercontent.com/')}/${REVISION}/verification_design.md`;
 const CATEGORY_LABELS = {
@@ -54,23 +55,6 @@ function sortKeys(value) {
   }
   return value;
 }
-
-const failureSection = [
-  '## Start from the failure',
-  '',
-  'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.',
-  '',
-  ...FAILURE_MAP.flatMap((entry) => [
-    `### ${entry.failure}`,
-    '',
-    entry.shape,
-    '',
-    ...entry.links.map((link) => `- [${link.label}](${SITE}${link.href.replace(/\/$/, '.md')})`),
-    '',
-  ]),
-  `If the failure is still unclear, start with [Constitution](${SITE}/patterns/context-and-state/constitution.md). Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`,
-  '',
-];
 
 function quote(value) {
   return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
@@ -121,13 +105,46 @@ for (const file of cardFiles) {
 
 const byId = new Map(cards.map((card) => [card.id, card]));
 const byTitle = new Map(cards.map((card) => [card.title, card]));
-const orderedCards = READING_ORDER.map((id) => {
+const fullOrder = READING_ORDER.map((id) => {
   const card = byId.get(id);
   if (!card) throw new Error(`Reading order names missing card: ${id}`);
   return card;
 });
-if (orderedCards.length !== cards.length) {
-  throw new Error(`Reading order has ${orderedCards.length} cards; filesystem has ${cards.length}`);
+if (fullOrder.length !== cards.length) {
+  throw new Error(`Reading order has ${fullOrder.length} cards; filesystem has ${cards.length}`);
+}
+
+const allowlist = cardAllowlist();
+const orderedCards = fullOrder.filter(({ slug }) => !allowlist || allowlist.has(slug));
+const selectedIds = new Set(orderedCards.map(({ id }) => id));
+const selectedHrefs = new Set(orderedCards.map(({ id }) => `/patterns/${id}/`));
+const patternLabel = (label, href) => selectedHrefs.has(href)
+  ? `[${label}](${SITE}${href.replace(/\/$/, '.md')})`
+  : label;
+
+const failureSection = [
+  '## Start from the failure',
+  '',
+  'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.',
+  '',
+  ...FAILURE_MAP.flatMap((entry) => [
+    `### ${entry.failure}`,
+    '',
+    entry.shape,
+    '',
+    ...entry.links.map((link) => `- ${patternLabel(link.label, link.href)}`),
+    '',
+  ]),
+  `If the failure is still unclear, start with ${patternLabel('Constitution', '/patterns/context-and-state/constitution/')}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`,
+  '',
+];
+
+function selectedRelated(card) {
+  return card.relatedNames.flatMap((title) => {
+    const target = byTitle.get(title);
+    if (!target) throw new Error(`${card.file} names unknown related pattern: ${title}`);
+    return selectedIds.has(target.id) ? [target] : [];
+  });
 }
 
 const twins = [];
@@ -149,15 +166,10 @@ registerTwin('principles.md', `${SITE}/principles/`);
 for (const card of orderedCards) {
   const markdownUrl = `${SITE}/patterns/${card.category}/${card.slug}.md`;
   const canonical = `${SITE}/patterns/${card.category}/${card.slug}/`;
-  const related = card.relatedNames.map((rawTitle) => {
-    const title = rawTitle.replace(/:$/, '');
-    const target = byTitle.get(title);
-    if (!target) throw new Error(`${card.file} names unknown related pattern: ${title}`);
-    return {
-      title,
-      url: `${SITE}/patterns/${target.category}/${target.slug}.md`,
-    };
-  });
+  const related = selectedRelated(card).map((target) => ({
+    title: target.title,
+    url: `${SITE}/patterns/${target.id}.md`,
+  }));
   await emit(`patterns/${card.category}/${card.slug}.md`, `${frontmatter({
     title: card.title,
     canonical,
@@ -310,12 +322,7 @@ const catalog = {
     html_url: card.canonical,
     markdown_url: card.markdownUrl,
     source_url: `${REPO_URL.replace('https://github.com/', 'https://raw.githubusercontent.com/')}/${REVISION}/${card.source}`,
-    related: card.relatedNames.map((rawTitle) => {
-      const title = rawTitle.replace(/:$/, '');
-      const target = byTitle.get(title);
-      if (!target) throw new Error(`${card.file} names unknown related pattern: ${title}`);
-      return target.id;
-    }),
+    related: selectedRelated(card).map(({ id }) => id),
     determinism_move: firstParagraph(card.body, 'Determinism Move'),
     observable_signal: bullets(card.body, 'Observable Signal'),
     use_when: bullets(card.body, 'Use When'),
@@ -327,7 +334,7 @@ const catalog = {
   failures: FAILURE_MAP.map((entry) => ({
     failure: entry.failure,
     shape: entry.shape,
-    cards: entry.links.map((link) => link.href.replace(/^\/patterns\//, '').replace(/\/$/, '')),
+    cards: entry.links.filter(({ href }) => selectedHrefs.has(href)).map((link) => link.href.replace(/^\/patterns\//, '').replace(/\/$/, '')),
   })),
 };
 await emit('catalog.json', `${JSON.stringify(sortKeys(catalog), null, 2)}\n`);

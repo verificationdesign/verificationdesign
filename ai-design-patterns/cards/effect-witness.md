@@ -170,6 +170,16 @@ These preprints provide bounded examples for review. The paired refund test is a
 * One study compares a gold write expectation with logged commit events on airline and retail tau2-bench tasks. The boundary check determines whether an expected write occurred. Write content, timing, and overall policy compliance require further evidence. [arXiv:2611.14581](https://arxiv.org/abs/2611.14581)
 * One study reports that simulator replay in multi-turn function calling identifies collateral calls that final-state scoring can miss. The finding concerns benchmark-defined effects and depends on the reference trajectories and simulator. [arXiv:2611.02978](https://arxiv.org/abs/2611.02978)
 
+### References
+
+| Source | Study |
+| --- | --- |
+| [arXiv:2607.14166](https://arxiv.org/abs/2607.14166) | Stop Means Stop: Measuring and Repairing the Enforcement Gap in Agent-Framework Control Primitives |
+| [arXiv:2611.19237](https://arxiv.org/abs/2611.19237) | Auditable Authorization for LLM Agents: Empirical Evidence Across Model, Harness, and Workflow Layers |
+| [arXiv:2611.20595](https://arxiv.org/abs/2611.20595) | Invariant-Aware Harness Enforcement to Protect LLM Agents from Silent API Failures |
+| [arXiv:2611.14581](https://arxiv.org/abs/2611.14581) | When Evaluators of AI Agents Disagree: An Empirical Study of Native Scoring, LLM Judges, and Commit-Boundary Checks on tau2-bench |
+| [arXiv:2611.02978](https://arxiv.org/abs/2611.02978) | CAREFUL-Bench: Effect-Aware, Judge-Free Evaluation of Multi-Turn LLM Function Calling |
+
 ## Related Patterns
 
 * **Guardrail Decorator:** places policy at a call boundary. Effect Witness checks the system of record across that route and other routes that can commit.
