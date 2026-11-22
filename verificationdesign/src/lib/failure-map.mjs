@@ -5,6 +5,7 @@ export const FAILURE_MAP = [
     links: [
       { label: 'Executable Analog', href: '/patterns/verification/executable-analog/' },
       { label: 'Comparator', href: '/patterns/verification/comparator/' },
+      { label: 'Fault Seed', href: '/patterns/verification/fault-seed/' },
       { label: 'Constitution', href: '/patterns/context-and-state/constitution/' },
     ],
   },

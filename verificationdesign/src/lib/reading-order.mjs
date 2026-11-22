@@ -10,6 +10,7 @@ export const READING_ORDER = [
   'verification/delta',
   'verification/judge-harness',
   'verification/admissibility-gate',
+  'verification/fault-seed',
   'orchestration/cross-family',
   'orchestration/adversary',
   'orchestration/debate',
