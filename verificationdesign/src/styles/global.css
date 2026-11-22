@@ -88,11 +88,18 @@ sup {
   font-size: 0.68em;
   line-height: 0;
 }
+/* Footnote-style citations: keep them visibly linked and give the single
+   digit a usable hit area without changing line height. */
 .source-link {
-  text-decoration: none;
+  display: inline-block;
+  line-height: 1;
+  padding: 0.6em 0.6em;
+  margin: -0.6em -0.35em;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
 }
 .source-link:hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 
 code {
@@ -113,6 +120,14 @@ pre {
   font-size: 0.88rem;
   line-height: 1.5;
   max-width: 100%;
+}
+
+/* Shiki inlines white-space: pre-wrap; wrapped lines break code indentation,
+   so scroll horizontally instead. */
+.astro-code {
+  white-space: pre !important;
+  overflow-wrap: normal !important;
+  word-wrap: normal !important;
 }
 
 pre code {
@@ -404,11 +419,24 @@ hr {
   cursor: pointer;
   display: flex;
   align-items: center;
+  gap: var(--space-2);
   min-height: 44px;
   font-weight: 600;
   padding: var(--space-2) 0;
   color: var(--accent);
+  list-style: none;
 }
+.section-nav summary::-webkit-details-marker { display: none; }
+.section-nav summary::before {
+  content: '';
+  flex: 0 0 auto;
+  border-left: 0.45em solid currentColor;
+  border-top: 0.3em solid transparent;
+  border-bottom: 0.3em solid transparent;
+  transition: transform 0.15s ease;
+}
+.section-nav[open] summary::before { transform: rotate(90deg); }
+.section-nav summary:hover { text-decoration: underline; }
 .section-nav ol {
   columns: 2;
   column-gap: var(--space-5);
@@ -560,9 +588,21 @@ hr {
   margin: 0 0 var(--space-3);
 }
 
+/* The cited work leads; where it is cited from is secondary metadata. */
 .reference-sources {
+  display: block;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  margin-top: var(--space-1);
+}
+.reference-sources a {
+  color: var(--muted);
+  text-decoration-color: var(--border);
+}
+.reference-sources a:hover {
+  color: var(--text);
+  text-decoration-color: currentColor;
 }
 
 @media (min-width: 720px) {
