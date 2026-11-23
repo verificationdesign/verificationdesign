@@ -38,29 +38,43 @@ const visible = (Object.keys(CATEGORY_INFO) as CategoryKey[]).filter(
   (key) => grouped[key].length > 0,
 );
 
-const { headingLevel = 'h2' } = Astro.props;
+interface Props {
+  headingLevel?: 'h2' | 'h3';
+  overview?: boolean;
+}
+
+const { headingLevel = 'h2', overview = false } = Astro.props;
 const Heading = headingLevel;
 ---
 
-<div class="category-grid">
+<div class:list={["category-grid", { "family-overview": overview }]}>
   {visible.map((key) => (
-    <section class="category" id={key}>
-      <Heading class="category-title">{CATEGORY_INFO[key].label}</Heading>
+    <section class:list={[overview ? "family-entry" : "category", key]} id={overview ? undefined : key}>
+      <Heading class="category-title">
+        {overview ? <a href={`/patterns/#${key}`}>{CATEGORY_INFO[key].label}</a> : CATEGORY_INFO[key].label}
+      </Heading>
       <p class="category-blurb">
         {CATEGORY_INFO[key].blurb}
       </p>
-      <ul class="card-list">
-        {grouped[key].map((card) => (
-          <li>
-            <a href={`/patterns/${card.data.category}/${card.data.slug}/`}>
-              <span class="card-title">{card.data.title}</span>
-              {card.data.gloss && (
-                <span class="card-gloss">{card.data.gloss}</span>
-              )}
-            </a>
-          </li>
-        ))}
-      </ul>
+      {overview ? (
+        <span class="family-count" role="img" aria-label={`${grouped[key].length} patterns`}>
+          {grouped[key].map(() => <span aria-hidden="true"></span>)}
+          <span aria-hidden="true" class="family-total">{grouped[key].length}</span>
+        </span>
+      ) : (
+        <ul class="card-list" role="list">
+          {grouped[key].map((card) => (
+            <li>
+              <a href={`/patterns/${card.data.category}/${card.data.slug}/`}>
+                <span class="card-title">{card.data.title}</span>
+                {card.data.gloss && (
+                  <span class="card-gloss">{card.data.gloss}</span>
+                )}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   ))}
 </div>

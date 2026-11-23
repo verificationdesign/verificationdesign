@@ -10,13 +10,19 @@ import FailureChooser from '../../components/FailureChooser.astro';
   markdownPath="/patterns.md"
 >
   <div class="patterns-page">
-    <h1>Patterns</h1>
-    <p class="patterns-orientation">
-      Patterns are reusable verification structures for agentic systems.
-      Each card names the failure it controls, the mechanism it uses, the
-      observable signal it produces, and the evidence behind it. Two ways
-      in: start from the failure you are seeing, or browse by family.
-    </p>
+    <div class="landing-intro">
+      <h1>Patterns</h1>
+      <p class="patterns-orientation">
+        Patterns are reusable verification structures for agentic systems.
+        Each card names the failure it controls, the mechanism it uses, the
+        observable signal it produces, and the evidence behind it. Two ways
+        in: start from the failure you are seeing, or browse by family.
+      </p>
+      <div class="route-links">
+        <a href="#by-failure-heading">Start from the failure</a>
+        <a href="#by-family-heading">Browse by family</a>
+      </div>
+    </div>
 
     <FailureChooser headingLevel="h2" />
 
