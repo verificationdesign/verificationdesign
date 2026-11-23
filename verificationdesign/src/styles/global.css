@@ -455,6 +455,7 @@ hr {
 .card-list a {
   align-self: stretch;
   width: 100%;
+  min-width: 0;
   aspect-ratio: 1;
   min-height: var(--tile-min-height);
   padding: 0.58rem;
@@ -481,11 +482,11 @@ hr {
 }
 
 @media (min-width: 1000px) {
-  .card-list { --tile-columns: 5; --tile-min-height: 13rem; }
+  .card-list { --tile-columns: 4; --tile-min-height: 13rem; }
 }
 
 @media (min-width: 1200px) {
-  .card-list { --tile-min-height: 12rem; }
+  .card-list { --tile-columns: 5; --tile-min-height: 12rem; }
 }
 
 .card-page { max-width: var(--measure-wide); margin: 0 auto; }
