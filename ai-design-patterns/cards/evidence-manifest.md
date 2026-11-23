@@ -8,7 +8,7 @@
 
 ## Intent
 
-Require a match between criterion-specific source evidence and the packet at the checker entry point before issuing a verdict.
+Match criterion-specific source evidence to the evidence packet at the checker entry point. Require that match before issuing a verdict.
 
 ## Problem
 

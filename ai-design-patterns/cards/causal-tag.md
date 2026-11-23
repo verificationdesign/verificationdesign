@@ -10,7 +10,7 @@ Also known as: Causal ID, Run ID Propagation, Invocation Tag, Event Parentage.
 
 ## Intent
 
-Stamp emitted events with stable joinable identifiers and parent links, then join destination observations to recorded actions; causal attribution depends on trustworthy tag generation and propagation.
+Stamp emitted events with stable joinable identifiers and parent links for tracing actions across boundaries. Join destination observations to recorded actions. Causal attribution depends on trustworthy tag generation and propagation.
 
 ## Problem
 

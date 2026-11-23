@@ -10,7 +10,7 @@ Also known as: Adversarial Frame (former name), Operationalized Skepticism, Evid
 
 ## Intent
 
-Replace tone-level skepticism instructions with admissibility rules that define what counts as proof, name common shortcut paths to reject, and invert the verifier's default from "accept if plausible" to "fail unless backed by trusted evidence."
+Define what counts as proof with admissibility rules that reject common verification shortcuts. Replace tone-level skepticism instructions and invert the verifier's default from "accept if plausible" to "fail unless backed by trusted evidence."
 
 ## Problem
 

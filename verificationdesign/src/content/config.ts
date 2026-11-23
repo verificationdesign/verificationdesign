@@ -11,6 +11,7 @@ const patterns = defineCollection({
     updated: z.string(),
     related: z.array(z.string()).default([]),
     intent: z.string().nullable().optional(),
+    gloss: z.string().nullable(),
     sourceFile: z.string().optional(),
   }),
 });

@@ -10,7 +10,7 @@ Also known as: Mechanical Extraction, Tool-Mediated Verification, Objective Grou
 
 ## Intent
 
-Translate a subjective, language-based verification step into a deterministic, programmatic execution step that yields a binary pass/fail signal independent of the agent's judgment.
+Translate a subjective, language-based verification step into a deterministic, programmatic check. Execute it to yield a binary pass/fail signal independent of the agent's judgment.
 
 ## Problem
 

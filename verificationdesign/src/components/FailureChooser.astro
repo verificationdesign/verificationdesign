@@ -27,6 +27,12 @@ const RowHeading = Heading === 'h2' ? 'h3' : 'h4';
     First the pain, then the pattern. Each failure lists the patterns to
     reach for, closest fit first.
   </p>
+  <p class="chooser-fallback">
+    If the failure is still unclear, start with
+    {selectedHrefs.has(constitutionHref) ? <a href={constitutionHref}>Constitution</a> : 'Constitution'}.
+    Most verification failures become easier to diagnose once the system has
+    an explicit answer to what is being checked.
+  </p>
   <div class="chooser-list">
     {FAILURE_MAP.map((entry) => (
       <section class="chooser-card">
@@ -40,10 +46,4 @@ const RowHeading = Heading === 'h2' ? 'h3' : 'h4';
       </section>
     ))}
   </div>
-  <p class="chooser-footer">
-    If the failure is still unclear, start with
-    {selectedHrefs.has(constitutionHref) ? <a href={constitutionHref}>Constitution</a> : 'Constitution'}.
-    Most verification failures become easier to diagnose once the system has
-    an explicit answer to what is being checked.
-  </p>
 </section>

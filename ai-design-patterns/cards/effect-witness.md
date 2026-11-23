@@ -8,7 +8,7 @@
 
 ## Intent
 
-Replay the same proposal from the same initial state under approval and rejection, then verify in the system of record that approval produces exactly one matching effect and rejection leaves none.
+Verify the effects of approval and rejection by replaying the same proposal from the same initial state. Check in the system of record that approval produces exactly one matching effect and rejection leaves none.
 
 ## Problem
 

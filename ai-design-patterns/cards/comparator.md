@@ -10,7 +10,7 @@ Also known as: Named Comparison, Comparison Operator, Match Mode.
 
 ## Intent
 
-Express verification comparison as a named operator from a finite family, so the verdict is a deterministic function of `(expected, observed, operator, threshold, normalization)` rather than a model's interpretation of "does this look right?"
+Express verification comparison as a named operator chosen from a finite family of operators. Make the verdict a deterministic function of `(expected, observed, operator, threshold, normalization)` instead of asking a model to interpret "does this look right?"
 
 ## Problem
 

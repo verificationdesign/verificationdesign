@@ -36,7 +36,7 @@ export function extractTitle(content) {
 }
 
 export function extractIntent(content) {
-  const match = content.match(/##\s+Intent\s*\n+([\s\S]*?)(?=\n##\s|\n*$)/);
+  const match = content.match(/^##[ \t]+Intent[ \t]*\r?\n([\s\S]*?)(?=\n##[ \t]|(?![\s\S]))/m);
   if (!match) return null;
   const paragraph = match[1]
     .trim()
@@ -44,9 +44,11 @@ export function extractIntent(content) {
     .replace(/[*`]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
-  if (!paragraph) return null;
-  const sentence = paragraph.match(/^.*?[.!?](?=\s|$)/);
-  return sentence ? sentence[0] : paragraph;
+  return paragraph || null;
+}
+
+export function extractGloss(content) {
+  return extractIntent(content)?.match(/^.*?\.(?= |$)/)?.[0] ?? null;
 }
 
 export function extractCategory(content) {
@@ -158,6 +160,7 @@ export function cardsLoader() {
             updated,
             related,
             intent,
+            gloss: extractGloss(content),
             sourceFile: filePath,
           },
         });

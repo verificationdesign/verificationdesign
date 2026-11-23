@@ -10,7 +10,7 @@ Also known as: Handoff, Tiered Routing, Manager Delegation.
 
 ## Intent
 
-Route work to a higher-authority or different-capability handler through a typed, validated handoff, so the next owner is code-level state instead of a model's memory of who to call.
+Route work to a higher-authority or different-capability handler through a typed, validated handoff. Keep the next owner in code-level state instead of relying on a model's memory of who to call.
 
 ## Problem
 

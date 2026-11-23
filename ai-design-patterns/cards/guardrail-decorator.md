@@ -10,7 +10,7 @@ Also known as: Policy Decorator, Policy Hook, Callback Guardrail, Boundary Decor
 
 ## Intent
 
-Wrap a model call, tool call, or other model-output boundary in a policy decorator that can deny, replace, sanitize, or convert errors, so policy lives in code at the boundary the model crosses instead of in prompt prose the model is asked to obey.
+Wrap a model call, tool call, or other model-output boundary in a decorator that enforces policy. Let the decorator deny, replace, sanitize, or convert errors so policy lives in code at the boundary the model crosses instead of in prompt prose the model is asked to obey.
 
 The decorator is the layer around the call. It is not the prompt instruction telling the model how to behave. A prompt that says "never call delete_file without confirmation" can still be useful. It does not create the guardrail.
 

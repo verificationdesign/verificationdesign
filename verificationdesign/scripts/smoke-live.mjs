@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { extractGloss } from '../src/content/loaders/cardsLoader.mjs';
 
 const SITE = 'https://verificationdesign.com';
 const allowStale = process.argv.includes('--allow-stale');
@@ -17,10 +18,6 @@ function sourceBody(text) {
 
 function titleOf(text) {
   return text.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? '';
-}
-
-function intentOf(text) {
-  return text.match(/^## Intent\s*\n+([^\n]+)/m)?.[1]?.replace(/[*`]/g, '').trim().replace(/\s+/g, ' ') ?? '';
 }
 
 function decodeHtml(value) {
@@ -61,7 +58,7 @@ for (const file of (await readdir(cardsDir)).filter((name) => name.endsWith('.md
   const text = sourceBody(await readFile(join(cardsDir, file), 'utf8'));
   const category = categoryOf(text);
   if (!category) continue;
-  cards.push({ category, slug: file.replace(/\.md$/, ''), title: titleOf(text), intent: intentOf(text) });
+  cards.push({ category, slug: file.replace(/\.md$/, ''), title: titleOf(text), gloss: extractGloss(text) });
 }
 
 const twins = [
@@ -87,9 +84,9 @@ for (const path of ['/', '/patterns/']) {
   await request(path, 'text/html', (body) => {
     const html = decodeHtml(body);
     const agentLinks = ['/llms.txt', '/llms-full.txt'].filter((href) => html.includes(`href="${href}"`)).length;
-    const intentsOnce = cards.filter((card) => html.split(card.intent).length === 2).length;
-    console.log(`${path}: agent_links=${agentLinks}/2 intents_once=${intentsOnce}/${cards.length}`);
-    return agentLinks === 2 && intentsOnce === cards.length;
+    const glossesOnce = cards.filter((card) => html.split(`<span class="card-gloss">${card.gloss}</span>`).length === 2).length;
+    console.log(`${path}: agent_links=${agentLinks}/2 glosses_once=${glossesOnce}/${cards.length}`);
+    return agentLinks === 2 && glossesOnce === cards.length;
   });
 }
 await request('/principles.md/', '', () => true, undefined, true);

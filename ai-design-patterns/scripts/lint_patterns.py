@@ -95,6 +95,21 @@ def check_required_sections(content: str, sections: list[str]) -> CheckResult:
     )
 
 
+def check_intent_gloss(content: str, rule: dict) -> CheckResult:
+    section = re.search(r"^##[ \t]+Intent[ \t]*\n(.*?)(?=\n##[ \t]|\Z)", content, re.M | re.S)
+    paragraph = re.split(r"\n\s*\n", section[1].strip(), maxsplit=1)[0] if section else ""
+    plain = " ".join(re.sub(r"[*`]", "", paragraph).split())
+    sentence = re.match(r"^.*?\.(?= |$)", plain)
+    length = len(sentence[0]) if sentence else 0
+    minimum, maximum = rule["min_chars"], rule["max_chars"]
+    return CheckResult(
+        name="Intent gloss",
+        passed=sentence is not None and minimum <= length <= maximum,
+        observed=f"{length} characters (required {minimum} to {maximum})",
+        detail=[] if sentence else ["no period-terminated sentence in the first Intent paragraph"],
+    )
+
+
 def check_determinism_move(content: str, valid_sources: list[str]) -> CheckResult:
     section_match = re.search(
         r"^#{2,3}\s+Determinism Move\s*\n(.*?)(?=\n#{2,3}\s|\Z)",
@@ -188,6 +203,7 @@ def lint_file(path: Path, constitution: dict) -> list[CheckResult]:
     return [
         check_forbidden_characters(content, constitution["forbidden_characters"]),
         check_required_sections(content, constitution["required_sections"]["sections"]),
+        check_intent_gloss(prose, constitution["intent_gloss"]),
         check_determinism_move(content, constitution["determinism_move"]["valid_sources"]),
         check_vague_terms(prose, constitution["vague_terms"]["terms"]),
         check_empirical_claims(

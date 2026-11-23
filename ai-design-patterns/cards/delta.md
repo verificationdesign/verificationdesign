@@ -10,7 +10,7 @@ Also known as: Baseline Assertion, Relative State Verification, Ambient Isolatio
 
 ## Intent
 
-Check whether the observed change in environment state satisfies an action's expected postcondition; attribution to that action requires isolation or a propagated causal tag.
+Check the observed change in environment state against the expected postcondition of an action. Attribute the change to that action only with isolation or a propagated causal tag.
 
 ## Problem
 

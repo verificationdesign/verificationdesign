@@ -10,7 +10,7 @@ Also known as: Tool Wrapper, Schema Adapter, Function Adapter.
 
 ## Intent
 
-Normalize model-emitted tool calls at a typed boundary: derive or fetch a schema, validate arguments before invocation, call the tool with typed arguments, and return a typed observation.
+Normalize model-emitted tool calls at a typed boundary that validates arguments before invocation. Derive or fetch a schema, call the tool with validated typed arguments, and return a typed observation.
 
 ## Problem
 

@@ -127,6 +127,8 @@ const failureSection = [
   '',
   'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.',
   '',
+  `If the failure is still unclear, start with ${patternLabel('Constitution', '/patterns/context-and-state/constitution/')}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`,
+  '',
   ...FAILURE_MAP.flatMap((entry) => [
     `### ${entry.failure}`,
     '',
@@ -135,8 +137,6 @@ const failureSection = [
     ...entry.links.map((link) => `- ${patternLabel(link.label, link.href)}`),
     '',
   ]),
-  `If the failure is still unclear, start with ${patternLabel('Constitution', '/patterns/context-and-state/constitution/')}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`,
-  '',
 ];
 
 function selectedRelated(card) {

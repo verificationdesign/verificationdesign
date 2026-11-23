@@ -10,7 +10,7 @@ Also known as: Action History Cursor, Step Cursor, Trajectory Record, Execution 
 
 ## Intent
 
-Maintain an explicit, structured record of where the agent is in its multi-step process and what happened at each boundary, so the verifier and the next turn can read the trajectory instead of inferring it from chat history or model recall.
+Record the agent's position in a multi-step process and what happened at each of its boundaries. Keep the record explicit and structured so the verifier and the next turn can read the trajectory instead of inferring it from chat history or model recall.
 
 ## Problem
 

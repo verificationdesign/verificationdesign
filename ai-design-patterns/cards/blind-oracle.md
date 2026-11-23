@@ -10,7 +10,7 @@ Also known as: Independent Derivation, Extract-Then-Compare, Spec-Only Verificat
 
 ## Intent
 
-Derive expected evidence from the spec, the question, or independent re-execution without conditioning that derivation on the agent's draft, reasoning trace, or shortcut history.
+Derive expected evidence from the spec, the question, or independent re-execution without using the agent's draft. Keep the derivation independent of the agent's reasoning trace and shortcut history as well.
 
 The verifier may inspect the draft afterward to extract observed values. The expected side of the comparison must come from a channel the draft cannot influence. The mechanic is structural independence between the derivation path and the production path, not blindness to the artifact.
 

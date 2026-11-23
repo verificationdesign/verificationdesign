@@ -10,7 +10,7 @@ Also known as: Judge Reliability Harness, LLM-as-Judge Harness, Calibrated Judge
 
 ## Intent
 
-Wrap an LLM judge in a structural harness of perturbation, repetition, calibration, and reporting so that one judge verdict becomes a measured signal with visible consistency and bias controls.
+Wrap an LLM judge in a structural harness of perturbation, repetition, calibration, and reporting. Turn one judge verdict into a measured signal with visible consistency and bias controls.
 
 The harness is the layer around the judge. It is not the judge prompt itself. A prompt that tells the judge to avoid bias may help the call, but it does not create the harness.
 

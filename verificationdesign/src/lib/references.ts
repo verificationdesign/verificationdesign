@@ -30,7 +30,6 @@ const ARXIV_ABS_HREF_RE = /^https:\/\/arxiv\.org\/abs\/(\d{4}\.\d{4,5})/;
 
 // Site prose pages that cite via superscript source-link anchors.
 const PROSE_PAGES: Array<{ file: string; source: ReferenceSource }> = [
-  { file: 'src/pages/index.astro', source: { title: 'Home', href: '/' } },
   { file: 'src/pages/about.astro', source: { title: 'About', href: '/about/' } },
   { file: 'src/pages/principles.astro', source: { title: 'Principles', href: '/principles/' } },
 ];

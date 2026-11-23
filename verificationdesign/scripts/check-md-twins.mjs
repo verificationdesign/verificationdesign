@@ -129,6 +129,8 @@ for (const file of (await readdir(CARDS_DIR)).filter((name) => name.endsWith('.m
   const category = CATEGORY[subtitle];
   if (!title || !category) continue;
   const slug = file.replace(/\.md$/, '');
+  const intent = sectionText(sourceBody, 'Intent').trim().split(/\n\s*\n/)[0]
+    .replace(/[*`]/g, '').replace(/\s+/g, ' ').trim();
   catalogCards.push({
     id: `${category}/${slug}`,
     title,
@@ -137,7 +139,8 @@ for (const file of (await readdir(CARDS_DIR)).filter((name) => name.endsWith('.m
     file,
     source: `ai-design-patterns/cards/${file}`,
     sourceBody: normalizeBody(sourceBody),
-    intent: (sourceBody.match(/^## Intent\s*\n+([^\n]+)/m)?.[1] ?? '').replace(/[*`]/g, '').trim().replace(/\s+/g, ' '),
+    intent,
+    gloss: intent.match(/^.*?\.(?= |$)/)?.[0] ?? '',
   });
 }
 const byId = new Map(catalogCards.map((card) => [card.id, card]));
@@ -363,23 +366,32 @@ let uniqueMismatches = 0;
 for (const html of [homeHtml, patternsHtml]) {
   for (const card of cards) {
     uniqueComparisons += 1;
-    const count = html.split(card.intent).length - 1;
-    if (count !== 1) { uniqueMismatches += 1; fail(`intent uniqueness: ${card.id} occurs ${count} times`); }
+    const count = html.split(`<span class="card-gloss">${card.gloss}</span>`).length - 1;
+    if (count !== 1) { uniqueMismatches += 1; fail(`gloss uniqueness: ${card.id} occurs ${count} times`); }
   }
 }
-console.log(`Check 12 intent uniqueness: pages=2 comparisons=${uniqueComparisons} mismatches=${uniqueMismatches}`);
+console.log(`Check 12 gloss uniqueness: pages=2 comparisons=${uniqueComparisons} mismatches=${uniqueMismatches}`);
 
 const compactPatternsHtml = patternsHtml.replace(/>\s+</g, '><');
-const chooserMatch = compactPatternsHtml.match(/<div class="chooser-list">([\s\S]*?)<\/div><p class="chooser-footer">/);
+const chooserMatch = compactPatternsHtml.match(/<p class="chooser-lead">[^<]*<\/p><p class="chooser-fallback">((?:(?!<\/p>)[\s\S])*)<\/p><div class="chooser-list">([\s\S]*?)<\/div><\/section>/);
+const htmlFallback = (chooserMatch?.[1] ?? '').replace(/\s+/g, ' ').trim().replace(
+  /<a href="([^"]+)">([^<]+)<\/a>/g,
+  (_, href, label) => `[${label}](${SITE}${href.replace(/\/$/, '.md')})`,
+);
+const constitution = selectedIds.has('context-and-state/constitution')
+  ? `[Constitution](${SITE}/patterns/context-and-state/constitution.md)`
+  : 'Constitution';
+const expectedFallback = `If the failure is still unclear, start with ${constitution}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`;
+if (htmlFallback !== expectedFallback) fail('HTML chooser: expected the verbatim fallback directly between the lead and the grid');
 const htmlFailures = [];
-for (const match of (chooserMatch?.[1] ?? '').matchAll(/<section class="chooser-card"><h3>(.*?)<\/h3><p>(.*?)<\/p><ul role="list">([\s\S]*?)<\/ul><\/section>/g)) {
+for (const match of (chooserMatch?.[2] ?? '').matchAll(/<section class="chooser-card"><h3>(.*?)<\/h3><p>(.*?)<\/p><ul role="list">([\s\S]*?)<\/ul><\/section>/g)) {
   htmlFailures.push({
     failure: match[1], shape: match[2],
     links: [...match[3].matchAll(/<li>(?:<a href="([^"]+)">(.*?)<\/a>|([^<]+))<\/li>/g)].map(([, href, label, plain]) => ({ href: href ?? null, label: label ?? plain })),
   });
 }
 const failureMarkdown = (parsed.get('patterns.md')?.body ?? '').split('\n## Start from the failure\n')[1] ?? '';
-const mdFailures = [...failureMarkdown.matchAll(/### ([^\n]+)\n\n([^\n]+)\n\n([\s\S]*?)(?=\n### |\nIf the failure)/g)].map((match) => ({
+const mdFailures = [...failureMarkdown.matchAll(/### ([^\n]+)\n\n([^\n]+)\n\n([\s\S]*?)(?=\n### |$)/g)].map((match) => ({
   failure: match[1], shape: match[2],
   links: [...match[3].matchAll(/^- (?:\[([^\]]+)\]\(([^)]+)\)|(.+))$/gm)].map(([, label, href, plain]) => ({ label: label ?? plain, href: href ?? null })),
 }));
@@ -439,7 +451,16 @@ console.log(`Check 16 llms.txt bytes: card_lines=${cards.length} bytes=${Buffer.
 
 const ordered = ORDER.map((id) => byId.get(id));
 const expectedFlat = ['# Patterns', '', ...ordered.map(cardLine), ''];
-const expectedFailureLines = ['## Start from the failure', '', 'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.', '', ...predictedFailures.flatMap((entry) => [`### ${entry.failure}`, '', entry.shape, '', ...entry.links.map((link) => `- ${link.href ? `[${link.label}](${link.href})` : link.label}`), '']), `If the failure is still unclear, start with ${selectedIds.has('context-and-state/constitution') ? `[Constitution](${SITE}/patterns/context-and-state/constitution.md)` : 'Constitution'}. Most verification failures become easier to diagnose once the system has an explicit answer to what is being checked.`, ''];
+const expectedFailureLines = [
+  '## Start from the failure', '',
+  'First the pain, then the pattern. Each failure lists the patterns to reach for, closest fit first.', '',
+  htmlFallback, '',
+  ...predictedFailures.flatMap((entry) => [
+    `### ${entry.failure}`, '', entry.shape, '',
+    ...entry.links.map(({ href, label }) => `- ${href ? `[${label}](${href})` : label}`),
+    '',
+  ]),
+];
 const expectedIndexes = new Map([['patterns.md', [...expectedFlat, ...expectedFailureLines].join('\n')], ...Object.entries(categoryLabels).map(([category, title]) => [`patterns/${category}.md`, [`# ${title}`, '', ...ordered.filter((card) => card.category === category).map(cardLine), ''].join('\n')])]);
 let indexMismatches = 0;
 for (const [path, body] of expectedIndexes) if (normalizeBody(parsed.get(path)?.body ?? '') !== normalizeBody(body)) { indexMismatches += 1; fail(`${path}: exact normalized bytes differ`); }

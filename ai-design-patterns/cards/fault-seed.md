@@ -8,7 +8,7 @@
 
 ## Intent
 
-Qualify a verification gate before relying on it by measuring how often it rejects known-wrong work in each failure class while requiring known-good work to pass.
+Qualify a verification gate by measuring its rejection of known-wrong work in each failure class. Require known-good work to pass, and do both checks before relying on the gate.
 
 ## Problem
 

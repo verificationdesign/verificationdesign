@@ -35,6 +35,14 @@
     ]
   },
 
+  "intent_gloss": {
+    "rationale": "Keep the first sentence of Intent close in length across cards so square catalog tiles have comparable amounts of text.",
+    "added": "2026-11-22",
+    "origin": "Maintainer instruction on 2026-11-22 to use a required text length for square pattern tiles on Home and /patterns/.",
+    "min_chars": 85,
+    "max_chars": 120
+  },
+
   "determinism_move": {
     "rationale": "Every card must name at least one variance source from the closed list, wrapped in backticks within the Determinism Move section. Free prose is allowed alongside the identifier.",
     "valid_sources": [

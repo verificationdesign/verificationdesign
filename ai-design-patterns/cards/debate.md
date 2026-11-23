@@ -10,7 +10,7 @@ Also known as: Structured Disagreement, Multi-Agent Debate, Roundtable.
 
 ## Intent
 
-Run bounded disagreement among multiple roles before a decision, with turn order, round count, phase, and consensus threshold held in orchestration state instead of model discretion.
+Run bounded disagreement among multiple roles and hold the rules for it in orchestration state. Set turn order, round count, phase, and consensus threshold there before a decision, outside model discretion.
 
 ## Problem
 

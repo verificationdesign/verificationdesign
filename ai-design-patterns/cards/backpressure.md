@@ -10,7 +10,7 @@ Also known as: Retry-with-Feedback, Rerun Context, Revision Loop.
 
 ## Intent
 
-When a downstream check fails, route the failure back upstream as structured rerun context within a bounded retry budget, instead of swallowing the failure or retrying blindly.
+Route a failed downstream check back upstream as structured rerun context within a bounded retry budget. Use that context instead of swallowing the failure or retrying blindly.
 
 ## Problem
 

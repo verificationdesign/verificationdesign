@@ -10,7 +10,7 @@ Also known as: Criteria Registry, Verification Charter, Policy-as-Data.
 
 ## Intent
 
-Represent the system’s verification criteria as explicit, versioned, machine-readable data, rather than as scattered prompt prose.
+Represent the system’s verification criteria as explicit, versioned, machine-readable data. Keep those criteria out of scattered prompt prose.
 
 The constitution defines what “correct” means before any agent acts. It is not itself a verifier. It is the source of truth from which verifiers, judges, reports, and escalation rules draw their criteria.
 

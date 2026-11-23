@@ -10,7 +10,7 @@ Also known as: Critic, Red-Team Role, Negative Channel.
 
 ## Intent
 
-Assign a structurally separate role whose only job is to find failures in another role's output, and require that role to emit a negative channel the orchestrator can inspect.
+Assign a structurally separate role whose sole job is to find failures in another role's output. Require that role to emit a negative channel the orchestrator can inspect.
 
 ## Problem
 

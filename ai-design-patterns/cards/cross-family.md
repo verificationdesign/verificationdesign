@@ -10,7 +10,7 @@ Also known as: Cross-Provider Verification, Independent-Family Judge, Family-Div
 
 ## Intent
 
-Run high-leverage generation and high-leverage assessment on deliberately different model families, and record both identities, so exposure to shared training-data biases and shared latent priors is reduced rather than assumed away, and any residual correlated error is attributable to named models.
+Run high-leverage generation and assessment on deliberately different model families and record both identities. Reduce exposure to shared training-data biases and shared latent priors, and make any residual correlated error attributable to the named models.
 
 Cross-Family has two complementary roles. At verification time, the judge comes from a different family than the generator. At optimization time, the teacher or proposer comes from a different family than the model being shaped. Both roles serve the same mechanic: break same-family blind spots where one model's confidence becomes another model's evidence.
 
