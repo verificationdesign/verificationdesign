@@ -31,16 +31,9 @@ const references = await collectReferences(
         <li>
           {reference.context && <span class="reference-context">{reference.context}</span>}
           <a href={reference.href}>{reference.label}</a>
-          <span class="reference-sources">
-            {' '}Cited from{' '}
-            {reference.sources.map((source, index) => (
-              <>
-                {index > 0 && ', '}
-                <a href={source.href}>{source.title}</a>
-              </>
-            ))}
-            .
-          </span>
+          <span class="reference-sources">{' Cited from '}{reference.sources.map((source, index) => (
+            <><a href={source.href}>{source.title}</a>{index === reference.sources.length - 1 ? '.' : ', '}</>
+          ))}</span>
         </li>
       ))}
     </ol>

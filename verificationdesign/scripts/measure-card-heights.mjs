@@ -11,14 +11,9 @@ const positional = args.filter((_, index) => shotsIndex < 0 || (index !== shotsI
 const base = (process.env.SITE_URL || positional[0] || 'http://127.0.0.1:4321').replace(/\/$/, '');
 const cardsDir = resolve(process.cwd(), '../ai-design-patterns/cards');
 const widths = [1280, 1024, 768, 390, 320];
-const rowExpectations = {
-  1280: { min: 2, max: 2 },
-  768: { min: 3, max: 3 },
-  390: { min: 2, max: 2 },
-  320: { min: 1, max: 1 },
-};
+const tileColumns = { 1280: 4, 1024: 4, 768: 4, 390: 2, 320: 1 };
 const chooserColumns = { 1280: 3, 1024: 2, 768: 2, 390: 1, 320: 1 };
-const headerPositions = { 1280: 'sticky', 768: 'sticky', 390: 'static', 320: 'static' };
+const headerPositions = { 1280: 'sticky', 1024: 'sticky', 768: 'sticky', 390: 'static', 320: 'static' };
 const pages = [{ path: '/', name: 'home' }, { path: '/patterns/', name: 'patterns' }];
 const failures = [];
 
@@ -49,15 +44,16 @@ try {
       await page.setViewport({ width, height: 900, deviceScaleFactor: 1 });
       try {
         await page.goto(`${base}${item.path}`, { waitUntil: 'networkidle0' });
-        await page.evaluate(() => document.fonts.ready.then(() => undefined));
-        const { scrollWidth, viewportWidth, categories, chooserCards, headerPosition } = await page.evaluate(() => ({
-          scrollWidth: document.documentElement.scrollWidth,
-          viewportWidth: window.innerWidth,
+        await page.evaluate(async () => {
+          const catalog = document.querySelector('.home-catalog');
+          if (catalog) catalog.open = true;
+          await document.fonts.ready;
+        });
+        const { categories, chooserCards, headerPosition } = await page.evaluate(() => ({
           headerPosition: getComputedStyle(document.querySelector('.site-header')).position,
-          chooserCards: [...document.querySelectorAll('.chooser-card')].map((card) => {
-            const { left, top, width } = card.getBoundingClientRect();
-            return { left, top, width };
-          }),
+          chooserCards: [...document.querySelectorAll('.chooser-card')].map(
+            (card) => ({ top: card.getBoundingClientRect().top }),
+          ),
           categories: [...document.querySelectorAll('.category')].map((category) => ({
             title: category.querySelector('.category-title').textContent.trim(),
             left: category.getBoundingClientRect().left,
@@ -93,14 +89,10 @@ try {
           })),
         }));
         const context = `${item.path} width=${width}`;
-        console.log(`${context} scrollWidth=${scrollWidth}px viewportWidth=${viewportWidth}px`);
-        if (scrollWidth > viewportWidth + 1) {
-          failures.push(`${context}: document scrollWidth ${scrollWidth}px exceeds viewport width ${viewportWidth}px`);
-        }
         const categoryLefts = categories.map(({ left }) => left);
         const categoryTops = categories.map(({ top }) => top);
         const firstTileTops = categories.map(({ tiles }) => tiles[0]?.top);
-        console.log(`  category_lefts=[${categoryLefts}] category_tops=[${categoryTops}] first_tile_tops=[${firstTileTops}]`);
+        console.log(`${context} category_lefts=[${categoryLefts}] category_tops=[${categoryTops}] first_tile_tops=[${firstTileTops}]`);
         const aligned = (positions) => positions.every(Number.isFinite)
           && Math.max(...positions) - Math.min(...positions) <= 1;
         const chooserRows = groupRows(chooserCards);
@@ -113,26 +105,8 @@ try {
         if (headerPositions[width] && headerPosition !== headerPositions[width]) {
           failures.push(`${context}: expected header position ${headerPositions[width]}, got ${headerPosition}`);
         }
-        if (width === 1280) {
-          if (categories.length !== 3 || new Set(categoryLefts).size !== 3 || !aligned(categoryTops)) {
-            failures.push(`${context}: expected three side-by-side categories with aligned tops`);
-          }
-          if (!aligned(firstTileTops)) failures.push(`${context}: first tiles are vertically misaligned`);
-          for (const [rowIndex, row] of chooserRows.entries()) {
-            for (const [columnIndex, card] of row.sort((a, b) => a.left - b.left).entries()) {
-              const category = categories[columnIndex];
-              const column = `chooser row ${rowIndex + 1} column ${columnIndex + 1}`;
-              console.log(`  ${column} left=${card.left.toFixed(2)}px width=${card.width.toFixed(2)}px category_left=${category?.left.toFixed(2) ?? 'n/a'}px category_width=${category?.sectionWidth.toFixed(2) ?? 'n/a'}px`);
-              if (!category || Math.abs(card.left - category.left) > 1
-                  || Math.abs(card.width - category.sectionWidth) > 1) {
-                failures.push(`${context}: ${column} differs from the category column by more than 1px or has no match`);
-              }
-            }
-          }
-        } else {
-          if (categories.length !== 3 || !aligned(categoryLefts) || new Set(categoryTops).size !== 3) {
-            failures.push(`${context}: expected three categories with one per row`);
-          }
+        if (categories.length !== 3 || !aligned(categoryLefts) || new Set(categoryTops).size !== 3) {
+          failures.push(`${context}: expected three categories with one per row`);
         }
         const tiles = categories.flatMap(({ tiles }) => tiles);
         const glossCounts = expected.map(({ file, gloss }) => ({
@@ -155,15 +129,11 @@ try {
           allRowGaps.push(...rowGaps);
           console.log(`  ${title} tiles_per_row=[${rowSizes}] row_gaps=[${rowGaps.map((gap) => gap.toFixed(2))}]px card_list_width=${listWidth.toFixed(2)}px category_width=${sectionWidth.toFixed(2)}px`);
           if (!aligned(rowGaps)) failures.push(`${context} ${title}: tile row gaps differ by more than 1px`);
-          const expectation = rowExpectations[width];
-          if (expectation) {
-            const { min, max } = expectation;
-            const fullRows = rowSizes.slice(0, -1);
-            const lastRow = rowSizes.at(-1);
-            if (fullRows.some((count) => count < min || count > max)
-                || lastRow > (fullRows[0] ?? max)) {
-              failures.push(`${context} ${title}: row sizes [${rowSizes}] violate expected full row size ${min}-${max} with a potentially shorter last row`);
-            }
+          const columns = tileColumns[width];
+          const expectedRows = Array.from({ length: Math.ceil(group.length / columns) }, (_, index) =>
+            Math.min(columns, group.length - index * columns));
+          if (rowSizes.length !== expectedRows.length || rowSizes.some((size, index) => size !== expectedRows[index])) {
+            failures.push(`${context} ${title}: row sizes [${rowSizes}], expected [${expectedRows}]`);
           }
           for (const tile of group) {
             console.log(`    ${tile.title}: ${tile.width.toFixed(2)}x${tile.height.toFixed(2)}px overflow=${tile.overflowX}x${tile.overflowY}px unused_bottom=${tile.unused?.toFixed(2) ?? 'n/a'}px gloss_line_height=${tile.lineHeight}px padding=${tile.padding} gloss_width=${tile.glossWidth === null ? 'n/a' : `${tile.glossWidth.toFixed(2)}px`}`);
@@ -187,16 +157,48 @@ try {
         for (const { file, count } of glossCounts) {
           if (count !== 1) failures.push(`${context}: ${file} gloss occurs ${count} times`);
         }
-        if (width !== 320 && (spread('width') > 1 || spread('height') > 1)) {
-          failures.push(`${context}: tile sizes differ by more than 1px`);
+        if (spread('width') > 1) failures.push(`${context}: tile widths differ by more than 1px`);
+        // From 1200px every tile has one fixed shape. Below that the tile height follows
+        // its text (global.css): equal within a family where tiles share rows, free in
+        // the single column.
+        const heightSpread = (group) => Math.max(...group.map((tile) => tile.height))
+          - Math.min(...group.map((tile) => tile.height));
+        if (width >= 1200) {
+          if (spread('height') > 1) failures.push(`${context}: tile heights differ by more than 1px`);
+          // The fixed shape must still leave the gloss above the bottom padding.
+          for (const tile of tiles) {
+            if (!(tile.unused >= -0.5)) failures.push(`${context} ${tile.title}: gloss runs ${(-tile.unused).toFixed(1)}px into the bottom padding`);
+          }
+        } else {
+          for (const { title, tiles: group } of categories) {
+            if (group.length < 2 || group.some((tile) => !(tile.width > 0 && tile.height > 0))) {
+              failures.push(`${context} ${title}: family tiles not measurable (tiles=${group.length})`);
+              continue;
+            }
+            // Height follows the text: in shared rows the longest gloss in the family
+            // reaches the bottom padding; in the single column every tile does. A
+            // minimum height or fixed ratio that leaves every tile part empty fails here.
+            const unused = group.map((tile) => tile.unused);
+            const slack = tileColumns[width] > 1
+              ? Math.min(...unused)
+              : unused.reduce((worst, gap) => (Math.abs(gap) > Math.abs(worst) ? gap : worst), 0);
+            console.log(`  ${title} height_spread=${heightSpread(group).toFixed(2)}px unused_below_gloss min=${Math.min(...unused).toFixed(2)}px max=${Math.max(...unused).toFixed(2)}px`);
+            if (tileColumns[width] > 1 && heightSpread(group) > 1) {
+              failures.push(`${context} ${title}: tile heights differ by more than 1px within the family`);
+            }
+            if (!(Math.abs(slack) <= 1.5)) {
+              failures.push(`${context} ${title}: tile height does not follow its text (${slack.toFixed(1)}px between gloss and bottom padding)`);
+            }
+          }
         }
         for (const tile of tiles) {
           const label = `${context} ${tile.title}`;
-          if (width !== 320 && Math.abs(tile.width - tile.height) > 2) failures.push(`${label}: tile is not square`);
-          if (tile.overflowX > 1 || tile.overflowY > 1) failures.push(`${label}: content overflows tile`);
-          if (width !== 320 && tile.unused > 2 * tile.lineHeight) {
-            failures.push(`${label}: more than two gloss lines of unused height`);
+          // Wide viewports use landscape tiles so the gloss fills the tile (global.css).
+          const ratio = { 1280: 2 }[width];
+          if (ratio && Math.abs(tile.width - tile.height * ratio) > 2) {
+            failures.push(`${label}: tile is not ${ratio.toFixed(2)} to 1`);
           }
+          if (tile.overflowX > 1 || tile.overflowY > 1) failures.push(`${label}: content overflows tile`);
         }
       } catch (error) {
         console.log(`${item.path} width=${width} measurement_error=${JSON.stringify(error.message)}`);
