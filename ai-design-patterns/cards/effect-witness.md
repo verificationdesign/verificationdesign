@@ -12,13 +12,13 @@ Verify the effects of approval and rejection by replaying the same proposal from
 
 ## Problem
 
-A refund workflow can display "rejected" while its batch worker still posts the refund. Its interactive path can honor the verdict while a retry, resumed session, or parallel branch proceeds on stale state. A workflow can also record approval and then lose the approved operation before it posts. A test of the gate's return value passes in both cases because the ledger was outside the test.
+A refund workflow can display "rejected" while its batch worker still posts the refund. Its interactive path can honor the verdict while a retry, resumed session, or parallel branch proceeds on stale state. A workflow can also record approval and then lose the approved operation before it posts. A test that checks only the gate's return value can pass even when the ledger shows the wrong outcome.
 
 The same question applies when cancellation or a failed check is supposed to stop a release. A model can receive a warning and continue. When a workflow promises to block, the observable contract is what happens at the release boundary after the verdict.
 
 ## Forces
 
-The following are design judgments about the test contract.
+These tradeoffs reflect design judgment.
 
 * **Both decisions matter.** A rejection-only test can pass when the workflow drops all work. An approval-only test can pass when the workflow commits regardless of the decision. Report both rates together, with distinct denominators for rejected and eligible approved runs.
 * **The record must answer the question.** A gate log can establish that a decision was recorded. A transcript can explain what the agent saw. Use the ledger to establish whether money was credited. Use the other records to diagnose a discrepancy after observing it.
@@ -27,7 +27,7 @@ The following are design judgments about the test contract.
 
 ## Solution
 
-Choose an observable effect and write down its expected cardinality under each decision before running the workflow. Pin the proposal, initial records, path, and observation horizon for each pair. Change the decision between the two runs. Read the committed records independently of the gate under test and compare each count with its expectation.
+Before replay, specify the effect to count and the expected count for each decision. Use the same proposal, initial records, path, and observation window in both runs, and change only the decision. Read the committed records independently of the gate and compare each count with its expectation.
 
 Repeat the pair for every entry point in scope. Where multiple writers can act on the same proposal, add a combined-path case and expect one approved effect across all writers. Report how paths were selected and where the harness stopped observing. A delayed posting after that horizon falls outside the reported result.
 
@@ -43,7 +43,7 @@ In this example the workflow is synchronous, so return from the entry point is t
 
 ### Antipattern: assert the refund verdict
 
-The test supplies a rejection on the batch path and checks the verdict returned by the orchestrator. The return value can be correct even when the batch worker posts a refund.
+The test supplies a rejection on the batch path and checks the verdict returned by the orchestrator. The return value can be correct even when the batch worker posts a refund. The Pattern block below defines `batch_ignores_gate`, `Ledger`, and `Refund`.
 
 ```python
 ledger = Ledger()
@@ -56,7 +56,7 @@ assert verdict == "rejected"
 
 ### Pattern: replay both decisions and read the refund ledger
 
-The interactive route handles a live refund and the batch route handles queued refunds. Each row starts with identical accounts and entries. Three implementations exercise the witness: a batch route that ignores rejection, a corrected orchestrator, and an interactive route that drops approved work.
+The interactive route handles a live refund and the batch route handles queued refunds. Each row starts with identical accounts and entries. `check_refunds` takes one implementation at a time. The example runs it against a batch route that ignores rejection, a corrected implementation, and an interactive route that drops approved work.
 
 ```python
 from dataclasses import dataclass, field
@@ -103,22 +103,20 @@ def interactive_drops_approval(ledger, proposal, decision, path):
     return both_paths_check_gate(ledger, proposal, decision, path)
 
 
-def check_refunds(orchestrate, proposal):
+def check_refunds(implementation, proposal):
     failures = []
-    print(f"Implementation: {orchestrate.__name__}")
+    print(f"Implementation: {implementation.__name__}")
     for path in ("interactive", "batch"):
         for decision, expected in (("reject", 0), ("approve", 1)):
             ledger = Ledger()
-            orchestrate(ledger, proposal, decision, path)
+            implementation(ledger, proposal, decision, path)
             observed = ledger.entries.count(proposal)
             passed = observed == expected
             print(
                 f"  path={path} decision={decision} expected={expected} "
                 f"observed={observed} passed={passed}"
             )
-            try:
-                assert passed
-            except AssertionError:
+            if not passed:
                 failures.append((path, decision))
     return failures
 
@@ -139,13 +137,13 @@ Constrain `ambient_state` by constructing a fresh ledger for every decision and 
 
 ## Observable Signal
 
-Each row includes the implementation, path, decision, expected count, observed count, and comparison result. In the batch rejection fault, the batch row reads expected zero and observed one. In the dropped approval fault, the interactive approval row reads expected one and observed zero. The corrected implementation matches both decisions on both paths.
+Each row includes the implementation, path, decision, expected count, observed count, and comparison result. The faulty batch route posts one refund on rejection, where the expected count is zero. The faulty interactive route posts zero on approval, where the expected count is one. The corrected implementation matches both decisions on both paths.
 
-For a suite with multiple proposals, report unexpected effects among rejections and missing or duplicate effects among approvals, with counts and denominators for both. Keep incomplete observations visible. State that the toy example checks each entry point individually. It leaves retries, resume, simultaneous paths, direct writes, and late commits untested.
+For a suite with multiple proposals, report unexpected effects among rejections and missing or duplicate effects among approvals, with counts and denominators for both. Keep incomplete observations visible. The example tests each entry point in isolation. Retries, resumed runs, simultaneous paths, direct writes, and late commits fall outside its coverage.
 
 ## Failure Modes
 
-The following are design judgments about witness scope.
+These failure modes reflect design judgment.
 
 * **Premature observation.** A zero count before a queued worker can run gives an apparent pass. Observe through a declared boundary that accounts for delayed writes.
 * **Partial witness.** A matching entry can coexist with an unrelated credit. Where collateral effects matter, also check the balance changes and other affected records. A count of matching entries answers only the cardinality claim.
@@ -162,7 +160,7 @@ Use a simulator or a reversible fixture when replay could create real refunds or
 
 ## Evidence
 
-These preprints provide bounded examples for review. The paired refund test is a design choice.
+The preprints describe specific settings. The paired refund test reflects design judgment.
 
 * One study reports that model-free probes on pinned agent-framework releases found sibling effects committing despite an approval pause. Its mediation repair depends on routing all relevant effects through the enforcement boundary. [arXiv:2607.14166](https://arxiv.org/abs/2607.14166)
 * One study reports both protected effects after rejection and missing approved effects in selected workflow and harness replays. Its paired replay holds the protected operation and initial state fixed. The results describe selected mechanisms and repeated cases. [arXiv:2611.19237](https://arxiv.org/abs/2611.19237)

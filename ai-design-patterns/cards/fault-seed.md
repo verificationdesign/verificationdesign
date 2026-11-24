@@ -14,15 +14,15 @@ Qualify a verification gate by measuring its rejection of known-wrong work in ea
 
 A release check for a library migration can run on every candidate, return the same verdict on replay, and still accept the behavior the migration was supposed to change. In the example below, the release changes how a rounding function handles exactly halfway values. The check covers ordinary positive inputs on either side of halfway. A repair that preserves the old tie rule passes every assertion.
 
-A green release check answers a question about the candidate under its current assertions. Qualification asks a different question about the check itself. If a plausible wrong candidate violates the changed contract, will this gate reject it? Running the same ordinary inputs again provides the same candidate verdict. A known-wrong repair makes the missing coverage visible.
+A green release check says the candidate passed the current assertions. Qualification asks about the check itself: does the gate reject a plausible repair that violates the changed contract? Rerunning the ordinary inputs yields the same verdict. A known-wrong repair exposes the gap in what that verdict covers.
 
 ## Forces
 
-The following tradeoffs are design judgment.
+These tradeoffs reflect design judgment.
 
 * **Plausibility and cost.** A repair that returns a constant may be cheap to construct and easy to catch. A repair that agrees on ordinary inputs and disagrees only at the changed boundary requires more care to author. Choose seeds that represent decisions a maintainer would consider plausible when implementing the change.
 * **Independent derivation and maintenance.** Derive seeds and their expected behavior from the documented change or specification. Reusing the release suite as the source of expected behavior carries its omissions into the qualification suite. Pin the specification version so a later change can trigger review of both the gate and seeds.
-* **Qualification and evidence size.** A threshold gives the release process an explicit decision rule. The denominator tells the reader how much work that rule actually exercised. A perfect result on one seed is evidence about that seed and leaves variation within the class open.
+* **Qualification and evidence size.** A threshold gives the release process an explicit decision rule. The denominator shows how many seeds the gate tested. Rejecting the only seed leaves other faults in that class untested.
 * **Coverage and reach.** A gate can only decide on what its entry point can observe. A behavioral output check can distinguish two repairs that return different values on the same observed input. A requirement about source provenance needs evidence from somewhere else.
 
 ## Solution
@@ -39,7 +39,7 @@ For each class, divide the number of rejected seeds by the number of eligible se
 4. **Run the release gate.** Submit the seeds and control through the release interface. Preserve their individual verdicts. Treat an interrupted or incomplete qualification run as missing measurement.
 5. **Scope the release decision.** Require passing clean controls and qualified coverage for every class assigned to the gate. Route obligations outside its reach to a check with the required observations.
 
-The toy example treats gate verdicts as Boolean results from assertion predicates. In a real runner, the report needs to distinguish a candidate rejected on the contract from a harness failure that prevented the assertion from running. Design judgment favors reviewing both the fixture and the rejection reason when a surprising pass or rejection changes the qualification decision.
+The example derives each verdict from a Boolean check. In a real runner, report contract violations and harness failures separately. As a matter of design judgment, review the fixture and rejection reason when an unexpected verdict changes the qualification decision.
 
 ## Pattern / Antipattern
 
@@ -140,17 +140,17 @@ assert all(row["catch_rate"] == 1.0 and row["qualified"]
 
 ## Determinism Move
 
-Fault Seed pins the seed identities, expected verdicts, denominator rules, and thresholds before qualification. The nearest variance source is `criteria_drift` because the qualification decision would otherwise be open to changing thresholds or counting rules after seeing the results. The rounding example starts with fixed release criteria. Its original defect is an omission in those criteria, which the closed list does not name directly. The pinned decision rule governs qualification even when the gate under test already produces repeatable verdicts.
+Before qualification, pin the seed identities, expected verdicts, counting rules, and thresholds. The nearest variance source is `criteria_drift` because fixing those choices prevents the qualification rule from shifting in response to results. The fit is approximate. The original rounding gate consistently applies fixed criteria that omit the tie cases.
 
 ## Observable Signal
 
 Report the gate version, contract version and seed set in a maintained qualification run. For each seed, show its identifier, failure class, verdict, and available evidence for that verdict. Report the same observations for the clean controls. For every declared class, show rejected and tested counts, catch rate, threshold, and qualification status. Include any seeds outside the gate's reach and the observation each would require.
 
-The typical-input gate reports 0 of 1 rejected in each class. The expanded gate reports 1 of 1 in each class. Both gates pass the clean repair. The per-input records show why the added coverage takes two values in this example. Each faulty repair agrees with the new rule on one of the two tie cases.
+The typical-input gate reports 0 of 1 rejected in each class. The expanded gate reports 1 of 1 in each class. Both gates pass the clean repair. The expanded gate needs both tie values because each faulty repair agrees with the new rule on a different tie.
 
 ## Failure Modes
 
-These are design judgments about interpreting the report.
+These failure modes reflect design judgment.
 
 * **Easy seeds.** A suite full of repairs that fail on ordinary inputs can show a high catch rate while leaving the documented change untested. Keep witnesses that preserve familiar behavior around the changed obligation.
 * **Equivalent seeds.** A different implementation may have the required behavior throughout the contract domain. Review its witness and label before counting it as a negative fixture. Record unresolved cases as pending review.
@@ -160,7 +160,7 @@ These are design judgments about interpreting the report.
 
 ## Use When
 
-Use Fault Seed when a release decision depends on a named obligation, the gate can be replayed, and plausible wrong candidates can be labelled independently. It fits a migration that keeps most consumer behavior and changes a specific boundary. In design terms, mutation testing is the software-testing ancestor of this move.
+Use Fault Seed when a release decision depends on a named obligation, the gate can be replayed, and plausible wrong candidates can be labelled independently. It fits a migration that keeps most consumer behavior and changes a specific boundary. As a design analogy, Fault Seed borrows mutation testing's use of deliberately wrong variants to probe a check.
 
 Repeat qualification when the gate, contract, or input representation changes. Keep some independently authored cases available for reassessment if the development team has tuned the gate on the original seeds.
 
