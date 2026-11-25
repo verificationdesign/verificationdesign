@@ -11,6 +11,7 @@ const dist = resolve('dist');
 const widths = [320, 339, 340, 390, 768, 1024, 1280];
 const schemes = ['light', 'dark'];
 const cardColumnSelectors = ['p', 'pre', 'table', 'details.section-nav', 'nav.card-nav'];
+const cardReference = '.card-page';
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -56,6 +57,8 @@ function checkCardColumn(edges, expectedContent) {
       else failures.push(`${selector} is unmeasurable`);
     }
   }
+  // The card container is the reference: every ordinary block spans it edge to edge.
+  if (!edges[cardReference]) failures.push('card container is unmeasurable');
   const measured = Object.values(edges).filter(Boolean);
   for (const side of ['left', 'right']) {
     const positions = measured
@@ -81,6 +84,11 @@ const cardContent = new Map((await readCardCatalog()).map(({ category, slug, con
     table: Boolean(containsBlock(source, 'table', 'table')),
   }];
 }));
+// Every card in the catalog must have a built page, or it would get no edge check.
+const missingCardPages = [...cardContent.keys()].filter((route) => !pages.includes(route));
+if (!cardContent.size || missingCardPages.length) {
+  throw new Error(`Card pages missing from dist: ${missingCardPages.join(', ') || 'catalog is empty'}`);
+}
 
 const server = createServer(async (request, response) => {
   try {
@@ -126,7 +134,7 @@ try {
           const response = await page.goto(base + path, { waitUntil: 'networkidle0' });
           if (!response?.ok()) throw new Error(`HTTP ${response?.status() ?? 'no response'}`);
           const { scrollWidth, wideElements, families, navTargets, navTops, cardEdges } = await page.evaluate(async ({
-            viewportWidth, checkTileRows, checkNavTargets, cardSelectors,
+            viewportWidth, checkTileRows, checkNavTargets, cardSelectors, cardReference,
           }) => {
             await document.fonts.ready;
             // Closed details hide content that can overflow once opened (the home catalog).
@@ -162,19 +170,31 @@ try {
             const cardEdges = Object.fromEntries(cardSelectors.map((selector) => {
               // Prefer a block that sits directly in the card body. A block nested in a
               // list item is indented on purpose, so only its right edge is comparable.
-              const topLevel = card?.querySelector(`:scope > ${selector}, .card-body > ${selector}`);
+              // Body prose first, so the paragraph probe is card text and not the
+              // principles line above the body.
+              const topLevel = card?.querySelector(`.card-body > ${selector}`)
+                ?? card?.querySelector(`:scope > ${selector}`);
               const element = topLevel ?? card?.querySelector(selector);
               const bounds = element?.getBoundingClientRect();
+              // Only list items indent on purpose; any other wrapper must not inset a block.
+              const nested = !topLevel && Boolean(element?.closest('.card-body li'));
               return [selector, bounds?.width > 0 && bounds.height > 0
-                ? { left: bounds.left, right: bounds.right, nested: !topLevel }
+                ? { left: bounds.left, right: bounds.right, nested }
                 : null];
             }));
+            if (cardSelectors.length) {
+              const bounds = card?.getBoundingClientRect();
+              cardEdges[cardReference] = bounds?.width > 0 && bounds.height > 0
+                ? { left: bounds.left, right: bounds.right, nested: false }
+                : null;
+            }
             return { scrollWidth, wideElements, families, navTargets, navTops, cardEdges };
           }, {
             viewportWidth: width,
             checkTileRows,
             checkNavTargets,
             cardSelectors: checkCardEdges ? cardColumnSelectors : [],
+            cardReference,
           });
           console.log(`${configuration} scrollWidth=${scrollWidth}`);
           if (checkCardEdges) {
