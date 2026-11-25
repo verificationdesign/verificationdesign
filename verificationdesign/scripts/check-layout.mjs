@@ -2,10 +2,15 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
 import puppeteer from 'puppeteer';
+import remarkGfm from 'remark-gfm';
+import remarkParse from 'remark-parse';
+import { unified } from 'unified';
+import { readCardCatalog } from '../src/content/loaders/cardsLoader.mjs';
 
 const dist = resolve('dist');
 const widths = [320, 339, 340, 390, 768, 1024, 1280];
 const schemes = ['light', 'dark'];
+const cardColumnSelectors = ['p', 'pre', 'table', 'details.section-nav', 'nav.card-nav'];
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -42,6 +47,41 @@ function isShortNavTarget(height) {
   return height < 44;
 }
 
+function checkCardColumn(edges, expectedContent) {
+  const failures = [];
+  const skipped = [];
+  for (const selector of cardColumnSelectors) {
+    if (!edges[selector]) {
+      if (expectedContent[selector] === false) skipped.push(selector);
+      else failures.push(`${selector} is unmeasurable`);
+    }
+  }
+  const measured = Object.values(edges).filter(Boolean);
+  for (const side of ['left', 'right']) {
+    const positions = measured
+      .filter((bounds) => side === 'right' || !bounds.nested)
+      .map((bounds) => bounds[side]);
+    const spread = Math.max(...positions) - Math.min(...positions);
+    if (spread > 1) failures.push(`card column ${side} edges differ by ${spread}px (limit 1px)`);
+  }
+  return { failures, skipped };
+}
+
+function containsBlock(node, type, tag) {
+  return node.type === type
+    || (node.type === 'html' && new RegExp(`<${tag}\\b`, 'i').test(node.value))
+    || node.children?.some((child) => containsBlock(child, type, tag));
+}
+
+const markdown = unified().use(remarkParse).use(remarkGfm);
+const cardContent = new Map((await readCardCatalog()).map(({ category, slug, content }) => {
+  const source = markdown.parse(content);
+  return [`/patterns/${category}/${slug}/`, {
+    pre: Boolean(containsBlock(source, 'code', 'pre')),
+    table: Boolean(containsBlock(source, 'table', 'table')),
+  }];
+}));
+
 const server = createServer(async (request, response) => {
   try {
     const path = decodeURIComponent(new URL(request.url, 'http://127.0.0.1').pathname);
@@ -76,7 +116,8 @@ try {
     for (const scheme of schemes) {
       await page.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: scheme }]);
       for (const path of pages) {
-        if ([339, 340, 768, 1024].includes(width) && path !== '/' && path !== '/patterns/') continue;
+        const checkCardEdges = cardContent.has(path);
+        if ([339, 340, 768, 1024].includes(width) && path !== '/' && path !== '/patterns/' && !checkCardEdges) continue;
         configurations += 1;
         const checkTileRows = path === '/patterns/' && width >= 768;
         const checkNavTargets = width < 720;
@@ -84,8 +125,8 @@ try {
         try {
           const response = await page.goto(base + path, { waitUntil: 'networkidle0' });
           if (!response?.ok()) throw new Error(`HTTP ${response?.status() ?? 'no response'}`);
-          const { scrollWidth, wideElements, families, navTargets, navTops } = await page.evaluate(async ({
-            viewportWidth, checkTileRows, checkNavTargets,
+          const { scrollWidth, wideElements, families, navTargets, navTops, cardEdges } = await page.evaluate(async ({
+            viewportWidth, checkTileRows, checkNavTargets, cardSelectors,
           }) => {
             await document.fonts.ready;
             // Closed details hide content that can overflow once opened (the home catalog).
@@ -117,9 +158,36 @@ try {
             const navTops = checkNavTargets ? [...document.querySelectorAll('.site-header nav li > *')].map(
               (item) => item.getBoundingClientRect().top,
             ) : [];
-            return { scrollWidth, wideElements, families, navTargets, navTops };
-          }, { viewportWidth: width, checkTileRows, checkNavTargets });
+            const card = document.querySelector('.card-page');
+            const cardEdges = Object.fromEntries(cardSelectors.map((selector) => {
+              // Prefer a block that sits directly in the card body. A block nested in a
+              // list item is indented on purpose, so only its right edge is comparable.
+              const topLevel = card?.querySelector(`:scope > ${selector}, .card-body > ${selector}`);
+              const element = topLevel ?? card?.querySelector(selector);
+              const bounds = element?.getBoundingClientRect();
+              return [selector, bounds?.width > 0 && bounds.height > 0
+                ? { left: bounds.left, right: bounds.right, nested: !topLevel }
+                : null];
+            }));
+            return { scrollWidth, wideElements, families, navTargets, navTops, cardEdges };
+          }, {
+            viewportWidth: width,
+            checkTileRows,
+            checkNavTargets,
+            cardSelectors: checkCardEdges ? cardColumnSelectors : [],
+          });
           console.log(`${configuration} scrollWidth=${scrollWidth}`);
+          if (checkCardEdges) {
+            const result = checkCardColumn(cardEdges, cardContent.get(path));
+            console.log(`  card column edges=${JSON.stringify(cardEdges)}`);
+            for (const selector of result.skipped) {
+              console.log(`  SKIP: ${selector} absent from card source`);
+            }
+            failures += result.failures.length;
+            for (const failure of result.failures) {
+              console.error(`FAIL: ${configuration} ${failure}`);
+            }
+          }
           if (scrollWidth > width) {
             failures += 1;
             console.error(`FAIL: ${configuration} overflows by ${scrollWidth - width}px`);

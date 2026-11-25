@@ -490,6 +490,20 @@ hr {
 }
 
 .card-page { max-width: var(--measure-wide); margin: 0 auto; }
+
+/* One column on pattern pages: prose, code, tables and navigation share both edges.
+   Below about 846px the column is the viewport width less the main gutters. */
+@media screen {
+  .card-page {
+    --measure: 44rem;
+    max-width: var(--measure);
+  }
+
+  .card-body table { width: 100%; }
+  /* Source identifiers stay on one line; the title column takes the wrapping. */
+  .card-body table :is(th, td):first-child { white-space: nowrap; }
+}
+
 .breadcrumb {
   font-family: var(--font-sans);
   font-size: 0.85rem;
